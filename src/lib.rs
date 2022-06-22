@@ -57,6 +57,7 @@ async fn main_logic(env: &Env) -> anyhow::Result<()> {
 
     if tags_to_post.len() <= 1 {
         console_log!("latest version is already posted, finishing");
+        return Ok(());
     }
 
     for [previous_tag, new_tag] in tags_to_post.array_windows() {
