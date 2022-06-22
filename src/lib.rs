@@ -19,21 +19,21 @@ pub async fn fetch(
     env: Env,
     _ctx: worker::Context,
 ) -> worker::Result<worker::Response> {
-    panic_hook::set_panic_hook();
-
-    if let Err(e) = scheduled(&env).await {
-        console_error!("{e:?}");
-    }
-
+    main(&env).await;
     worker::Response::empty()
 }
 
 #[event(scheduled)]
 pub async fn scheduled(_event: ScheduledEvent, env: Env, _ctx: ScheduleContext) {
+    main(&env).await;
+}
+
+async fn main(env: &Env) {
     panic_hook::set_panic_hook();
 
-    if let Err(e) = scheduled(&env).await {
-        console_error!("{e:?}");
+    match scheduled(&env).await {
+        Err(e) => console_error!("{e:?}"),
+        Ok(_) => console_log!("finished successfully"),
     }
 }
 
@@ -54,6 +54,10 @@ async fn scheduled(env: &Env) -> anyhow::Result<()> {
         .collect::<Vec<_>>();
 
     console_log!("tags_to_post = {:?}", tags_to_post);
+
+    if tags_to_post.len() <= 1 {
+        console_log!("latest version is already posted, finishing");
+    }
 
     for [previous_tag, new_tag] in tags_to_post.array_windows() {
         console_log!(
@@ -135,11 +139,11 @@ async fn scheduled(env: &Env) -> anyhow::Result<()> {
             }
         }
 
-        console_log!("currently doing only one post per invocation, exiting loop");
-        break;
+        if tags_to_post.len() >= 3 {
+            console_log!("currently doing only one post per invocation, exiting loop");
+            break;
+        }
     }
-
-    console_log!("finished successfully");
 
     Ok(())
 }
