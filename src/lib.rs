@@ -12,6 +12,7 @@ mod utils;
 const TAGS_URL: &str = "https://api.github.com/repos/signalapp/Signal-Android/tags";
 const COMPARE_URL: &str = "https://api.github.com/repos/signalapp/Signal-Android/compare";
 
+// Used for debugging, to manually trigger the bot outside of schedule.
 #[event(fetch)]
 pub async fn fetch(
     _req: worker::Request,
