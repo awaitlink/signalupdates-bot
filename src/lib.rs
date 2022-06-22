@@ -1,16 +1,18 @@
 #![feature(array_windows)]
 
 use anyhow::Context;
+use strum::IntoEnumIterator;
 use worker::{console_error, console_log, event, Env, ScheduleContext, ScheduledEvent};
 
 mod panic_hook;
+mod platform;
 mod post;
 mod state;
 mod types;
 mod utils;
 
-const TAGS_URL: &str = "https://api.github.com/repos/signalapp/Signal-Android/tags";
-const COMPARE_URL: &str = "https://api.github.com/repos/signalapp/Signal-Android/compare";
+use platform::Platform;
+use state::StateController;
 
 // Used for debugging, to manually trigger the bot outside of schedule.
 #[event(fetch)]
@@ -31,17 +33,29 @@ pub async fn scheduled(_event: ScheduledEvent, env: Env, _ctx: ScheduleContext) 
 async fn main(env: &Env) {
     panic_hook::set_panic_hook();
 
-    match main_logic(env).await {
+    match check_all_platforms(env).await {
         Err(e) => console_error!("{e:?}"),
         Ok(_) => console_log!("finished successfully"),
     }
 }
 
-async fn main_logic(env: &Env) -> anyhow::Result<()> {
+async fn check_all_platforms(env: &Env) -> anyhow::Result<()> {
     let mut state_controller = state::StateController::from_kv(env).await?;
     console_log!("loaded state from KV: {:?}", state_controller.state());
 
-    let tags: Vec<types::github::Tag> = utils::get_json_from_url(TAGS_URL)
+    for platform in Platform::iter() {
+        check_platform(&mut state_controller, env, platform).await?
+    }
+
+    Ok(())
+}
+
+async fn check_platform(
+    state_controller: &mut StateController,
+    env: &Env,
+    platform: Platform,
+) -> anyhow::Result<()> {
+    let tags: Vec<types::github::Tag> = utils::get_json_from_url(platform.github_api_tags_url())
         .await
         .context("could not fetch tags from GitHub")?;
     console_log!("tags = {:?}", tags);
@@ -50,7 +64,7 @@ async fn main_logic(env: &Env) -> anyhow::Result<()> {
     let tags_to_post = tags
         .iter()
         .rev()
-        .skip_while(|tag| tag.name != state_controller.state().last_posted_tag)
+        .skip_while(|tag| tag.name != state_controller.platform_state(platform).last_posted_tag)
         .collect::<Vec<_>>();
 
     console_log!("tags_to_post = {:?}", tags_to_post);
@@ -77,7 +91,7 @@ async fn main_logic(env: &Env) -> anyhow::Result<()> {
 
         let discourse_api_key = utils::api_key(env);
 
-        let topic_id = utils::get_topic_id(discourse_api_key.clone(), &new_version)
+        let topic_id = utils::get_topic_id(discourse_api_key.clone(), platform, &new_version)
             .await
             .context("could not find topic_id")?;
 
@@ -85,22 +99,22 @@ async fn main_logic(env: &Env) -> anyhow::Result<()> {
             Some(topic_id) => {
                 console_log!("topic_id = {topic_id}");
 
-                let last_posted_version =
-                    utils::version_from_tag(&state_controller.state().last_posted_tag)?;
+                let last_posted_version = utils::version_from_tag(
+                    &state_controller.platform_state(platform).last_posted_tag,
+                )?;
 
                 let reply_to_post_number = if last_posted_version.major == new_version.major
                     && last_posted_version.minor == new_version.minor
                 {
-                    Some(state_controller.state().last_post_number)
+                    Some(state_controller.platform_state(platform).last_post_number)
                 } else {
                     None
                 };
                 console_log!("reply_to_post_number = {:?}", reply_to_post_number);
 
-                let comparison: types::github::Comparison = utils::get_json_from_url(format!(
-                    "{COMPARE_URL}/{}...{}",
-                    previous_tag.name, new_tag.name
-                ))
+                let comparison: types::github::Comparison = utils::get_json_from_url(
+                    platform.github_api_comparison_url(&previous_tag.name, &new_tag.name),
+                )
                 .await
                 .context("could not fetch comparison from GitHub")?;
 
@@ -110,13 +124,17 @@ async fn main_logic(env: &Env) -> anyhow::Result<()> {
                     .commits
                     .iter()
                     .map(|github_commit| {
-                        post::Commit::new(&github_commit.commit.message, &github_commit.sha)
+                        post::Commit::new(
+                            platform,
+                            &github_commit.commit.message,
+                            &github_commit.sha,
+                        )
                     })
                     .collect();
 
                 console_log!("commits = {:?}", commits);
 
-                let post = post::Post::new(&previous_tag.name, &new_tag.name, commits);
+                let post = post::Post::new(platform, &previous_tag.name, &new_tag.name, commits);
 
                 console_log!("post.markdown_text() = {:?}", post.markdown_text());
 
@@ -128,11 +146,17 @@ async fn main_logic(env: &Env) -> anyhow::Result<()> {
                 console_log!("posted post_number = {:?}", post_number);
 
                 state_controller
-                    .set_state(state::State::new(&new_tag.name, post_number))
+                    .set_platform_state(
+                        platform,
+                        state::PlatformState::new(&new_tag.name, post_number),
+                    )
                     .await
                     .context("could not set state")?;
 
-                console_log!("saved state to KV: {:?}", state_controller.state());
+                console_log!(
+                    "saved state to KV: {:?}",
+                    state_controller.platform_state(platform)
+                );
             }
             None => {
                 console_log!("no topic found, may be not created yet; not trying more tags");

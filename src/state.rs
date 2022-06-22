@@ -3,16 +3,23 @@ use serde::{Deserialize, Serialize};
 use worker::Env;
 use worker_kv::KvStore;
 
+use crate::platform::Platform::{self, *};
+
 const STATE_KV_BINDING: &str = "STATE";
 const STATE_KV_KEY: &str = "state";
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct State {
+    pub android: PlatformState,
+}
+
+#[derive(Serialize, Deserialize, Debug)]
+pub struct PlatformState {
     pub last_posted_tag: String,
     pub last_post_number: u64,
 }
 
-impl State {
+impl PlatformState {
     pub fn new(last_posted_tag: impl Into<String>, last_post_number: u64) -> Self {
         Self {
             last_posted_tag: last_posted_tag.into(),
@@ -50,8 +57,21 @@ impl StateController {
         &self.state
     }
 
-    pub async fn set_state(&mut self, state: State) -> anyhow::Result<()> {
-        self.state = state;
+    pub fn platform_state(&self, platform: Platform) -> &PlatformState {
+        match platform {
+            Android => &self.state.android,
+        }
+    }
+
+    pub async fn set_platform_state(
+        &mut self,
+        platform: Platform,
+        state: PlatformState,
+    ) -> anyhow::Result<()> {
+        match platform {
+            Android => self.state.android = state,
+        }
+
         self.commit_changes().await
     }
 

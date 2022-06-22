@@ -2,15 +2,16 @@ use anyhow::{anyhow, Context};
 use serde_json::json;
 use worker::{console_log, Method, Url};
 
-use crate::{types, utils};
+use crate::{
+    platform::Platform::{self},
+    types, utils,
+};
 
-const POSTING_URL: &str = "https://community.signalusers.org/posts.json";
-const FAD_TOPIC_URL: &str = "https://community.signalusers.org/t/17538";
-const COMPARE_URL: &str = "https://github.com/signalapp/Signal-Android/compare";
-const COMMIT_URL: &str = "https://github.com/signalapp/Signal-Android/commit";
+const DISCOURSE_API_POSTING_URL: &str = "https://community.signalusers.org/posts.json";
 
 #[derive(Debug)]
 pub struct Post {
+    platform: Platform,
     previous_tag: String,
     new_tag: String,
     commits: Vec<Commit>,
@@ -18,11 +19,13 @@ pub struct Post {
 
 impl Post {
     pub fn new(
+        platform: Platform,
         previous_tag: impl Into<String>,
         new_tag: impl Into<String>,
         commits: Vec<Commit>,
     ) -> Self {
         Self {
+            platform,
             previous_tag: previous_tag.into(),
             new_tag: new_tag.into(),
             commits,
@@ -38,24 +41,15 @@ impl Post {
             .collect::<Vec<_>>()
             .join("\n");
 
-        let previous_tag = &self.previous_tag;
-        let previous_version = previous_tag.replace('v', "");
+        let previous_version = self.previous_tag.replace('v', "");
+        let new_version = self.new_tag.replace('v', "");
 
-        let new_tag = &self.new_tag;
-        let new_version = new_tag.replace('v', "");
+        let platform = self.platform;
+        let extra_text = platform.availability_notice();
+        let comparison_url = platform.github_comparison_url(&self.previous_tag, &self.new_tag);
 
         format!(
-            "## :tada: - New Version: {new_version}
-(Not Yet) Available via [Firebase App Distribution]({FAD_TOPIC_URL})
-
-[quote]
-All new commits since {previous_version}:
-
-{commits}
-
----
-Gathered from [signalapp/Signal-Android]({COMPARE_URL}/{previous_tag}...{new_tag})
-[/quote]"
+            "## :tada: - New Version: {new_version}{extra_text}\n\n[quote]\nAll new commits since {previous_version}:\n\n{commits}\n\n---\nGathered from [signalapp/Signal-{platform}]({comparison_url})\n[/quote]"
         )
     }
 
@@ -71,7 +65,7 @@ Gathered from [signalapp/Signal-Android]({COMPARE_URL}/{previous_tag}...{new_tag
             "raw": self.markdown_text(),
         });
 
-        let url = Url::parse(POSTING_URL).context("could not parse URL")?;
+        let url = Url::parse(DISCOURSE_API_POSTING_URL).context("could not parse URL")?;
         let request = utils::create_request(url, Method::Post, Some(body), Some(api_key))?;
 
         let api_response: types::discourse::PostApiResponse =
@@ -90,13 +84,19 @@ Gathered from [signalapp/Signal-Android]({COMPARE_URL}/{previous_tag}...{new_tag
 
 #[derive(Debug)]
 pub struct Commit {
+    platform: Platform,
     message_lines: Vec<String>,
     sha: String,
 }
 
 impl Commit {
-    pub fn new(full_message: impl Into<String>, sha: impl Into<String>) -> Self {
+    pub fn new(
+        platform: Platform,
+        full_message: impl Into<String>,
+        sha: impl Into<String>,
+    ) -> Self {
         Self {
+            platform,
             message_lines: full_message
                 .into()
                 .split('\n')
@@ -117,9 +117,9 @@ impl Commit {
             None => "*Empty commit message*",
         };
 
-        let sha = &self.sha;
+        let commit_url = self.platform.github_commit_url(&self.sha);
 
-        let main_content = format!("- {message} [[{index}]]({COMMIT_URL}/{sha})\n");
+        let main_content = format!("- {message} [[{index}]]({commit_url})\n");
 
         let details = match self.message_lines.len() {
             2.. => format!("\n    {}", self.message_lines[1..].join("\n    ")),
@@ -134,24 +134,30 @@ impl Commit {
 mod tests {
     use super::*;
     use test_case::test_case;
+    use Platform::*;
 
-    #[test_case("Test commit.", "abcdef" => "- Test commit. [[1]](https://github.com/signalapp/Signal-Android/commit/abcdef)\n".to_string(); "one line")]
-    #[test_case("Test commit.\nAnother line.", "abcdef" => "- Test commit. [[1]](https://github.com/signalapp/Signal-Android/commit/abcdef)\n\n    Another line.".to_string(); "two lines")]
-    #[test_case("Test commit.\nAnother line.\nAnd another line.", "abcdef" => "- Test commit. [[1]](https://github.com/signalapp/Signal-Android/commit/abcdef)\n\n    Another line.\n    And another line.".to_string(); "three lines")]
-    #[test_case("Test commit.\nCo-Authored-By: user", "abcdef" => "- Test commit. [[1]](https://github.com/signalapp/Signal-Android/commit/abcdef)\n".to_string(); "Co-Authored-By is removed")]
-    #[test_case("Revert \"Test commit\".\nThis reverts commit fedcba.", "abcdef" => "- Revert \"Test commit\". [[1]](https://github.com/signalapp/Signal-Android/commit/abcdef)\n".to_string(); "This reverts commit is removed")]
-    fn commit_markdown(full_message: impl Into<String>, sha: impl Into<String>) -> String {
-        Commit::new(full_message, sha).markdown_text(0)
+    #[test_case(Android, "Test commit.", "abcdef" => "- Test commit. [[1]](https://github.com/signalapp/Signal-Android/commit/abcdef)\n".to_string(); "one line")]
+    #[test_case(Android, "Test commit.\nAnother line.", "abcdef" => "- Test commit. [[1]](https://github.com/signalapp/Signal-Android/commit/abcdef)\n\n    Another line.".to_string(); "two lines")]
+    #[test_case(Android, "Test commit.\nAnother line.\nAnd another line.", "abcdef" => "- Test commit. [[1]](https://github.com/signalapp/Signal-Android/commit/abcdef)\n\n    Another line.\n    And another line.".to_string(); "three lines")]
+    #[test_case(Android, "Test commit.\nCo-Authored-By: user", "abcdef" => "- Test commit. [[1]](https://github.com/signalapp/Signal-Android/commit/abcdef)\n".to_string(); "Co-Authored-By is removed")]
+    #[test_case(Android, "Revert \"Test commit\".\nThis reverts commit fedcba.", "abcdef" => "- Revert \"Test commit\". [[1]](https://github.com/signalapp/Signal-Android/commit/abcdef)\n".to_string(); "This reverts commit is removed")]
+    fn commit_markdown(
+        platform: Platform,
+        full_message: impl Into<String>,
+        sha: impl Into<String>,
+    ) -> String {
+        Commit::new(platform, full_message, sha).markdown_text(0)
     }
 
-    #[test_case("v1.2.3", "v1.2.4", vec![
-        Commit::new("Test commit.", "abcdef")
+    #[test_case(Android, "v1.2.3", "v1.2.4", vec![
+        Commit::new(Android, "Test commit.", "abcdef")
     ] => "## :tada: - New Version: 1.2.4\n(Not Yet) Available via [Firebase App Distribution](https://community.signalusers.org/t/17538)\n\n[quote]\nAll new commits since 1.2.3:\n\n- Test commit. [[1]](https://github.com/signalapp/Signal-Android/commit/abcdef)\n\n\n---\nGathered from [signalapp/Signal-Android](https://github.com/signalapp/Signal-Android/compare/v1.2.3...v1.2.4)\n[/quote]".to_string(); "one commit")]
     fn post_markdown(
+        platform: Platform,
         previous_tag: impl Into<String>,
         new_tag: impl Into<String>,
         commits: Vec<Commit>,
     ) -> String {
-        Post::new(previous_tag, new_tag, commits).markdown_text()
+        Post::new(platform, previous_tag, new_tag, commits).markdown_text()
     }
 }

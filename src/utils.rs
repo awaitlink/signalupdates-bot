@@ -7,6 +7,8 @@ use worker::{
     Response, Url,
 };
 
+use crate::platform::Platform;
+
 pub const USER_AGENT: &str = "updates-bot";
 
 pub fn version_from_tag(tag: &str) -> anyhow::Result<Version> {
@@ -19,14 +21,15 @@ pub fn api_key(env: &Env) -> String {
     JsValue::from(string_binding).as_string().unwrap()
 }
 
-pub async fn get_topic_id(api_key: String, version: &Version) -> anyhow::Result<Option<u64>> {
+pub async fn get_topic_id(
+    api_key: String,
+    platform: Platform,
+    version: &Version,
+) -> anyhow::Result<Option<u64>> {
     console_log!("getting topic id for version {version}");
 
-    let url = Url::parse(&format!(
-        "https://community.signalusers.org/t/beta-feedback-for-the-upcoming-android-{}-{}-release.json",
-        version.major, version.minor
-    ))
-    .context("could not parse URL")?;
+    let url =
+        Url::parse(&platform.discourse_topic_slug_url(version)).context("could not parse URL")?;
 
     let request = create_request(url, Method::Get, None, Some(api_key))?;
     let response: crate::types::discourse::TopicResponse = get_json_from_request(request).await?;
