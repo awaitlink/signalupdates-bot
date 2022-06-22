@@ -31,7 +31,7 @@ pub async fn scheduled(_event: ScheduledEvent, env: Env, _ctx: ScheduleContext) 
 async fn main(env: &Env) {
     panic_hook::set_panic_hook();
 
-    match main_logic(&env).await {
+    match main_logic(env).await {
         Err(e) => console_error!("{e:?}"),
         Ok(_) => console_log!("finished successfully"),
     }
