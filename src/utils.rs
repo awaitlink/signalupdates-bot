@@ -20,13 +20,13 @@ pub fn api_key(env: &Env) -> String {
 }
 
 pub async fn get_topic_id(api_key: String, version: &Version) -> anyhow::Result<Option<u64>> {
+    console_log!("getting topic id for version {version}");
+
     let url = Url::parse(&format!(
         "https://community.signalusers.org/t/beta-feedback-for-the-upcoming-android-{}-{}-release.json",
         version.major, version.minor
     ))
     .context("could not parse URL")?;
-
-    console_log!("getting topic id for version {version}");
 
     let request = create_request(url, Method::Get, None, Some(api_key))?;
     let response: crate::types::discourse::TopicResponse = get_json_from_request(request).await?;
