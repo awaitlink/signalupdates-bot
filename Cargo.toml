@@ -1,0 +1,28 @@
+[package]
+name = "signalupdates-bot"
+version = "0.1.0"
+edition = "2021"
+publish = false
+
+[lib]
+crate-type = ["cdylib", "rlib"]
+
+[features]
+default = ["console_error_panic_hook"]
+
+[dependencies]
+cfg-if = "1.0"
+worker = "0.0.9"
+worker-kv = "0.5"
+anyhow = "1.0"
+serde = "1.0"
+serde_derive = "1.0"
+serde_json = "1.0"
+semver = "1.0"
+console_error_panic_hook = { version = "0.1.1", optional = true }
+
+[dev-dependencies]
+test-case = "2.1"
+
+[profile.release]
+opt-level = "s"

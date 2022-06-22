@@ -1,0 +1,21 @@
+name = "signalupdates-bot"
+type = "javascript"
+compatibility_date = "2022-06-18"
+kv_namespaces = [{ binding = "STATE", id = "..." }]
+
+[triggers]
+crons = ["*/10 * * * *"]
+
+[vars]
+
+[build]
+command = "cargo install worker-build && worker-build --release"
+
+[build.upload]
+dir = "build/worker"
+format = "modules"
+main = "./shim.mjs"
+
+[[build.upload.rules]]
+globs = ["**/*.wasm"]
+type = "CompiledWasm"

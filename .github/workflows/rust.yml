@@ -1,0 +1,24 @@
+name: Rust
+
+on: [push, pull_request]
+
+jobs:
+  main:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        rust: [nightly]
+
+    steps:
+    - uses: actions/checkout@v1
+    - name: configure Rust
+      run: |
+        rustup set profile default
+        rustup install ${{ matrix.rust }}
+        rustup default ${{ matrix.rust }}
+    - name: fmt check
+      run: cargo fmt -- --check
+    - name: clippy
+      run: cargo clippy -- -Dwarnings
+    - name: test
+      run: cargo test

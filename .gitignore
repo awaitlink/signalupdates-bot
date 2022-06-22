@@ -1,0 +1,7 @@
+/target
+**/*.rs.bk
+wasm-pack.log
+build/
+.DS_Store
+
+wrangler.toml
