@@ -45,11 +45,11 @@ impl Post {
         let new_version = self.new_tag.replace('v', "");
 
         let platform = self.platform;
-        let extra_text = platform.availability_notice();
+        let availability_notice = platform.availability_notice();
         let comparison_url = platform.github_comparison_url(&self.previous_tag, &self.new_tag);
 
         format!(
-            "## :tada: - New Version: {new_version}{extra_text}\n\n[quote]\nAll new commits since {previous_version}:\n\n{commits}\n\n---\nGathered from [signalapp/Signal-{platform}]({comparison_url})\n[/quote]"
+            "## :tada: - New Version: {new_version}{availability_notice}\n\n[quote]\nAll new commits since {previous_version}:\n\n{commits}\n\n---\nGathered from [signalapp/Signal-{platform}]({comparison_url})\n[/quote]"
         )
     }
 
