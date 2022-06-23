@@ -17,11 +17,11 @@ pub struct State {
 #[derive(Serialize, Deserialize, Debug)]
 pub struct PlatformState {
     pub last_posted_tag: String,
-    pub last_post_number: u64,
+    pub last_post_number: Option<u64>,
 }
 
 impl PlatformState {
-    pub fn new(last_posted_tag: impl Into<String>, last_post_number: u64) -> Self {
+    pub fn new(last_posted_tag: impl Into<String>, last_post_number: Option<u64>) -> Self {
         Self {
             last_posted_tag: last_posted_tag.into(),
             last_post_number,

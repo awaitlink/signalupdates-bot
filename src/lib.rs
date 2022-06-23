@@ -103,7 +103,7 @@ async fn check_platform(
                 let reply_to_post_number = if last_posted_version.major == new_version.major
                     && last_posted_version.minor == new_version.minor
                 {
-                    Some(state_controller.platform_state(platform).last_post_number)
+                    state_controller.platform_state(platform).last_post_number
                 } else {
                     None
                 };
@@ -143,7 +143,7 @@ async fn check_platform(
                 state_controller
                     .set_platform_state(
                         platform,
-                        state::PlatformState::new(&new_tag.name, post_number),
+                        state::PlatformState::new(&new_tag.name, Some(post_number)),
                     )
                     .await
                     .context("could not set state")?;
