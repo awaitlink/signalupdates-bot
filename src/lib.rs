@@ -1,6 +1,7 @@
 #![feature(array_windows)]
 
 use anyhow::Context;
+use semver::Version;
 use strum::IntoEnumIterator;
 use worker::{console_error, console_log, event, Env, ScheduleContext, ScheduledEvent};
 
@@ -65,7 +66,9 @@ async fn check_platform(
         .iter()
         .rev()
         .skip_while(|tag| tag.name != state_controller.platform_state(platform).last_posted_tag)
-        .collect::<Vec<_>>();
+        .filter_map(|tag| tag.try_into().ok().map(|version| (tag.clone(), version)))
+        .filter(|(_, version)| platform.should_post_version(version))
+        .collect::<Vec<(types::github::Tag, Version)>>();
 
     console_log!("tags_to_post = {:?}", tags_to_post);
 
@@ -74,19 +77,16 @@ async fn check_platform(
         return Ok(());
     }
 
-    for [previous_tag, new_tag] in tags_to_post.array_windows() {
+    for [(previous_tag, _), (new_tag, new_version)] in tags_to_post.array_windows() {
         console_log!(
             "looking at [previous_tag: {:?}, new_tag: {:?}]",
             previous_tag,
             new_tag
         );
 
-        let new_version =
-            utils::version_from_tag(&new_tag.name).context("could not parse new_version")?;
-
         let discourse_api_key = utils::api_key(env);
 
-        let topic_id = utils::get_topic_id(discourse_api_key.clone(), platform, &new_version)
+        let topic_id = utils::get_topic_id(discourse_api_key.clone(), platform, new_version)
             .await
             .context("could not find topic_id")?;
 

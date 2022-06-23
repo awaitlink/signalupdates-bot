@@ -14,6 +14,12 @@ impl Platform {
         }
     }
 
+    pub fn should_post_version(&self, version: &Version) -> bool {
+        match self {
+            Android => version.build.is_empty(), // versions like 1.2.3.4 are filtered out (the "4" is parsed into `build` by lenient_semver)
+        }
+    }
+
     pub fn github_api_comparison_url(&self, old: &str, new: &str) -> String {
         format!("https://api.github.com/repos/signalapp/Signal-{self}/compare/{old}...{new}")
     }

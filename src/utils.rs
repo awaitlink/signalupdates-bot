@@ -12,8 +12,9 @@ use crate::platform::Platform;
 pub const USER_AGENT: &str = "updates-bot";
 
 pub fn version_from_tag(tag: &str) -> anyhow::Result<Version> {
-    let version = tag.replace('v', "");
-    Version::parse(&version).context("could not parse version")
+    lenient_semver::parse(tag)
+        .map_err(|e| anyhow!(e.to_string()))
+        .context("could not parse version from tag")
 }
 
 pub fn api_key(env: &Env) -> String {
