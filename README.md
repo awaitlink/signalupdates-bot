@@ -1,6 +1,6 @@
 # `signalupdates-bot`
 
-An [unofficial](#disclaimer) bot that creates posts about new commits in the [Signal Android](https://github.com/signalapp/Signal-Android) and [Signal Desktop](https://github.com/signalapp/Signal-Desktop) repositories in the corresponding [beta feedback](https://community.signalusers.org/c/25) topics.
+An [unofficial](#disclaimer) bot that creates posts about new tags in the [Signal Android](https://github.com/signalapp/Signal-Android) and [Signal Desktop](https://github.com/signalapp/Signal-Desktop) repositories in the corresponding [beta feedback](https://community.signalusers.org/c/25) topics.
 
 ## Acknowledgements
 
