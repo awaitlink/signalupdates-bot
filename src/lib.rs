@@ -84,11 +84,6 @@ async fn check_platform(
         let new_version =
             utils::version_from_tag(&new_tag.name).context("could not parse new_version")?;
 
-        if new_version.patch == 0 {
-            console_log!("skipping because new_version.patch is 0");
-            continue;
-        }
-
         let discourse_api_key = utils::api_key(env);
 
         let topic_id = utils::get_topic_id(discourse_api_key.clone(), platform, &new_version)
