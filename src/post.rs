@@ -37,7 +37,7 @@ impl Post {
             .commits
             .iter()
             .enumerate()
-            .map(|(index, commit)| commit.markdown_text(index))
+            .map(|(index, commit)| commit.markdown_text(index + 1))
             .collect::<Vec<_>>()
             .join("\n");
 
@@ -129,9 +129,7 @@ impl Commit {
         }
     }
 
-    pub fn markdown_text(&self, index: usize) -> String {
-        let index = index + 1;
-
+    pub fn markdown_text(&self, number: usize) -> String {
         let message = match self.message_lines.get(0) {
             Some(line) => line,
             None => "*Empty commit message*",
@@ -139,7 +137,7 @@ impl Commit {
 
         let commit_url = self.platform.github_commit_url(&self.sha);
 
-        let main_content = format!("- {message} [[{index}]]({commit_url})\n");
+        let main_content = format!("- {message} [[{number}]]({commit_url})\n");
 
         let details = match self.message_lines.len() {
             2.. => format!("\n    {}", self.message_lines[1..].join("\n    ")),
@@ -166,7 +164,7 @@ mod tests {
         full_message: impl Into<String>,
         sha: impl Into<String>,
     ) -> String {
-        Commit::new(platform, full_message, sha).markdown_text(0)
+        Commit::new(platform, full_message, sha).markdown_text(1)
     }
 
     #[test_case(Android, "v1.2.3", "v1.2.4", vec![
