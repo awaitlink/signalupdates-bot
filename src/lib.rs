@@ -136,8 +136,6 @@ async fn check_platform(
 
                 let post = post::Post::new(platform, &previous_tag.name, &new_tag.name, commits);
 
-                console_log!("post.markdown_text() = {:?}", post.markdown_text());
-
                 let post_number = post
                     .post(discourse_api_key.clone(), topic_id, reply_to_post_number)
                     .await

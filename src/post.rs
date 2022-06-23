@@ -76,10 +76,13 @@ Gathered from [signalapp/Signal-{platform}]({comparison_url})
         topic_id: u64,
         reply_to_post_number: Option<u64>,
     ) -> anyhow::Result<u64> {
+        let markdown_text = self.markdown_text();
+        console_log!("posting post with markdown_text = {:?}", markdown_text);
+
         let body = json!({
             "topic_id": topic_id,
             "reply_to_post_number": reply_to_post_number,
-            "raw": self.markdown_text(),
+            "raw": markdown_text,
         });
 
         let url = Url::parse(DISCOURSE_API_POSTING_URL).context("could not parse URL")?;
