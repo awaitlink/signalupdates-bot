@@ -48,8 +48,25 @@ impl Post {
         let availability_notice = platform.availability_notice();
         let comparison_url = platform.github_comparison_url(&self.previous_tag, &self.new_tag);
 
+        let commits_count = self.commits.len();
+        let (commits_prefix, commits_postfix) = match commits_count {
+            0..=20 => ("", ""),
+            _ => ("[details=\"Show commits\"]\n\n", "\n\n[/details]"),
+        };
+
+        let commits_word_suffix = if commits_count == 1 { "" } else { "s" };
+
         format!(
-            "## :tada: - New Version: {new_version}{availability_notice}\n\n[quote]\nAll new commits since {previous_version}:\n\n{commits}\n\n---\nGathered from [signalapp/Signal-{platform}]({comparison_url})\n[/quote]"
+            "## :tada: - New Version: {new_version}{availability_notice}
+
+[quote]
+{commits_count} new commit{commits_word_suffix} since {previous_version}:
+
+{commits_prefix}{commits}{commits_postfix}
+
+---
+Gathered from [signalapp/Signal-{platform}]({comparison_url})
+[/quote]"
         )
     }
 
@@ -151,7 +168,117 @@ mod tests {
 
     #[test_case(Android, "v1.2.3", "v1.2.4", vec![
         Commit::new(Android, "Test commit.", "abcdef")
-    ] => "## :tada: - New Version: 1.2.4\n(Not Yet) Available via [Firebase App Distribution](https://community.signalusers.org/t/17538)\n\n[quote]\nAll new commits since 1.2.3:\n\n- Test commit. [[1]](https://github.com/signalapp/Signal-Android/commit/abcdef)\n\n\n---\nGathered from [signalapp/Signal-Android](https://github.com/signalapp/Signal-Android/compare/v1.2.3...v1.2.4)\n[/quote]".to_string(); "one commit")]
+    ] => "## :tada: - New Version: 1.2.4
+(Not Yet) Available via [Firebase App Distribution](https://community.signalusers.org/t/17538)
+
+[quote]
+1 new commit since 1.2.3:
+
+- Test commit. [[1]](https://github.com/signalapp/Signal-Android/commit/abcdef)
+
+
+---
+Gathered from [signalapp/Signal-Android](https://github.com/signalapp/Signal-Android/compare/v1.2.3...v1.2.4)
+[/quote]".to_string(); "one commit")]
+    #[test_case(Android, "v1.2.3", "v1.2.4", vec![
+        Commit::new(Android, "Test commit.", "abcdef"),
+        Commit::new(Android, "Bump version to 1.2.4", "abc123")
+    ] => "## :tada: - New Version: 1.2.4
+(Not Yet) Available via [Firebase App Distribution](https://community.signalusers.org/t/17538)
+
+[quote]
+2 new commits since 1.2.3:
+
+- Test commit. [[1]](https://github.com/signalapp/Signal-Android/commit/abcdef)
+
+- Bump version to 1.2.4 [[2]](https://github.com/signalapp/Signal-Android/commit/abc123)
+
+
+---
+Gathered from [signalapp/Signal-Android](https://github.com/signalapp/Signal-Android/compare/v1.2.3...v1.2.4)
+[/quote]".to_string(); "two commits")]
+    #[test_case(Android, "v1.2.3", "v1.2.4", vec![
+        Commit::new(Android, "Test commit.", "abcdef"),
+        Commit::new(Android, "Test commit.", "abcdef"),
+        Commit::new(Android, "Test commit.", "abcdef"),
+        Commit::new(Android, "Test commit.", "abcdef"),
+        Commit::new(Android, "Test commit.", "abcdef"),
+
+        Commit::new(Android, "Test commit.", "abcdef"),
+        Commit::new(Android, "Test commit.", "abcdef"),
+        Commit::new(Android, "Test commit.", "abcdef"),
+        Commit::new(Android, "Test commit.", "abcdef"),
+        Commit::new(Android, "Test commit.", "abcdef"),
+
+        Commit::new(Android, "Test commit.", "abcdef"),
+        Commit::new(Android, "Test commit.", "abcdef"),
+        Commit::new(Android, "Test commit.", "abcdef"),
+        Commit::new(Android, "Test commit.", "abcdef"),
+        Commit::new(Android, "Test commit.", "abcdef"),
+
+        Commit::new(Android, "Test commit.", "abcdef"),
+        Commit::new(Android, "Test commit.", "abcdef"),
+        Commit::new(Android, "Test commit.", "abcdef"),
+        Commit::new(Android, "Test commit.", "abcdef"),
+        Commit::new(Android, "Test commit.", "abcdef"),
+
+        Commit::new(Android, "Bump version to 1.2.4", "abc123")
+    ] => "## :tada: - New Version: 1.2.4
+(Not Yet) Available via [Firebase App Distribution](https://community.signalusers.org/t/17538)
+
+[quote]
+21 new commits since 1.2.3:
+
+[details=\"Show commits\"]
+
+- Test commit. [[1]](https://github.com/signalapp/Signal-Android/commit/abcdef)
+
+- Test commit. [[2]](https://github.com/signalapp/Signal-Android/commit/abcdef)
+
+- Test commit. [[3]](https://github.com/signalapp/Signal-Android/commit/abcdef)
+
+- Test commit. [[4]](https://github.com/signalapp/Signal-Android/commit/abcdef)
+
+- Test commit. [[5]](https://github.com/signalapp/Signal-Android/commit/abcdef)
+
+- Test commit. [[6]](https://github.com/signalapp/Signal-Android/commit/abcdef)
+
+- Test commit. [[7]](https://github.com/signalapp/Signal-Android/commit/abcdef)
+
+- Test commit. [[8]](https://github.com/signalapp/Signal-Android/commit/abcdef)
+
+- Test commit. [[9]](https://github.com/signalapp/Signal-Android/commit/abcdef)
+
+- Test commit. [[10]](https://github.com/signalapp/Signal-Android/commit/abcdef)
+
+- Test commit. [[11]](https://github.com/signalapp/Signal-Android/commit/abcdef)
+
+- Test commit. [[12]](https://github.com/signalapp/Signal-Android/commit/abcdef)
+
+- Test commit. [[13]](https://github.com/signalapp/Signal-Android/commit/abcdef)
+
+- Test commit. [[14]](https://github.com/signalapp/Signal-Android/commit/abcdef)
+
+- Test commit. [[15]](https://github.com/signalapp/Signal-Android/commit/abcdef)
+
+- Test commit. [[16]](https://github.com/signalapp/Signal-Android/commit/abcdef)
+
+- Test commit. [[17]](https://github.com/signalapp/Signal-Android/commit/abcdef)
+
+- Test commit. [[18]](https://github.com/signalapp/Signal-Android/commit/abcdef)
+
+- Test commit. [[19]](https://github.com/signalapp/Signal-Android/commit/abcdef)
+
+- Test commit. [[20]](https://github.com/signalapp/Signal-Android/commit/abcdef)
+
+- Bump version to 1.2.4 [[21]](https://github.com/signalapp/Signal-Android/commit/abc123)
+
+
+[/details]
+
+---
+Gathered from [signalapp/Signal-Android](https://github.com/signalapp/Signal-Android/compare/v1.2.3...v1.2.4)
+[/quote]".to_string(); "twenty one commits")]
     fn post_markdown(
         platform: Platform,
         previous_tag: impl Into<String>,
