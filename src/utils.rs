@@ -104,3 +104,37 @@ pub fn create_request(
 
     Request::new_with_init(url.as_ref(), &request_init).map_err(|e| anyhow!(e.to_string()))
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use test_case::test_case;
+
+    fn test_version(pre: Option<&str>, build: Option<&str>) -> Version {
+        use semver::{BuildMetadata, Prerelease};
+
+        Version {
+            major: 1,
+            minor: 2,
+            patch: 3,
+            pre: match pre {
+                Some(pre) => Prerelease::new(pre).unwrap(),
+                None => Prerelease::EMPTY,
+            },
+            build: match build {
+                Some(build) => BuildMetadata::new(build).unwrap(),
+                None => BuildMetadata::EMPTY,
+            },
+        }
+    }
+
+    #[test_case("v1.2.3" => test_version(None, None); "3 digits with v")]
+    #[test_case("1.2.3" => test_version(None, None); "3 digits without v")]
+    #[test_case("v1.2.3.4" => test_version(None, Some("4")); "4 digits with v")]
+    #[test_case("1.2.3.4" => test_version(None, Some("4")); "4 digits without v")]
+    #[test_case("v1.2.3-beta.1" => test_version(Some("beta.1"), None); "3 digits beta with v")]
+    #[test_case("1.2.3.4-beta" => test_version(Some("beta"), Some("4")); "4 digits beta without v")]
+    fn version_from_tag(tag: &str) -> Version {
+        super::version_from_tag(tag).unwrap()
+    }
+}
