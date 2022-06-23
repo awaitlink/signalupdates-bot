@@ -1,4 +1,4 @@
-use anyhow::{anyhow, Context};
+use anyhow::{anyhow, bail, Context};
 use serde_json::json;
 use worker::{console_log, Method, Url};
 
@@ -77,7 +77,16 @@ Gathered from [signalapp/Signal-{platform}]({comparison_url})
         reply_to_post_number: Option<u64>,
     ) -> anyhow::Result<u64> {
         let markdown_text = self.markdown_text();
-        console_log!("posting post with markdown_text = {:?}", markdown_text);
+        console_log!(
+            "posting post with markdown_text.len() = {}, markdown_text = {:?}",
+            markdown_text.len(),
+            markdown_text
+        );
+
+        if markdown_text.len() > 32_000 {
+            // TODO: Attempt to decrease post size in this case.
+            bail!("markdown_text is likely too long to post");
+        }
 
         let body = json!({
             "topic_id": topic_id,
@@ -95,9 +104,9 @@ Gathered from [signalapp/Signal-{platform}]({comparison_url})
 
         match api_response.post_number {
             Some(number) => Ok(number),
-            None => Err(anyhow!(
+            None => bail!(
                 "discourse API response did not include the post number, posting likely failed"
-            )),
+            ),
         }
     }
 }
