@@ -1,4 +1,4 @@
-use anyhow::{anyhow, bail, Context};
+use anyhow::{bail, Context};
 use serde_json::json;
 use worker::{console_log, Method, Url};
 
@@ -6,8 +6,6 @@ use crate::{
     platform::Platform::{self},
     types, utils,
 };
-
-const DISCOURSE_API_POSTING_URL: &str = "https://community.signalusers.org/posts.json";
 
 #[derive(Debug)]
 pub struct Post {
@@ -94,7 +92,8 @@ Gathered from [signalapp/Signal-{platform}]({comparison_url})
             "raw": markdown_text,
         });
 
-        let url = Url::parse(DISCOURSE_API_POSTING_URL).context("could not parse URL")?;
+        let url = Url::parse("https://community.signalusers.org/posts.json")
+            .context("could not parse URL")?;
         let request = utils::create_request(url, Method::Post, Some(body), Some(api_key))?;
 
         let api_response: types::discourse::PostApiResponse =
