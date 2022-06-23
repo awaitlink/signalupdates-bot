@@ -162,11 +162,12 @@ mod tests {
     use test_case::test_case;
     use Platform::*;
 
-    #[test_case(Android, "Test commit.", "abcdef" => "- Test commit. [[1]](https://github.com/signalapp/Signal-Android/commit/abcdef)\n".to_string(); "one line")]
-    #[test_case(Android, "Test commit.\nAnother line.", "abcdef" => "- Test commit. [[1]](https://github.com/signalapp/Signal-Android/commit/abcdef)\n\n    Another line.".to_string(); "two lines")]
-    #[test_case(Android, "Test commit.\nAnother line.\nAnd another line.", "abcdef" => "- Test commit. [[1]](https://github.com/signalapp/Signal-Android/commit/abcdef)\n\n    Another line.\n    And another line.".to_string(); "three lines")]
-    #[test_case(Android, "Test commit.\nCo-Authored-By: user", "abcdef" => "- Test commit. [[1]](https://github.com/signalapp/Signal-Android/commit/abcdef)\n".to_string(); "Co-Authored-By is removed")]
-    #[test_case(Android, "Revert \"Test commit\".\nThis reverts commit fedcba.", "abcdef" => "- Revert \"Test commit\". [[1]](https://github.com/signalapp/Signal-Android/commit/abcdef)\n".to_string(); "This reverts commit is removed")]
+    #[test_case(Android, "Test commit.", "abcdef" => "- Test commit. [[1]](https://github.com/signalapp/Signal-Android/commit/abcdef)\n".to_string(); "Android: one line")]
+    #[test_case(Android, "Test commit.\nAnother line.", "abcdef" => "- Test commit. [[1]](https://github.com/signalapp/Signal-Android/commit/abcdef)\n\n    Another line.".to_string(); "Android: two lines")]
+    #[test_case(Android, "Test commit.\nAnother line.\nAnd another line.", "abcdef" => "- Test commit. [[1]](https://github.com/signalapp/Signal-Android/commit/abcdef)\n\n    Another line.\n    And another line.".to_string(); "Android: three lines")]
+    #[test_case(Android, "Test commit.\nCo-Authored-By: user", "abcdef" => "- Test commit. [[1]](https://github.com/signalapp/Signal-Android/commit/abcdef)\n".to_string(); "Android: Co-Authored-By is removed")]
+    #[test_case(Android, "Revert \"Test commit\".\nThis reverts commit fedcba.", "abcdef" => "- Revert \"Test commit\". [[1]](https://github.com/signalapp/Signal-Android/commit/abcdef)\n".to_string(); "Android: This reverts commit is removed")]
+    #[test_case(Desktop, "Test commit.", "abcdef" => "- Test commit. [[1]](https://github.com/signalapp/Signal-Desktop/commit/abcdef)\n".to_string(); "Desktop: one line")]
     fn commit_markdown(
         platform: Platform,
         full_message: impl Into<String>,
@@ -188,7 +189,7 @@ mod tests {
 
 ---
 Gathered from [signalapp/Signal-Android](https://github.com/signalapp/Signal-Android/compare/v1.2.3...v1.2.4)
-[/quote]".to_string(); "one commit")]
+[/quote]".to_string(); "Android: one commit")]
     #[test_case(Android, "v1.2.3", "v1.2.4", vec![
         Commit::new(Android, "Test commit.", "abcdef"),
         Commit::new(Android, "Bump version to 1.2.4", "abc123")
@@ -205,7 +206,7 @@ Gathered from [signalapp/Signal-Android](https://github.com/signalapp/Signal-And
 
 ---
 Gathered from [signalapp/Signal-Android](https://github.com/signalapp/Signal-Android/compare/v1.2.3...v1.2.4)
-[/quote]".to_string(); "two commits")]
+[/quote]".to_string(); "Android: two commits")]
     #[test_case(Android, "v1.2.3", "v1.2.4", vec![
         Commit::new(Android, "Test commit.", "abcdef"),
         Commit::new(Android, "Test commit.", "abcdef"),
@@ -287,7 +288,20 @@ Gathered from [signalapp/Signal-Android](https://github.com/signalapp/Signal-And
 
 ---
 Gathered from [signalapp/Signal-Android](https://github.com/signalapp/Signal-Android/compare/v1.2.3...v1.2.4)
-[/quote]".to_string(); "twenty one commits")]
+[/quote]".to_string(); "Android: twenty one commits")]
+    #[test_case(Desktop, "v1.2.3-beta.1", "v1.2.3-beta.2", vec![
+        Commit::new(Desktop, "Test commit.", "abcdef")
+    ] => "## :tada: - New Version: 1.2.3-beta.2
+
+[quote]
+1 new commit since 1.2.3-beta.1:
+
+- Test commit. [[1]](https://github.com/signalapp/Signal-Desktop/commit/abcdef)
+
+
+---
+Gathered from [signalapp/Signal-Desktop](https://github.com/signalapp/Signal-Desktop/compare/v1.2.3-beta.1...v1.2.3-beta.2)
+[/quote]".to_string(); "Desktop: one commit")]
     fn post_markdown(
         platform: Platform,
         previous_tag: impl Into<String>,
