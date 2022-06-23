@@ -11,6 +11,7 @@ const STATE_KV_KEY: &str = "state";
 #[derive(Serialize, Deserialize, Debug)]
 pub struct State {
     pub android: PlatformState,
+    pub desktop: PlatformState,
 }
 
 #[derive(Serialize, Deserialize, Debug)]
@@ -60,6 +61,7 @@ impl StateController {
     pub fn platform_state(&self, platform: Platform) -> &PlatformState {
         match platform {
             Android => &self.state.android,
+            Desktop => &self.state.desktop,
         }
     }
 
@@ -70,6 +72,7 @@ impl StateController {
     ) -> anyhow::Result<()> {
         match platform {
             Android => self.state.android = state,
+            Desktop => self.state.desktop = state,
         }
 
         self.commit_changes().await

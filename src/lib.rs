@@ -56,6 +56,8 @@ async fn check_platform(
     env: &Env,
     platform: Platform,
 ) -> anyhow::Result<()> {
+    console_log!("checking platform = {platform}");
+
     let tags: Vec<types::github::Tag> = utils::get_json_from_url(platform.github_api_tags_url())
         .await
         .context("could not fetch tags from GitHub")?;

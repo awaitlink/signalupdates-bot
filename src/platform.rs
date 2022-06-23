@@ -5,18 +5,21 @@ use Platform::*;
 #[derive(Debug, Clone, Copy, strum_macros::EnumIter)]
 pub enum Platform {
     Android,
+    Desktop,
 }
 
 impl Platform {
     pub const fn github_api_tags_url(&self) -> &'static str {
         match self {
             Android => "https://api.github.com/repos/signalapp/Signal-Android/tags",
+            Desktop => "https://api.github.com/repos/signalapp/Signal-Desktop/tags",
         }
     }
 
     pub fn should_post_version(&self, version: &Version) -> bool {
         match self {
             Android => version.build.is_empty(), // versions like 1.2.3.4 are filtered out (the "4" is parsed into `build` by lenient_semver)
+            Desktop => version.pre.contains("beta"),
         }
     }
 
@@ -34,7 +37,8 @@ impl Platform {
 
     pub const fn availability_notice(&self) -> &'static str {
         match self {
-            Android => "\n(Not Yet) Available via [Firebase App Distribution](https://community.signalusers.org/t/17538)"
+            Android => "\n(Not Yet) Available via [Firebase App Distribution](https://community.signalusers.org/t/17538)",
+            Desktop => "",
         }
     }
 
@@ -53,6 +57,7 @@ impl fmt::Display for Platform {
             "{}",
             match self {
                 Android => "Android",
+                Desktop => "Desktop",
             }
         )
     }
