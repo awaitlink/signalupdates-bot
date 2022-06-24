@@ -107,7 +107,9 @@ pub fn create_request(
         request_init.with_body(Some(JsValue::from_str(&body.to_string())));
     }
 
-    Request::new_with_init(url.as_ref(), &request_init).map_err(|e| anyhow!(e.to_string()))
+    Request::new_with_init(url.as_ref(), &request_init)
+        .map_err(|e| anyhow!(e.to_string()))
+        .context("could not create request")
 }
 
 pub async fn get_full_github_comparison(
@@ -139,9 +141,12 @@ pub async fn get_full_github_comparison(
             .get("Link")
             .unwrap()
             .ok_or_else(|| anyhow!("no `Link` header in GitHub's response"))?;
-        let link_header = parse_link_header::parse_with_rel(&link_header_string)?;
+        let link_header = parse_link_header::parse_with_rel(&link_header_string)
+            .context("could not parse `Link` header")?;
 
-        let mut comparison_part: Comparison = json_from_response(&mut response).await?;
+        let mut comparison_part: Comparison = json_from_response(&mut response)
+            .await
+            .context("could not get JSON for comparison part")?;
 
         total_commits = comparison_part.total_commits; // always the total number of commits
         commits.append(&mut comparison_part.commits);
