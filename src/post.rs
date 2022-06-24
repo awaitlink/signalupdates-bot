@@ -139,7 +139,7 @@ Gathered from [signalapp/Signal-{platform}]({comparison_url})
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Commit {
     platform: Platform,
     message_lines: Vec<String>,
@@ -239,33 +239,12 @@ Gathered from [signalapp/Signal-Android](https://github.com/signalapp/Signal-And
 Gathered from [signalapp/Signal-Android](https://github.com/signalapp/Signal-Android/compare/v1.2.3...v1.2.4)
 [/quote]
 *No localization changes found*".to_string(); "Android: two commits")]
-    #[test_case(Android, "v1.2.3", "v1.2.4", vec![
-        Commit::new(Android, "Test commit.", "abcdef"),
-        Commit::new(Android, "Test commit.", "abcdef"),
-        Commit::new(Android, "Test commit.", "abcdef"),
-        Commit::new(Android, "Test commit.", "abcdef"),
-        Commit::new(Android, "Test commit.", "abcdef"),
-
-        Commit::new(Android, "Test commit.", "abcdef"),
-        Commit::new(Android, "Test commit.", "abcdef"),
-        Commit::new(Android, "Test commit.", "abcdef"),
-        Commit::new(Android, "Test commit.", "abcdef"),
-        Commit::new(Android, "Test commit.", "abcdef"),
-
-        Commit::new(Android, "Test commit.", "abcdef"),
-        Commit::new(Android, "Test commit.", "abcdef"),
-        Commit::new(Android, "Test commit.", "abcdef"),
-        Commit::new(Android, "Test commit.", "abcdef"),
-        Commit::new(Android, "Test commit.", "abcdef"),
-
-        Commit::new(Android, "Test commit.", "abcdef"),
-        Commit::new(Android, "Test commit.", "abcdef"),
-        Commit::new(Android, "Test commit.", "abcdef"),
-        Commit::new(Android, "Test commit.", "abcdef"),
-        Commit::new(Android, "Test commit.", "abcdef"),
-
-        Commit::new(Android, "Bump version to 1.2.4", "abc123")
-    ], vec![] => "## New Version: 1.2.4
+    #[test_case(Android, "v1.2.3", "v1.2.4",
+    std::iter::repeat(Commit::new(Android, "Test commit.", "abcdef"))
+        .take(20)
+        .chain(vec![Commit::new(Android, "Bump version to 1.2.4", "abc123")].iter().cloned())
+        .collect(),
+    vec![] => "## New Version: 1.2.4
 (Not Yet) Available via [Firebase App Distribution](https://community.signalusers.org/t/17538)
 [quote]
 21 new commits since 1.2.3:
