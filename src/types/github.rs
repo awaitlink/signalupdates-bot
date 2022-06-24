@@ -26,6 +26,7 @@ impl TryFrom<&Tag> for Version {
 
 #[derive(Deserialize, Debug, Clone)]
 pub struct Comparison {
+    pub total_commits: usize,
     pub commits: Vec<Commit>,
 }
 

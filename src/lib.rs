@@ -117,6 +117,12 @@ async fn check_platform(
 
                 console_log!("comparison = {:?}", comparison);
 
+                if comparison.total_commits != comparison.commits.len() {
+                    // TODO: Use pagination to get all commits.
+                    console_log!("comparison should have {} commits but only has {}, not posting incomplete comparison", comparison.total_commits, comparison.commits.len());
+                    break;
+                }
+
                 let commits = comparison
                     .commits
                     .iter()
