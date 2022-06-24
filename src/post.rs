@@ -63,7 +63,7 @@ impl Post {
                     .map(|change| {
                         format!(
                             "[{}]({})",
-                            change.language.to_string(),
+                            change.language,
                             platform.github_comparison_url(
                                 &self.previous_tag,
                                 &self.new_tag,

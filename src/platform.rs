@@ -9,7 +9,7 @@ use crate::{
     utils,
 };
 
-pub const ANDROID_DEFAULT_STRINGS_FILENAME: &'static str = "app/src/main/res/values/strings.xml";
+pub const ANDROID_DEFAULT_STRINGS_FILENAME: &str = "app/src/main/res/values/strings.xml";
 
 #[derive(Debug, Clone, Copy, strum_macros::EnumIter)]
 pub enum Platform {
@@ -87,16 +87,14 @@ impl Platform {
             Desktop => DESKTOP_REGEX.captures_iter(filename),
         };
 
-        let result = captures_iter
+        captures_iter
             .filter_map(|captures| captures.get(1))
             .map(|capture| capture.as_str())
             .find_map(Language::from_code)
             .map(|language| LocalizationChange {
                 language,
                 filename: filename.to_string(),
-            });
-
-        result
+            })
     }
 }
 
