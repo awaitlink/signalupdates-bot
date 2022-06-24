@@ -1,4 +1,4 @@
-use anyhow::{anyhow, Context};
+use anyhow::{anyhow, bail, Context};
 use semver::Version;
 use serde::de::DeserializeOwned;
 use serde_json::Value;
@@ -164,6 +164,13 @@ pub async fn get_full_github_comparison(
                 break;
             }
         }
+    }
+
+    if total_commits != commits.len() {
+        bail!(
+            "incomplete full comparison: total_commits = {total_commits} but commits.len() = {}, commits = {commits:?}",
+            commits.len()
+        );
     }
 
     Ok(Comparison {
