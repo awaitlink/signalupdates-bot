@@ -112,13 +112,13 @@ pub fn create_request(
 
 pub async fn get_full_github_comparison(
     platform: Platform,
-    previous_tag: &str,
+    old_tag: &str,
     new_tag: &str,
 ) -> anyhow::Result<Comparison> {
     console_log!("getting full comparison");
 
     let mut page = 1;
-    let mut url_string = platform.github_api_comparison_url(previous_tag, new_tag, page, 100);
+    let mut url_string = platform.github_api_comparison_url(old_tag, new_tag, page, 100);
 
     let mut total_commits;
     let mut commits = vec![];

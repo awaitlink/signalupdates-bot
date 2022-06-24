@@ -7,7 +7,7 @@ use crate::{language::LocalizationChange, platform::Platform, types, utils};
 #[derive(Debug)]
 pub struct Post {
     platform: Platform,
-    previous_tag: String,
+    old_tag: String,
     new_tag: String,
     commits: Vec<Commit>,
     localization_changes: Vec<LocalizationChange>,
@@ -16,14 +16,14 @@ pub struct Post {
 impl Post {
     pub fn new(
         platform: Platform,
-        previous_tag: impl Into<String>,
+        old_tag: impl Into<String>,
         new_tag: impl Into<String>,
         commits: Vec<Commit>,
         localization_changes: Vec<LocalizationChange>,
     ) -> Self {
         Self {
             platform,
-            previous_tag: previous_tag.into(),
+            old_tag: old_tag.into(),
             new_tag: new_tag.into(),
             commits,
             localization_changes,
@@ -39,13 +39,12 @@ impl Post {
             .collect::<Vec<_>>()
             .join("\n");
 
-        let previous_version = self.previous_tag.replace('v', "");
+        let old_version = self.old_tag.replace('v', "");
         let new_version = self.new_tag.replace('v', "");
 
         let platform = self.platform;
         let availability_notice = platform.availability_notice();
-        let comparison_url =
-            platform.github_comparison_url(&self.previous_tag, &self.new_tag, None);
+        let comparison_url = platform.github_comparison_url(&self.old_tag, &self.new_tag, None);
 
         let commits_count = self.commits.len();
         let (commits_prefix, commits_postfix) = match commits_count {
@@ -65,7 +64,7 @@ impl Post {
                             "[{}]({})",
                             change.language,
                             platform.github_comparison_url(
-                                &self.previous_tag,
+                                &self.old_tag,
                                 &self.new_tag,
                                 Some(&change.filename)
                             )
@@ -77,7 +76,7 @@ impl Post {
                 format!(
                     "[details=\"Localization changes\"]
 [quote]
-Compared to {previous_version}: {language_links}
+Compared to {old_version}: {language_links}
 [/quote]
 [/details]"
                 )
@@ -88,7 +87,7 @@ Compared to {previous_version}: {language_links}
         format!(
             "## New Version: {new_version}{availability_notice}
 [quote]
-{commits_count} new commit{commits_word_suffix} since {previous_version}:
+{commits_count} new commit{commits_word_suffix} since {old_version}:
 {commits_prefix}{commits}{commits_postfix}
 ---
 Gathered from [signalapp/Signal-{platform}]({comparison_url})
@@ -325,18 +324,11 @@ Compared to 1.2.3: [English (en)](https://github.com/signalapp/Signal-Android/co
 [/details]".to_string(); "Android: one commit with localization changes")]
     fn post_markdown(
         platform: Platform,
-        previous_tag: impl Into<String>,
+        old_tag: impl Into<String>,
         new_tag: impl Into<String>,
         commits: Vec<Commit>,
         localization_changes: Vec<LocalizationChange>,
     ) -> String {
-        Post::new(
-            platform,
-            previous_tag,
-            new_tag,
-            commits,
-            localization_changes,
-        )
-        .markdown_text()
+        Post::new(platform, old_tag, new_tag, commits, localization_changes).markdown_text()
     }
 }

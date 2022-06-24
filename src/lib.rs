@@ -80,10 +80,10 @@ async fn check_platform(
         return Ok(());
     }
 
-    for [(previous_tag, _), (new_tag, new_version)] in tags_to_post.array_windows() {
+    for [(old_tag, _), (new_tag, new_version)] in tags_to_post.array_windows() {
         console_log!(
-            "looking at [previous_tag: {:?}, new_tag: {:?}]",
-            previous_tag,
+            "looking at [old_tag: {:?}, new_tag: {:?}]",
+            old_tag,
             new_tag
         );
 
@@ -111,7 +111,7 @@ async fn check_platform(
                 console_log!("reply_to_post_number = {:?}", reply_to_post_number);
 
                 let comparison =
-                    utils::get_full_github_comparison(platform, &previous_tag.name, &new_tag.name)
+                    utils::get_full_github_comparison(platform, &old_tag.name, &new_tag.name)
                         .await?;
 
                 console_log!("comparison = {:?}", comparison);
@@ -144,7 +144,7 @@ async fn check_platform(
 
                 let post = post::Post::new(
                     platform,
-                    &previous_tag.name,
+                    &old_tag.name,
                     &new_tag.name,
                     commits,
                     localization_changes,
