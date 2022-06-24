@@ -28,7 +28,7 @@ impl TryFrom<&Tag> for Version {
 pub struct Comparison {
     pub total_commits: usize,
     pub commits: Vec<Commit>,
-    pub files: Vec<File>,
+    pub files: Option<Vec<File>>,
 }
 
 #[derive(Deserialize, Debug, Clone, PartialEq, Eq)]
@@ -326,9 +326,9 @@ mod tests {
                         message: "Fix all the bugs".to_string()
                     }
                 }],
-                files: vec![File {
+                files: Some(vec![File {
                     filename: "file1.txt".to_string()
-                }]
+                }])
             }
         );
     }

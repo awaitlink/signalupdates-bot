@@ -425,6 +425,17 @@ dependencies = [
 ]
 
 [[package]]
+name = "parse_link_header"
+version = "0.3.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "40728c9c01de984c45f49385ab054fdc31cd3322658a6934347887e72cb48df9"
+dependencies = [
+ "http",
+ "lazy_static",
+ "regex",
+]
+
+[[package]]
 name = "percent-encoding"
 version = "2.1.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -677,6 +688,7 @@ dependencies = [
  "lazy_static",
  "lenient_semver",
  "locale-codes",
+ "parse_link_header",
  "regex",
  "semver",
  "serde",

@@ -110,19 +110,11 @@ async fn check_platform(
                 };
                 console_log!("reply_to_post_number = {:?}", reply_to_post_number);
 
-                let comparison: types::github::Comparison = utils::get_json_from_url(
-                    platform.github_api_comparison_url(&previous_tag.name, &new_tag.name),
-                )
-                .await
-                .context("could not fetch comparison from GitHub")?;
+                let comparison =
+                    utils::get_full_github_comparison(platform, &previous_tag.name, &new_tag.name)
+                        .await?;
 
                 console_log!("comparison = {:?}", comparison);
-
-                if comparison.total_commits != comparison.commits.len() {
-                    // TODO: Use pagination to get all commits.
-                    console_log!("comparison should have {} commits but only has {}, not posting incomplete comparison", comparison.total_commits, comparison.commits.len());
-                    break;
-                }
 
                 let commits = comparison
                     .commits
@@ -140,6 +132,7 @@ async fn check_platform(
 
                 let mut localization_changes = comparison
                     .files
+                    .unwrap()
                     .iter()
                     .filter_map(|file| platform.localization_change(&file.filename))
                     .collect::<Vec<_>>();

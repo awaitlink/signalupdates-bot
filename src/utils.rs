@@ -8,7 +8,7 @@ use worker::{
     Response, Url,
 };
 
-use crate::platform::Platform;
+use crate::{platform::Platform, types::github::Comparison};
 
 pub const USER_AGENT: &str = "updates-bot";
 
@@ -56,12 +56,8 @@ pub async fn get_json_from_request<T: DeserializeOwned>(request: Request) -> any
 }
 
 async fn json_from_configuration<T: DeserializeOwned>(configuration: Fetch) -> anyhow::Result<T> {
-    fetch(configuration)
-        .await?
-        .json()
-        .await
-        .map_err(|e| anyhow!(e.to_string()))
-        .context("could not get JSON")
+    let mut response = fetch(configuration).await?;
+    json_from_response(&mut response).await
 }
 
 async fn fetch(configuration: Fetch) -> anyhow::Result<Response> {
@@ -76,6 +72,14 @@ async fn fetch(configuration: Fetch) -> anyhow::Result<Response> {
     }
 
     result
+}
+
+async fn json_from_response<T: DeserializeOwned>(response: &mut Response) -> anyhow::Result<T> {
+    response
+        .json()
+        .await
+        .map_err(|e| anyhow!(e.to_string()))
+        .context("could not get JSON")
 }
 
 pub fn create_request(
@@ -104,6 +108,64 @@ pub fn create_request(
     }
 
     Request::new_with_init(url.as_ref(), &request_init).map_err(|e| anyhow!(e.to_string()))
+}
+
+pub async fn get_full_github_comparison(
+    platform: Platform,
+    previous_tag: &str,
+    new_tag: &str,
+) -> anyhow::Result<Comparison> {
+    console_log!("getting full comparison");
+
+    let mut page = 1;
+    let mut url_string = platform.github_api_comparison_url(previous_tag, new_tag, page, 100);
+
+    let mut total_commits;
+    let mut commits = vec![];
+    let mut files = vec![];
+
+    loop {
+        console_log!("getting page = {page}, url = {url_string}");
+
+        let url = Url::parse(&url_string).context("could not parse URL")?;
+        let request = create_request(url, Method::Get, None, None)?;
+
+        let mut response = fetch(Fetch::Request(request))
+            .await
+            .context("could not fetch comparison from GitHub")?;
+
+        let link_header_string = response
+            .headers()
+            .get("Link")
+            .unwrap()
+            .ok_or_else(|| anyhow!("no `Link` header in GitHub's response"))?;
+        let link_header = parse_link_header::parse_with_rel(&link_header_string)?;
+
+        let mut comparison_part: Comparison = json_from_response(&mut response).await?;
+
+        total_commits = comparison_part.total_commits; // always the total number of commits
+        commits.append(&mut comparison_part.commits);
+        if let Some(part_files) = &mut comparison_part.files {
+            files.append(part_files);
+        }
+
+        match link_header.get("next") {
+            Some(link) => {
+                url_string = link.raw_uri.clone();
+                page += 1;
+            }
+            None => {
+                console_log!("no `next` link, done getting full comparison");
+                break;
+            }
+        }
+    }
+
+    Ok(Comparison {
+        total_commits,
+        commits,
+        files: Some(files),
+    })
 }
 
 pub fn sha256_string(input: &str) -> String {
