@@ -55,7 +55,7 @@ impl Post {
         let commits_word_suffix = if commits_count == 1 { "" } else { "s" };
 
         format!(
-            "## :tada: - New Version: {new_version}{availability_notice}
+            "## New Version: {new_version}{availability_notice}
 
 [quote]
 {commits_count} new commit{commits_word_suffix} since {previous_version}:
@@ -178,7 +178,7 @@ mod tests {
 
     #[test_case(Android, "v1.2.3", "v1.2.4", vec![
         Commit::new(Android, "Test commit.", "abcdef")
-    ] => "## :tada: - New Version: 1.2.4
+    ] => "## New Version: 1.2.4
 (Not Yet) Available via [Firebase App Distribution](https://community.signalusers.org/t/17538)
 
 [quote]
@@ -193,7 +193,7 @@ Gathered from [signalapp/Signal-Android](https://github.com/signalapp/Signal-And
     #[test_case(Android, "v1.2.3", "v1.2.4", vec![
         Commit::new(Android, "Test commit.", "abcdef"),
         Commit::new(Android, "Bump version to 1.2.4", "abc123")
-    ] => "## :tada: - New Version: 1.2.4
+    ] => "## New Version: 1.2.4
 (Not Yet) Available via [Firebase App Distribution](https://community.signalusers.org/t/17538)
 
 [quote]
@@ -233,7 +233,7 @@ Gathered from [signalapp/Signal-Android](https://github.com/signalapp/Signal-And
         Commit::new(Android, "Test commit.", "abcdef"),
 
         Commit::new(Android, "Bump version to 1.2.4", "abc123")
-    ] => "## :tada: - New Version: 1.2.4
+    ] => "## New Version: 1.2.4
 (Not Yet) Available via [Firebase App Distribution](https://community.signalusers.org/t/17538)
 
 [quote]
@@ -291,7 +291,7 @@ Gathered from [signalapp/Signal-Android](https://github.com/signalapp/Signal-And
 [/quote]".to_string(); "Android: twenty one commits")]
     #[test_case(Desktop, "v1.2.3-beta.1", "v1.2.3-beta.2", vec![
         Commit::new(Desktop, "Test commit.", "abcdef")
-    ] => "## :tada: - New Version: 1.2.3-beta.2
+    ] => "## New Version: 1.2.3-beta.2
 
 [quote]
 1 new commit since 1.2.3-beta.1:
