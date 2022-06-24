@@ -5,6 +5,7 @@ use semver::Version;
 use strum::IntoEnumIterator;
 use worker::{console_error, console_log, event, Env, ScheduleContext, ScheduledEvent};
 
+mod language;
 mod panic_hook;
 mod platform;
 mod post;
@@ -137,7 +138,24 @@ async fn check_platform(
 
                 console_log!("commits = {:?}", commits);
 
-                let post = post::Post::new(platform, &previous_tag.name, &new_tag.name, commits);
+                let mut localization_changes = comparison
+                    .files
+                    .iter()
+                    .filter_map(|file| platform.localization_change(&file.filename))
+                    .collect::<Vec<_>>();
+
+                localization_changes
+                    .sort_unstable_by_key(|change| change.language.language_reference_name.clone());
+
+                console_log!("localization_changes = {:?}", localization_changes);
+
+                let post = post::Post::new(
+                    platform,
+                    &previous_tag.name,
+                    &new_tag.name,
+                    commits,
+                    localization_changes,
+                );
 
                 let post_number = post
                     .post(discourse_api_key.clone(), topic_id, reply_to_post_number)

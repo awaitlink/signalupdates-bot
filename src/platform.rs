@@ -1,6 +1,15 @@
+use lazy_static::lazy_static;
+use regex::Regex;
 use semver::Version;
 use std::fmt;
 use Platform::*;
+
+use crate::{
+    language::{Language, LocalizationChange},
+    utils,
+};
+
+pub const ANDROID_DEFAULT_STRINGS_FILENAME: &'static str = "app/src/main/res/values/strings.xml";
 
 #[derive(Debug, Clone, Copy, strum_macros::EnumIter)]
 pub enum Platform {
@@ -27,8 +36,14 @@ impl Platform {
         format!("https://api.github.com/repos/signalapp/Signal-{self}/compare/{old}...{new}")
     }
 
-    pub fn github_comparison_url(&self, old: &str, new: &str) -> String {
-        format!("https://github.com/signalapp/Signal-{self}/compare/{old}...{new}")
+    pub fn github_comparison_url(&self, old: &str, new: &str, filename: Option<&str>) -> String {
+        match filename {
+            Some(filename) => format!(
+                "https://github.com/signalapp/Signal-{self}/compare/{old}...{new}#diff-{}",
+                utils::sha256_string(filename)
+            ),
+            None => format!("https://github.com/signalapp/Signal-{self}/compare/{old}...{new}"),
+        }
     }
 
     pub fn github_commit_url(&self, sha: &str) -> String {
@@ -48,6 +63,41 @@ impl Platform {
             self.to_string().to_ascii_lowercase(), version.major, version.minor
         )
     }
+
+    pub fn localization_change(&self, filename: &str) -> Option<LocalizationChange> {
+        lazy_static! {
+            static ref ANDROID_REGEX: Regex =
+                Regex::new(r"app/src/main/res/values-([a-zA-Z]{2,3}(-r[A-Z]{2})?)/strings\.xml")
+                    .unwrap();
+            static ref DESKTOP_REGEX: Regex =
+                Regex::new(r"_locales/([a-zA-Z]{2,3}(_[A-Z]{2})?)/messages\.json").unwrap();
+        }
+
+        let captures_iter = match self {
+            Android => {
+                if filename == ANDROID_DEFAULT_STRINGS_FILENAME {
+                    return Some(LocalizationChange {
+                        language: Language::default(),
+                        filename: ANDROID_DEFAULT_STRINGS_FILENAME.to_string(),
+                    });
+                }
+
+                ANDROID_REGEX.captures_iter(filename)
+            }
+            Desktop => DESKTOP_REGEX.captures_iter(filename),
+        };
+
+        let result = captures_iter
+            .filter_map(|captures| captures.get(1))
+            .map(|capture| capture.as_str())
+            .find_map(Language::from_code)
+            .map(|language| LocalizationChange {
+                language,
+                filename: filename.to_string(),
+            });
+
+        result
+    }
 }
 
 impl fmt::Display for Platform {
@@ -60,5 +110,35 @@ impl fmt::Display for Platform {
                 Desktop => "Desktop",
             }
         )
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use test_case::test_case;
+
+    #[test_case(Android, "app/src/main/res/values/strings.xml", "English (en)"; "Android: en")]
+    #[test_case(Android, "app/src/main/res/values-kab/strings.xml", "Kabyle (kab)"; "Android: kab")]
+    #[test_case(Android, "app/src/main/res/values-pa-rPK/strings.xml", "Panjabi (Pakistan) (pa-PK)"; "Android: pa dash r PK")]
+    #[test_case(Desktop, "_locales/en/messages.json", "English (en)"; "Desktop: en")]
+    #[test_case(Desktop, "_locales/kab/messages.json", "Kabyle (kab)"; "Desktop: kab")]
+    #[test_case(Desktop, "_locales/pa_PK/messages.json", "Panjabi (Pakistan) (pa-PK)"; "Desktop: pa underscore PK")]
+    fn localization_change_language(platform: Platform, filename: &str, result: &str) {
+        assert_eq!(
+            platform
+                .localization_change(filename)
+                .unwrap()
+                .language
+                .to_string(),
+            result
+        );
+    }
+
+    // Some of the values-* folders in Signal Android are not for localization.
+    #[test_case(Android, "app/src/main/res/values-land/strings.xml"; "land")]
+    #[test_case(Android, "app/src/main/res/values-v9/strings.xml"; "v9")]
+    fn localization_change_none(platform: Platform, filename: &str) {
+        assert!(platform.localization_change(filename).is_none());
     }
 }

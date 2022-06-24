@@ -28,6 +28,7 @@ impl TryFrom<&Tag> for Version {
 pub struct Comparison {
     pub total_commits: usize,
     pub commits: Vec<Commit>,
+    pub files: Vec<File>,
 }
 
 #[derive(Deserialize, Debug, Clone)]
@@ -39,4 +40,9 @@ pub struct Commit {
 #[derive(Deserialize, Debug, Clone)]
 pub struct CommitData {
     pub message: String,
+}
+
+#[derive(Deserialize, Debug, Clone)]
+pub struct File {
+    pub filename: String,
 }

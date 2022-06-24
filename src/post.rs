@@ -2,10 +2,7 @@ use anyhow::{bail, Context};
 use serde_json::json;
 use worker::{console_log, Method, Url};
 
-use crate::{
-    platform::Platform::{self},
-    types, utils,
-};
+use crate::{language::LocalizationChange, platform::Platform, types, utils};
 
 #[derive(Debug)]
 pub struct Post {
@@ -13,6 +10,7 @@ pub struct Post {
     previous_tag: String,
     new_tag: String,
     commits: Vec<Commit>,
+    localization_changes: Vec<LocalizationChange>,
 }
 
 impl Post {
@@ -21,12 +19,14 @@ impl Post {
         previous_tag: impl Into<String>,
         new_tag: impl Into<String>,
         commits: Vec<Commit>,
+        localization_changes: Vec<LocalizationChange>,
     ) -> Self {
         Self {
             platform,
             previous_tag: previous_tag.into(),
             new_tag: new_tag.into(),
             commits,
+            localization_changes,
         }
     }
 
@@ -44,7 +44,8 @@ impl Post {
 
         let platform = self.platform;
         let availability_notice = platform.availability_notice();
-        let comparison_url = platform.github_comparison_url(&self.previous_tag, &self.new_tag);
+        let comparison_url =
+            platform.github_comparison_url(&self.previous_tag, &self.new_tag, None);
 
         let commits_count = self.commits.len();
         let (commits_prefix, commits_postfix) = match commits_count {
@@ -53,6 +54,40 @@ impl Post {
         };
 
         let commits_word_suffix = if commits_count == 1 { "" } else { "s" };
+
+        let localization_changes_string = match self.localization_changes.len() {
+            1.. => {
+                let language_links = self
+                    .localization_changes
+                    .iter()
+                    .map(|change| {
+                        format!(
+                            "[{}]({})",
+                            change.language.to_string(),
+                            platform.github_comparison_url(
+                                &self.previous_tag,
+                                &self.new_tag,
+                                Some(&change.filename)
+                            )
+                        )
+                    })
+                    .collect::<Vec<_>>()
+                    .join(" • ");
+
+                format!(
+                    "[details=\"Localization changes\"]
+
+[quote]
+
+Compared to {previous_version}: {language_links}
+
+[/quote]
+
+[/details]"
+                )
+            }
+            _ => String::from("*No localization changes found*"),
+        };
 
         format!(
             "## New Version: {new_version}{availability_notice}
@@ -64,7 +99,9 @@ impl Post {
 
 ---
 Gathered from [signalapp/Signal-{platform}]({comparison_url})
-[/quote]"
+[/quote]
+
+{localization_changes_string}"
         )
     }
 
@@ -176,9 +213,16 @@ mod tests {
         Commit::new(platform, full_message, sha).markdown_text(1)
     }
 
+    fn default_android_localization_change() -> LocalizationChange {
+        LocalizationChange {
+            language: Default::default(),
+            filename: crate::platform::ANDROID_DEFAULT_STRINGS_FILENAME.to_string(),
+        }
+    }
+
     #[test_case(Android, "v1.2.3", "v1.2.4", vec![
         Commit::new(Android, "Test commit.", "abcdef")
-    ] => "## New Version: 1.2.4
+    ], vec![] => "## New Version: 1.2.4
 (Not Yet) Available via [Firebase App Distribution](https://community.signalusers.org/t/17538)
 
 [quote]
@@ -189,11 +233,13 @@ mod tests {
 
 ---
 Gathered from [signalapp/Signal-Android](https://github.com/signalapp/Signal-Android/compare/v1.2.3...v1.2.4)
-[/quote]".to_string(); "Android: one commit")]
+[/quote]
+
+*No localization changes found*".to_string(); "Android: one commit")]
     #[test_case(Android, "v1.2.3", "v1.2.4", vec![
         Commit::new(Android, "Test commit.", "abcdef"),
         Commit::new(Android, "Bump version to 1.2.4", "abc123")
-    ] => "## New Version: 1.2.4
+    ], vec![] => "## New Version: 1.2.4
 (Not Yet) Available via [Firebase App Distribution](https://community.signalusers.org/t/17538)
 
 [quote]
@@ -206,7 +252,9 @@ Gathered from [signalapp/Signal-Android](https://github.com/signalapp/Signal-And
 
 ---
 Gathered from [signalapp/Signal-Android](https://github.com/signalapp/Signal-Android/compare/v1.2.3...v1.2.4)
-[/quote]".to_string(); "Android: two commits")]
+[/quote]
+
+*No localization changes found*".to_string(); "Android: two commits")]
     #[test_case(Android, "v1.2.3", "v1.2.4", vec![
         Commit::new(Android, "Test commit.", "abcdef"),
         Commit::new(Android, "Test commit.", "abcdef"),
@@ -233,7 +281,7 @@ Gathered from [signalapp/Signal-Android](https://github.com/signalapp/Signal-And
         Commit::new(Android, "Test commit.", "abcdef"),
 
         Commit::new(Android, "Bump version to 1.2.4", "abc123")
-    ] => "## New Version: 1.2.4
+    ], vec![] => "## New Version: 1.2.4
 (Not Yet) Available via [Firebase App Distribution](https://community.signalusers.org/t/17538)
 
 [quote]
@@ -288,10 +336,12 @@ Gathered from [signalapp/Signal-Android](https://github.com/signalapp/Signal-And
 
 ---
 Gathered from [signalapp/Signal-Android](https://github.com/signalapp/Signal-Android/compare/v1.2.3...v1.2.4)
-[/quote]".to_string(); "Android: twenty one commits")]
+[/quote]
+
+*No localization changes found*".to_string(); "Android: twenty one commits")]
     #[test_case(Desktop, "v1.2.3-beta.1", "v1.2.3-beta.2", vec![
         Commit::new(Desktop, "Test commit.", "abcdef")
-    ] => "## New Version: 1.2.3-beta.2
+    ], vec![] => "## New Version: 1.2.3-beta.2
 
 [quote]
 1 new commit since 1.2.3-beta.1:
@@ -301,13 +351,47 @@ Gathered from [signalapp/Signal-Android](https://github.com/signalapp/Signal-And
 
 ---
 Gathered from [signalapp/Signal-Desktop](https://github.com/signalapp/Signal-Desktop/compare/v1.2.3-beta.1...v1.2.3-beta.2)
-[/quote]".to_string(); "Desktop: one commit")]
+[/quote]
+
+*No localization changes found*".to_string(); "Desktop: one commit")]
+    #[test_case(Android, "v1.2.3", "v1.2.4", vec![
+        Commit::new(Android, "Test commit.", "abcdef")
+    ], vec![default_android_localization_change(), default_android_localization_change()] => "## New Version: 1.2.4
+(Not Yet) Available via [Firebase App Distribution](https://community.signalusers.org/t/17538)
+
+[quote]
+1 new commit since 1.2.3:
+
+- Test commit. [[1]](https://github.com/signalapp/Signal-Android/commit/abcdef)
+
+
+---
+Gathered from [signalapp/Signal-Android](https://github.com/signalapp/Signal-Android/compare/v1.2.3...v1.2.4)
+[/quote]
+
+[details=\"Localization changes\"]
+
+[quote]
+
+Compared to 1.2.3: [English (en)](https://github.com/signalapp/Signal-Android/compare/v1.2.3...v1.2.4#diff-5e01f7d37a66e4ca03deefc205d8e7008661cdd0284a05aaba1858e6b7bf9103) • [English (en)](https://github.com/signalapp/Signal-Android/compare/v1.2.3...v1.2.4#diff-5e01f7d37a66e4ca03deefc205d8e7008661cdd0284a05aaba1858e6b7bf9103)
+
+[/quote]
+
+[/details]".to_string(); "Android: one commit with localization changes")]
     fn post_markdown(
         platform: Platform,
         previous_tag: impl Into<String>,
         new_tag: impl Into<String>,
         commits: Vec<Commit>,
+        localization_changes: Vec<LocalizationChange>,
     ) -> String {
-        Post::new(platform, previous_tag, new_tag, commits).markdown_text()
+        Post::new(
+            platform,
+            previous_tag,
+            new_tag,
+            commits,
+            localization_changes,
+        )
+        .markdown_text()
     }
 }

@@ -2,6 +2,7 @@ use anyhow::{anyhow, Context};
 use semver::Version;
 use serde::de::DeserializeOwned;
 use serde_json::Value;
+use sha2::{Digest, Sha256};
 use worker::{
     console_log, wasm_bindgen::JsValue, Env, Fetch, Headers, Method, Request, RequestInit,
     Response, Url,
@@ -103,6 +104,11 @@ pub fn create_request(
     }
 
     Request::new_with_init(url.as_ref(), &request_init).map_err(|e| anyhow!(e.to_string()))
+}
+
+pub fn sha256_string(input: &str) -> String {
+    let result = Sha256::digest(input.as_bytes());
+    base16ct::lower::encode_string(&result)
 }
 
 #[cfg(test)]
