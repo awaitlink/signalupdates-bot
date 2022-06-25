@@ -37,3 +37,8 @@ test-case = "2.1"
 codegen-units = 1
 lto = true
 opt-level = 3
+
+# https://docs.rust-embedded.org/book/unsorted/speed-vs-size.html#optimizing-dependencies
+[profile.release.package."*"]
+codegen-units = 1
+opt-level = 3
