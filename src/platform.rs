@@ -4,10 +4,7 @@ use semver::Version;
 use std::fmt;
 use Platform::*;
 
-use crate::{
-    language::{Language, LocalizationChange},
-    utils,
-};
+use crate::{language::Language, localization_change::LocalizationChange, utils};
 
 pub const ANDROID_DEFAULT_STRINGS_FILENAME: &str = "app/src/main/res/values/strings.xml";
 

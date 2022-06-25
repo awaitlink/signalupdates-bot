@@ -1,11 +1,12 @@
 #![feature(array_windows)]
 
-use anyhow::Context;
+use anyhow::{anyhow, Context};
 use semver::Version;
 use strum::IntoEnumIterator;
 use worker::{console_error, console_log, event, Env, ScheduleContext, ScheduledEvent};
 
 mod language;
+mod localization_change;
 mod panic_hook;
 mod platform;
 mod post;
@@ -13,6 +14,7 @@ mod state;
 mod types;
 mod utils;
 
+use localization_change::LocalizationChangeCollection;
 use platform::Platform;
 use state::StateController;
 use utils::GitHubComparisonKind::*;
@@ -69,7 +71,6 @@ async fn check_platform(
 
     let tags: Vec<(types::github::Tag, Version)> = all_tags
         .iter()
-        .rev()
         .filter_map(|tag| tag.try_into().ok().map(|version| (tag.clone(), version)))
         .filter(|(_, version)| platform.should_post_version(version))
         .collect();
@@ -79,6 +80,7 @@ async fn check_platform(
     // TODO: assumes the last posted tag can be found on this GitHub API page
     let tags_to_post: Vec<(types::github::Tag, Version)> = tags
         .iter()
+        .rev()
         .skip_while(|(tag, _)| {
             tag.name != state_controller.platform_state(platform).last_posted_tag
         })
@@ -92,7 +94,7 @@ async fn check_platform(
         return Ok(());
     }
 
-    for [(old_tag, _), (new_tag, new_version)] in tags_to_post.array_windows() {
+    for [(old_tag, old_version), (new_tag, new_version)] in tags_to_post.array_windows() {
         console_log!(
             "looking at [old_tag: {:?}, new_tag: {:?}]",
             old_tag,
@@ -130,7 +132,8 @@ async fn check_platform(
 
                 let comparison =
                     utils::get_github_comparison(Full, platform, &old_tag.name, &new_tag.name)
-                        .await?;
+                        .await
+                        .context("could not get build comparison from GitHub")?;
 
                 console_log!("comparison = {:?}", comparison);
 
@@ -148,27 +151,110 @@ async fn check_platform(
 
                 console_log!("commits.len() = {:?}", commits.len());
 
-                let mut localization_changes = comparison
-                    .files
-                    .unwrap()
-                    .iter()
-                    .filter_map(|file| platform.localization_change(&file.filename))
-                    .collect::<Vec<_>>();
-
-                localization_changes
-                    .sort_unstable_by_key(|change| change.language.language_reference_name.clone());
+                let build_localization_changes =
+                    utils::localization_changes_from_comparison(platform, &comparison);
 
                 console_log!(
-                    "localization_changes.len() = {:?}",
-                    localization_changes.len()
+                    "build_localization_changes.len() = {:?}",
+                    build_localization_changes.len()
                 );
+
+                let last_version_of_previous_release = tags
+                    .iter()
+                    .find(|(_, version)| {
+                        version.minor < new_version.minor || version.major < new_version.major
+                    })
+                    .ok_or_else(|| {
+                        anyhow!("could not determine last version of previous release")
+                    })?;
+
+                console_log!(
+                    "last_version_of_previous_release = {:?}",
+                    last_version_of_previous_release
+                );
+
+                let mut is_release_complete = true;
+                let release_localization_changes = if &last_version_of_previous_release.1
+                    == old_version
+                {
+                    None
+                } else {
+                    let release_comparison = utils::get_github_comparison(
+                        JustAllFiles,
+                        platform,
+                        &last_version_of_previous_release.0.name,
+                        &new_tag.name,
+                    )
+                    .await
+                    .context("could not get release comparison from GitHub")?;
+
+                    console_log!("release_comparison = {:?}", release_comparison);
+
+                    let mut release_localization_changes =
+                        utils::localization_changes_from_comparison(platform, &release_comparison);
+
+                    console_log!(
+                        "release_localization_changes.len() = {:?}",
+                        release_localization_changes.len()
+                    );
+
+                    // GitHub API only returns at most 300 files, despite
+                    // https://docs.github.com/en/rest/commits/commits#compare-two-commits
+                    // saying that it always returns all.
+                    let combined_localization_changes = if release_comparison.files.unwrap().len()
+                        == 300
+                    {
+                        console_log!("release_comparison has 300 files, likely incomplete");
+                        is_release_complete = false;
+
+                        if !release_localization_changes.is_empty() {
+                            console_log!(
+                                "merging release_localization_changes and build_localization_changes"
+                            );
+
+                            let mut combined_localization_changes =
+                                build_localization_changes.clone();
+                            combined_localization_changes.append(&mut release_localization_changes);
+                            combined_localization_changes.dedup();
+                            combined_localization_changes.sort_unstable_by_key(|change| {
+                                change.language.language_reference_name.clone()
+                            });
+                            combined_localization_changes
+                        } else {
+                            console_log!(
+                                "release_localization_changes is empty, taking build_localization_changes"
+                            );
+
+                            build_localization_changes.clone()
+                        }
+                    } else {
+                        console_log!("release_comparison appears to be complete");
+                        release_localization_changes
+                    };
+
+                    console_log!(
+                        "combined_localization_changes.len() = {:?}",
+                        combined_localization_changes.len()
+                    );
+
+                    Some((
+                        last_version_of_previous_release.0.name.clone(),
+                        combined_localization_changes,
+                    ))
+                };
+
+                let localization_change_collection = LocalizationChangeCollection {
+                    build_localization_changes,
+                    release_localization_changes,
+                    is_release_complete,
+                };
 
                 let post = post::Post::new(
                     platform,
                     &old_tag.name,
                     &new_tag.name,
                     commits,
-                    localization_changes,
+                    localization_change_collection,
                 );
 
                 let post_number = post

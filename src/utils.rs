@@ -8,7 +8,9 @@ use worker::{
     Response, Url,
 };
 
-use crate::{platform::Platform, types::github::Comparison};
+use crate::{
+    localization_change::LocalizationChange, platform::Platform, types::github::Comparison,
+};
 
 pub const USER_AGENT: &str = "updates-bot";
 
@@ -16,6 +18,10 @@ pub fn version_from_tag(tag: &str) -> anyhow::Result<Version> {
     lenient_semver::parse(tag)
         .map_err(|e| anyhow!(e.to_string()))
         .context("could not parse version from tag")
+}
+
+pub fn exact_version_string_from_tag(tag: &str) -> String {
+    tag.replace('v', "")
 }
 
 #[derive(Debug)]
@@ -226,6 +232,23 @@ pub async fn get_github_comparison(
         commits,
         files: Some(files),
     })
+}
+
+pub fn localization_changes_from_comparison(
+    platform: Platform,
+    comparison: &Comparison,
+) -> Vec<LocalizationChange> {
+    let mut changes = comparison
+        .files
+        .clone()
+        .unwrap()
+        .iter()
+        .filter_map(|file| platform.localization_change(&file.filename))
+        .collect::<Vec<_>>();
+
+    changes.sort_unstable_by_key(|change| change.language.language_reference_name.clone());
+
+    changes
 }
 
 pub fn sha256_string(input: &str) -> String {

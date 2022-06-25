@@ -1,8 +1,13 @@
 use anyhow::{bail, Context};
 use serde_json::json;
+use strum::IntoEnumIterator;
 use worker::{console_log, Method, Url};
 
-use crate::{language::LocalizationChange, platform::Platform, types, utils};
+use crate::{
+    localization_change::{LocalizationChangeCollection, LocalizationChangeCollectionRenderMode},
+    platform::Platform,
+    types, utils,
+};
 
 #[derive(Debug)]
 pub struct Post {
@@ -10,7 +15,7 @@ pub struct Post {
     old_tag: String,
     new_tag: String,
     commits: Vec<Commit>,
-    localization_changes: Vec<LocalizationChange>,
+    localization_change_collection: LocalizationChangeCollection,
 }
 
 impl Post {
@@ -19,18 +24,18 @@ impl Post {
         old_tag: impl Into<String>,
         new_tag: impl Into<String>,
         commits: Vec<Commit>,
-        localization_changes: Vec<LocalizationChange>,
+        localization_change_collection: LocalizationChangeCollection,
     ) -> Self {
         Self {
             platform,
             old_tag: old_tag.into(),
             new_tag: new_tag.into(),
             commits,
-            localization_changes,
+            localization_change_collection,
         }
     }
 
-    pub fn markdown_text(&self) -> String {
+    pub fn markdown_text(&self, mode: LocalizationChangeCollectionRenderMode) -> String {
         let commits = self
             .commits
             .iter()
@@ -39,8 +44,8 @@ impl Post {
             .collect::<Vec<_>>()
             .join("\n");
 
-        let old_version = self.old_tag.replace('v', "");
-        let new_version = self.new_tag.replace('v', "");
+        let old_version = utils::exact_version_string_from_tag(&self.old_tag);
+        let new_version = utils::exact_version_string_from_tag(&self.new_tag);
 
         let platform = self.platform;
         let availability_notice = platform.availability_notice();
@@ -54,35 +59,12 @@ impl Post {
 
         let commits_word_suffix = if commits_count == 1 { "" } else { "s" };
 
-        let localization_changes_string = match self.localization_changes.len() {
-            1.. => {
-                let language_links = self
-                    .localization_changes
-                    .iter()
-                    .map(|change| {
-                        format!(
-                            "[{}]({})",
-                            change.language,
-                            platform.github_comparison_url(
-                                &self.old_tag,
-                                &self.new_tag,
-                                Some(&change.filename)
-                            )
-                        )
-                    })
-                    .collect::<Vec<_>>()
-                    .join(" • ");
-
-                format!(
-                    "[details=\"Localization changes\"]
-[quote]
-Compared to {old_version}: {language_links}
-[/quote]
-[/details]"
-                )
-            }
-            _ => String::from("*No localization changes found*"),
-        };
+        let localization_changes_string = self.localization_change_collection.to_string(
+            platform,
+            &self.old_tag,
+            &self.new_tag,
+            mode,
+        );
 
         format!(
             "## New Version: {new_version}{availability_notice}
@@ -102,15 +84,25 @@ Gathered from [signalapp/Signal-{platform}]({comparison_url})
         topic_id: u64,
         reply_to_post_number: Option<u64>,
     ) -> anyhow::Result<u64> {
-        let markdown_text = self.markdown_text();
-        console_log!(
-            "posting post with markdown_text.len() = {}",
-            markdown_text.len()
-        );
+        let mut markdown_text: Option<String> = None;
 
-        if markdown_text.len() > 32_000 {
-            // TODO: Attempt to decrease post size in this case.
-            bail!("markdown_text is likely too long to post");
+        for mode in LocalizationChangeCollectionRenderMode::iter() {
+            console_log!("trying localization change collection render mode = {mode:?}");
+
+            let text = self.markdown_text(mode);
+            console_log!("text.len() = {}", text.len());
+
+            if text.len() > 32_000 {
+                console_log!("text is likely too long to post");
+                markdown_text = None;
+            } else {
+                markdown_text = Some(text);
+                break;
+            }
+        }
+
+        if markdown_text.is_none() {
+            bail!("could not make a post that fits within the allowed character count")
         }
 
         let body = json!({
@@ -187,6 +179,7 @@ impl Commit {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::localization_change::LocalizationChange;
     use test_case::test_case;
     use Platform::*;
 
@@ -211,9 +204,35 @@ mod tests {
         }
     }
 
+    fn empty_localization_change_collection() -> LocalizationChangeCollection {
+        LocalizationChangeCollection {
+            build_localization_changes: vec![],
+            release_localization_changes: None,
+            is_release_complete: true,
+        }
+    }
+
+    fn simple_localization_change_collection() -> LocalizationChangeCollection {
+        LocalizationChangeCollection {
+            build_localization_changes: vec![
+                default_android_localization_change(),
+                default_android_localization_change(),
+            ],
+            release_localization_changes: Some((
+                String::from("v1.1.5"),
+                vec![
+                    default_android_localization_change(),
+                    default_android_localization_change(),
+                    default_android_localization_change(),
+                ],
+            )),
+            is_release_complete: true,
+        }
+    }
+
     #[test_case(Android, "v1.2.3", "v1.2.4", vec![
         Commit::new(Android, "Test commit.", "abcdef")
-    ], vec![] => "## New Version: 1.2.4
+    ], empty_localization_change_collection() => "## New Version: 1.2.4
 (Not Yet) Available via [Firebase App Distribution](https://community.signalusers.org/t/17538)
 [quote]
 1 new commit since 1.2.3:
@@ -222,11 +241,19 @@ mod tests {
 ---
 Gathered from [signalapp/Signal-Android](https://github.com/signalapp/Signal-Android/compare/v1.2.3...v1.2.4)
 [/quote]
-*No localization changes found*".to_string(); "Android: one commit")]
+[details=\"Localization changes\"]
+[quote]
+Note: after clicking a link, it may take ~5-10s before GitHub jumps to the corresponding file.
+
+Compared to 1.2.3: *No localization changes found*
+
+Localization changes for the whole release are the same, as this is the first build of the release.
+[/quote]
+[/details]".to_string(); "Android: one commit")]
     #[test_case(Android, "v1.2.3", "v1.2.4", vec![
         Commit::new(Android, "Test commit.", "abcdef"),
         Commit::new(Android, "Bump version to 1.2.4", "abc123")
-    ], vec![] => "## New Version: 1.2.4
+    ], empty_localization_change_collection() => "## New Version: 1.2.4
 (Not Yet) Available via [Firebase App Distribution](https://community.signalusers.org/t/17538)
 [quote]
 2 new commits since 1.2.3:
@@ -237,13 +264,21 @@ Gathered from [signalapp/Signal-Android](https://github.com/signalapp/Signal-And
 ---
 Gathered from [signalapp/Signal-Android](https://github.com/signalapp/Signal-Android/compare/v1.2.3...v1.2.4)
 [/quote]
-*No localization changes found*".to_string(); "Android: two commits")]
+[details=\"Localization changes\"]
+[quote]
+Note: after clicking a link, it may take ~5-10s before GitHub jumps to the corresponding file.
+
+Compared to 1.2.3: *No localization changes found*
+
+Localization changes for the whole release are the same, as this is the first build of the release.
+[/quote]
+[/details]".to_string(); "Android: two commits")]
     #[test_case(Android, "v1.2.3", "v1.2.4",
     std::iter::repeat(Commit::new(Android, "Test commit.", "abcdef"))
         .take(20)
         .chain(vec![Commit::new(Android, "Bump version to 1.2.4", "abc123")].iter().cloned())
         .collect(),
-    vec![] => "## New Version: 1.2.4
+    empty_localization_change_collection() => "## New Version: 1.2.4
 (Not Yet) Available via [Firebase App Distribution](https://community.signalusers.org/t/17538)
 [quote]
 21 new commits since 1.2.3:
@@ -294,10 +329,18 @@ Gathered from [signalapp/Signal-Android](https://github.com/signalapp/Signal-And
 ---
 Gathered from [signalapp/Signal-Android](https://github.com/signalapp/Signal-Android/compare/v1.2.3...v1.2.4)
 [/quote]
-*No localization changes found*".to_string(); "Android: twenty one commits")]
+[details=\"Localization changes\"]
+[quote]
+Note: after clicking a link, it may take ~5-10s before GitHub jumps to the corresponding file.
+
+Compared to 1.2.3: *No localization changes found*
+
+Localization changes for the whole release are the same, as this is the first build of the release.
+[/quote]
+[/details]".to_string(); "Android: twenty one commits")]
     #[test_case(Desktop, "v1.2.3-beta.1", "v1.2.3-beta.2", vec![
         Commit::new(Desktop, "Test commit.", "abcdef")
-    ], vec![] => "## New Version: 1.2.3-beta.2
+    ], empty_localization_change_collection() => "## New Version: 1.2.3-beta.2
 [quote]
 1 new commit since 1.2.3-beta.1:
 - Test commit. [[1]](https://github.com/signalapp/Signal-Desktop/commit/abcdef)
@@ -305,10 +348,18 @@ Gathered from [signalapp/Signal-Android](https://github.com/signalapp/Signal-And
 ---
 Gathered from [signalapp/Signal-Desktop](https://github.com/signalapp/Signal-Desktop/compare/v1.2.3-beta.1...v1.2.3-beta.2)
 [/quote]
-*No localization changes found*".to_string(); "Desktop: one commit")]
+[details=\"Localization changes\"]
+[quote]
+Note: after clicking a link, it may take ~5-10s before GitHub jumps to the corresponding file.
+
+Compared to 1.2.3-beta.1: *No localization changes found*
+
+Localization changes for the whole release are the same, as this is the first build of the release.
+[/quote]
+[/details]".to_string(); "Desktop: one commit")]
     #[test_case(Android, "v1.2.3", "v1.2.4", vec![
         Commit::new(Android, "Test commit.", "abcdef")
-    ], vec![default_android_localization_change(), default_android_localization_change()] => "## New Version: 1.2.4
+    ], simple_localization_change_collection() => "## New Version: 1.2.4
 (Not Yet) Available via [Firebase App Distribution](https://community.signalusers.org/t/17538)
 [quote]
 1 new commit since 1.2.3:
@@ -319,7 +370,11 @@ Gathered from [signalapp/Signal-Android](https://github.com/signalapp/Signal-And
 [/quote]
 [details=\"Localization changes\"]
 [quote]
+Note: after clicking a link, it may take ~5-10s before GitHub jumps to the corresponding file.
+
 Compared to 1.2.3: [English (`en`)](https://github.com/signalapp/Signal-Android/compare/v1.2.3...v1.2.4#diff-5e01f7d37a66e4ca03deefc205d8e7008661cdd0284a05aaba1858e6b7bf9103) • [English (`en`)](https://github.com/signalapp/Signal-Android/compare/v1.2.3...v1.2.4#diff-5e01f7d37a66e4ca03deefc205d8e7008661cdd0284a05aaba1858e6b7bf9103)
+
+Compared to 1.1.5: [English (`en`)](https://github.com/signalapp/Signal-Android/compare/v1.1.5...v1.2.4#diff-5e01f7d37a66e4ca03deefc205d8e7008661cdd0284a05aaba1858e6b7bf9103) • [English (`en`)](https://github.com/signalapp/Signal-Android/compare/v1.1.5...v1.2.4#diff-5e01f7d37a66e4ca03deefc205d8e7008661cdd0284a05aaba1858e6b7bf9103) • [English (`en`)](https://github.com/signalapp/Signal-Android/compare/v1.1.5...v1.2.4#diff-5e01f7d37a66e4ca03deefc205d8e7008661cdd0284a05aaba1858e6b7bf9103)
 [/quote]
 [/details]".to_string(); "Android: one commit with localization changes")]
     fn post_markdown(
@@ -327,8 +382,15 @@ Compared to 1.2.3: [English (`en`)](https://github.com/signalapp/Signal-Android/
         old_tag: impl Into<String>,
         new_tag: impl Into<String>,
         commits: Vec<Commit>,
-        localization_changes: Vec<LocalizationChange>,
+        localization_change_collection: LocalizationChangeCollection,
     ) -> String {
-        Post::new(platform, old_tag, new_tag, commits, localization_changes).markdown_text()
+        Post::new(
+            platform,
+            old_tag,
+            new_tag,
+            commits,
+            localization_change_collection,
+        )
+        .markdown_text(LocalizationChangeCollectionRenderMode::Full)
     }
 }

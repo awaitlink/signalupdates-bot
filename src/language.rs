@@ -1,7 +1,7 @@
 use locale_codes::{country, language, region};
 use std::fmt;
 
-#[derive(Debug)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Language {
     pub language_code: String,
     pub language_reference_name: String,
@@ -66,7 +66,7 @@ impl fmt::Display for Language {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Region {
     pub code: String,
     pub name: String,
@@ -82,12 +82,6 @@ impl Region {
             name,
         })
     }
-}
-
-#[derive(Debug)]
-pub struct LocalizationChange {
-    pub language: Language,
-    pub filename: String,
 }
 
 #[cfg(test)]
