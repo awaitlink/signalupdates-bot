@@ -175,7 +175,7 @@ async fn check_platform(
                     .context("could not set state")?;
 
                 console_log!(
-                    "saved state to KV: {:?}",
+                    "saved platform state to KV: {:?}",
                     state_controller.platform_state(platform)
                 );
             }
