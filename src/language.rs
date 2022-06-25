@@ -54,12 +54,12 @@ impl fmt::Display for Language {
         match &self.region {
             Some(region) => write!(
                 f,
-                "{} ({}) ({}-{})",
+                "{} ({}) (`{}-{}`)",
                 self.language_reference_name, region.name, self.language_code, region.code
             ),
             None => write!(
                 f,
-                "{} ({})",
+                "{} (`{}`)",
                 self.language_reference_name, self.language_code
             ),
         }
@@ -95,19 +95,19 @@ mod tests {
     use super::*;
     use test_case::test_case;
 
-    #[test_case("en", "English (en)"; "en")]
-    #[test_case("en_US", "English (United States of America) (en-US)"; "en underscore US")]
-    #[test_case("en-US", "English (United States of America) (en-US)"; "en dash US")]
-    #[test_case("en-rUS", "English (United States of America) (en-US)"; "en dash r US")]
-    #[test_case("eo", "Esperanto (eo)"; "eo")]
-    #[test_case("yue", "Yue Chinese (yue)"; "yue")]
-    #[test_case("kab", "Kabyle (kab)"; "kab")]
-    #[test_case("pt_BR", "Portuguese (Brazil) (pt-BR)"; "pt underscore BR")]
-    #[test_case("pt_PT", "Portuguese (Portugal) (pt-PT)"; "pt underscore PT")]
-    #[test_case("zh_CN", "Chinese (China) (zh-CN)"; "zh underscore CN")]
-    #[test_case("zh_TW", "Chinese (Taiwan, Province of China) (zh-TW)"; "zh underscore TW")]
-    #[test_case("pa-rPK", "Panjabi (Pakistan) (pa-PK)"; "pa dash r PK")]
-    #[test_case("qu-rEC", "Quechua (Ecuador) (qu-EC)"; "qu dash r EC")]
+    #[test_case("en", "English (`en`)"; "en")]
+    #[test_case("en_US", "English (United States of America) (`en-US`)"; "en underscore US")]
+    #[test_case("en-US", "English (United States of America) (`en-US`)"; "en dash US")]
+    #[test_case("en-rUS", "English (United States of America) (`en-US`)"; "en dash r US")]
+    #[test_case("eo", "Esperanto (`eo`)"; "eo")]
+    #[test_case("yue", "Yue Chinese (`yue`)"; "yue")]
+    #[test_case("kab", "Kabyle (`kab`)"; "kab")]
+    #[test_case("pt_BR", "Portuguese (Brazil) (`pt-BR`)"; "pt underscore BR")]
+    #[test_case("pt_PT", "Portuguese (Portugal) (`pt-PT`)"; "pt underscore PT")]
+    #[test_case("zh_CN", "Chinese (China) (`zh-CN`)"; "zh underscore CN")]
+    #[test_case("zh_TW", "Chinese (Taiwan, Province of China) (`zh-TW`)"; "zh underscore TW")]
+    #[test_case("pa-rPK", "Panjabi (Pakistan) (`pa-PK`)"; "pa dash r PK")]
+    #[test_case("qu-rEC", "Quechua (Ecuador) (`qu-EC`)"; "qu dash r EC")]
     fn language_from_code(code: &str, result: &str) {
         assert_eq!(Language::from_code(code).unwrap().to_string(), result);
     }
