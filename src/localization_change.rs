@@ -54,10 +54,20 @@ impl LocalizationChangeCollection {
         };
 
         let notice = match (mode, &self.release_localization_changes) {
-            (Full, Some(_)) => if self.is_release_complete { "" } else { "\n\n**Note:** Localization changes for the whole release may not include all languages (GitHub API likely did not return all files)." },
-            (Full, None) => "\n\nLocalization changes for the whole release are the same, as this is the first build of the release.",
-            (WithoutRelease, _) => "\n\nSorry, localization changes for the whole release did not fit in the post character limit.",
-            (Nothing, _) => "Sorry, no localization changes fit in the post character limit.",
+            (Full, Some((tag, _))) => if self.is_release_complete {
+                String::from("")
+            } else {
+                format!(
+                    "\n\n**Note:** Localization changes for the whole release may not include all languages (GitHub API likely did not return all files). You can view the full diff for the whole release so far [on GitHub]({}).",
+                    platform.github_comparison_url(tag, new_tag, None)
+                )
+            },
+            (Full | WithoutRelease, None) => String::from("\n\nLocalization changes for the whole release are the same, as this is the first build of the release."),
+            (WithoutRelease, Some((tag, _))) => format!(
+                "\n\nSorry, localization changes for the whole release did not fit in the post character limit. You can view the full diff for the whole release so far [on GitHub]({}).",
+                platform.github_comparison_url(tag, new_tag, None)
+            ),
+            (Nothing, _) => String::from("Sorry, no localization changes fit in the post character limit."),
         };
 
         format!(
