@@ -15,6 +15,7 @@ mod utils;
 
 use platform::Platform;
 use state::StateController;
+use utils::GitHubComparisonKind::*;
 
 // Used for debugging, to manually trigger the bot outside of schedule.
 #[event(fetch)]
@@ -59,19 +60,30 @@ async fn check_platform(
 ) -> anyhow::Result<()> {
     console_log!("checking platform = {platform}");
 
-    let tags: Vec<types::github::Tag> = utils::get_json_from_url(platform.github_api_tags_url())
-        .await
-        .context("could not fetch tags from GitHub")?;
+    let all_tags: Vec<types::github::Tag> =
+        utils::get_json_from_url(platform.github_api_tags_url())
+            .await
+            .context("could not fetch tags from GitHub")?;
+
+    console_log!("all_tags = {:?}", all_tags);
+
+    let tags: Vec<(types::github::Tag, Version)> = all_tags
+        .iter()
+        .rev()
+        .filter_map(|tag| tag.try_into().ok().map(|version| (tag.clone(), version)))
+        .filter(|(_, version)| platform.should_post_version(version))
+        .collect();
+
     console_log!("tags = {:?}", tags);
 
     // TODO: assumes the last posted tag can be found on this GitHub API page
-    let tags_to_post = tags
+    let tags_to_post: Vec<(types::github::Tag, Version)> = tags
         .iter()
-        .rev()
-        .skip_while(|tag| tag.name != state_controller.platform_state(platform).last_posted_tag)
-        .filter_map(|tag| tag.try_into().ok().map(|version| (tag.clone(), version)))
-        .filter(|(_, version)| platform.should_post_version(version))
-        .collect::<Vec<(types::github::Tag, Version)>>();
+        .skip_while(|(tag, _)| {
+            tag.name != state_controller.platform_state(platform).last_posted_tag
+        })
+        .cloned()
+        .collect();
 
     console_log!("tags_to_post = {:?}", tags_to_post);
 
@@ -117,7 +129,7 @@ async fn check_platform(
                 console_log!("reply_to_post_number = {:?}", reply_to_post_number);
 
                 let comparison =
-                    utils::get_full_github_comparison(platform, &old_tag.name, &new_tag.name)
+                    utils::get_github_comparison(Full, platform, &old_tag.name, &new_tag.name)
                         .await?;
 
                 console_log!("comparison = {:?}", comparison);
