@@ -3,7 +3,7 @@ compatibility_date = "2022-06-18"
 main = "build/worker/shim.mjs"
 
 [build]
-command = "cargo install worker-build && worker-build --release"
+command = "cargo install --git https://github.com/cloudflare/workers-rs --branch zeb/esbuild && worker-build --release"
 
 [env.production]
 name = "signalupdates-bot"
