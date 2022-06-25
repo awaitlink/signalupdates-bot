@@ -398,7 +398,7 @@ Compared to 1.2.3: [English (`en`)](https://github.com/signalapp/Signal-Android/
 
 Compared to 1.1.5: [English (`en`)](https://github.com/signalapp/Signal-Android/compare/v1.1.5...v1.2.4#diff-5e01f7d37a66e4ca03deefc205d8e7008661cdd0284a05aaba1858e6b7bf9103) • [English (`en`)](https://github.com/signalapp/Signal-Android/compare/v1.1.5...v1.2.4#diff-5e01f7d37a66e4ca03deefc205d8e7008661cdd0284a05aaba1858e6b7bf9103) • [English (`en`)](https://github.com/signalapp/Signal-Android/compare/v1.1.5...v1.2.4#diff-5e01f7d37a66e4ca03deefc205d8e7008661cdd0284a05aaba1858e6b7bf9103)
 
-**Note:** Localization changes for the whole release may not include all languages (GitHub API likely did not return all files). You can view the full diff for the whole release so far [on GitHub](https://github.com/signalapp/Signal-Android/compare/v1.1.5...v1.2.4).
+**Note:** Localization changes for the whole release may not include all languages (GitHub API likely did not return all files). You can view the full comparison to 1.1.5 so far [on GitHub](https://github.com/signalapp/Signal-Android/compare/v1.1.5...v1.2.4).
 [/quote]
 [/details]".to_string(); "Android: one commit with localization changes, incomplete release")]
     fn post_markdown(

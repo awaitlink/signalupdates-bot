@@ -53,21 +53,38 @@ impl LocalizationChangeCollection {
             _ => "Note: after clicking a link, it may take ~5-10s before GitHub jumps to the corresponding file.\n\n",
         };
 
+        let none_fit_notice = "Sorry, no localization changes fit in the post character limit.";
+        let same_notice = "Localization changes for the whole release are the same, as this is the first build of the release.";
+        let build_diff_notice = || {
+            format!(
+                "You can view the full comparison to {} by following the \"gathered from\" link above.",
+                utils::exact_version_string_from_tag(old_tag)
+            )
+        };
+        let release_diff_notice = |tag| {
+            format!(
+                "You can view the full comparison to {} so far [on GitHub]({}).",
+                utils::exact_version_string_from_tag(tag),
+                platform.github_comparison_url(tag, new_tag, None)
+            )
+        };
+
         let notice = match (mode, &self.release_localization_changes) {
             (Full, Some((tag, _))) => if self.is_release_complete {
                 String::from("")
             } else {
                 format!(
-                    "\n\n**Note:** Localization changes for the whole release may not include all languages (GitHub API likely did not return all files). You can view the full diff for the whole release so far [on GitHub]({}).",
-                    platform.github_comparison_url(tag, new_tag, None)
+                    "\n\n**Note:** Localization changes for the whole release may not include all languages (GitHub API likely did not return all files). {}",
+                    release_diff_notice(tag)
                 )
             },
-            (Full | WithoutRelease, None) => String::from("\n\nLocalization changes for the whole release are the same, as this is the first build of the release."),
+            (Full | WithoutRelease, None) => format!("\n\n{}", same_notice),
             (WithoutRelease, Some((tag, _))) => format!(
-                "\n\nSorry, localization changes for the whole release did not fit in the post character limit. You can view the full diff for the whole release so far [on GitHub]({}).",
-                platform.github_comparison_url(tag, new_tag, None)
+                "\n\nSorry, localization changes for the whole release did not fit in the post character limit. {}",
+                release_diff_notice(tag)
             ),
-            (Nothing, _) => String::from("Sorry, no localization changes fit in the post character limit."),
+            (Nothing, Some((tag, _))) => format!("{} {} {}", none_fit_notice, build_diff_notice(), release_diff_notice(tag)),
+            (Nothing, None) => format!("{} {} {}", none_fit_notice, build_diff_notice(), same_notice)
         };
 
         format!(
