@@ -104,9 +104,8 @@ Gathered from [signalapp/Signal-{platform}]({comparison_url})
     ) -> anyhow::Result<u64> {
         let markdown_text = self.markdown_text();
         console_log!(
-            "posting post with markdown_text.len() = {}, markdown_text = {:?}",
-            markdown_text.len(),
-            markdown_text
+            "posting post with markdown_text.len() = {}",
+            markdown_text.len()
         );
 
         if markdown_text.len() > 32_000 {
@@ -127,13 +126,14 @@ Gathered from [signalapp/Signal-{platform}]({comparison_url})
         let api_response: types::discourse::PostApiResponse =
             utils::get_json_from_request(request).await?;
 
-        console_log!("api_response = {:?}", api_response);
-
         match api_response.post_number {
             Some(number) => Ok(number),
-            None => bail!(
-                "discourse API response did not include the post number, posting likely failed"
-            ),
+            None => {
+                console_log!("api_response = {:?}", api_response);
+                bail!(
+                    "discourse API response did not include the post number, posting likely failed"
+                )
+            }
         }
     }
 }

@@ -122,7 +122,7 @@ async fn check_platform(
 
                 console_log!("comparison = {:?}", comparison);
 
-                let commits = comparison
+                let commits: Vec<post::Commit> = comparison
                     .commits
                     .iter()
                     .map(|github_commit| {
@@ -134,7 +134,7 @@ async fn check_platform(
                     })
                     .collect();
 
-                console_log!("commits = {:?}", commits);
+                console_log!("commits.len() = {:?}", commits.len());
 
                 let mut localization_changes = comparison
                     .files
@@ -146,7 +146,10 @@ async fn check_platform(
                 localization_changes
                     .sort_unstable_by_key(|change| change.language.language_reference_name.clone());
 
-                console_log!("localization_changes = {:?}", localization_changes);
+                console_log!(
+                    "localization_changes.len() = {:?}",
+                    localization_changes.len()
+                );
 
                 let post = post::Post::new(
                     platform,
