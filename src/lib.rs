@@ -87,11 +87,17 @@ async fn check_platform(
             new_tag
         );
 
-        let discourse_api_key = utils::api_key(env);
+        let discourse_api_key = utils::api_key(env)?;
 
-        let topic_id = utils::get_topic_id(discourse_api_key.clone(), platform, new_version)
-            .await
-            .context("could not find topic_id")?;
+        let topic_id = match utils::topic_id_override(env)? {
+            Some(id) => {
+                console_log!("using topic id override: {id}");
+                Some(id)
+            }
+            None => utils::get_topic_id(discourse_api_key.clone(), platform, new_version)
+                .await
+                .context("could not find topic_id")?,
+        };
 
         match topic_id {
             Some(topic_id) => {

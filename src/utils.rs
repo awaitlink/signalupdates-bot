@@ -18,9 +18,32 @@ pub fn version_from_tag(tag: &str) -> anyhow::Result<Version> {
         .context("could not parse version from tag")
 }
 
-pub fn api_key(env: &Env) -> String {
-    let string_binding = env.secret("DISCOURSE_API_KEY").unwrap();
-    JsValue::from(string_binding).as_string().unwrap()
+#[derive(Debug)]
+enum StringBindingKind {
+    Secret,
+    Var,
+}
+use StringBindingKind::*;
+
+fn get_env_string(env: &Env, kind: StringBindingKind, name: &str) -> anyhow::Result<String> {
+    let string_binding = match kind {
+        Secret => env.secret(name),
+        Var => env.var(name),
+    }
+    .map_err(|e| anyhow!(e.to_string()))
+    .with_context(|| anyhow!("couldn't get string binding kind = {kind:?}, name = {name}"))?;
+
+    JsValue::from(string_binding)
+        .as_string()
+        .ok_or_else(|| anyhow!("couldn't get value of string binding"))
+}
+
+pub fn api_key(env: &Env) -> anyhow::Result<String> {
+    get_env_string(env, Secret, "DISCOURSE_API_KEY")
+}
+
+pub fn topic_id_override(env: &Env) -> anyhow::Result<Option<u64>> {
+    get_env_string(env, Var, "TOPIC_ID_OVERRIDE").map(|string| string.parse().ok())
 }
 
 pub async fn get_topic_id(

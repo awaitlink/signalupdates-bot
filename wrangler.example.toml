@@ -1,14 +1,19 @@
 account_id = "..."
-name = "signalupdates-bot"
 compatibility_date = "2022-06-18"
-kv_namespaces = [{ binding = "STATE", id = "..." }]
 main = "build/worker/shim.mjs"
-workers_dev = false
-
-[triggers]
-crons = ["*/10 * * * *"]
-
-[vars]
 
 [build]
 command = "cargo install worker-build && worker-build --release"
+
+[env.production]
+name = "signalupdates-bot"
+vars = { TOPIC_ID_OVERRIDE = "" }
+kv_namespaces = [{ binding = "STATE", id = "..." }]
+workers_dev = false
+triggers = { crons = ["*/10 * * * *"] }
+
+[env.staging]
+name = "signalupdates-bot-staging"
+vars = { TOPIC_ID_OVERRIDE = "..." }
+kv_namespaces = [{ binding = "STATE", id = "..." }]
+workers_dev = true
