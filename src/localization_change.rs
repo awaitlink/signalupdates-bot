@@ -83,8 +83,8 @@ impl LocalizationChangeCollection {
                 "\n\nSorry, localization changes for the whole release did not fit in the post character limit. {}",
                 release_diff_notice(tag)
             ),
-            (Nothing, Some((tag, _))) => format!("{} {} {}", none_fit_notice, build_diff_notice(), release_diff_notice(tag)),
-            (Nothing, None) => format!("{} {} {}", none_fit_notice, build_diff_notice(), same_notice)
+            (Nothing, Some((tag, _))) => format!("\n\n{} {} {}", none_fit_notice, build_diff_notice(), release_diff_notice(tag)),
+            (Nothing, None) => format!("\n\n{} {} {}", none_fit_notice, build_diff_notice(), same_notice)
         };
 
         format!(
