@@ -268,7 +268,7 @@ async fn check_platform(
                         state::PlatformState::new(&new_tag.name, Some(post_number)),
                     )
                     .await
-                    .context("could not set state")?;
+                    .context("could not set platform state")?;
 
                 console_log!(
                     "saved platform state to KV: {:?}",
