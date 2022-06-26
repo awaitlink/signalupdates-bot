@@ -126,7 +126,7 @@ mod tests {
         let mut input = map(input);
         let output = map(output);
 
-        input.sort();
+        input.sort_unstable();
         assert_eq!(input, output);
     }
 }

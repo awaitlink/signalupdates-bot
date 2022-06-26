@@ -216,7 +216,7 @@ async fn check_platform(
                                 build_localization_changes.clone();
                             combined_localization_changes.append(&mut release_localization_changes);
                             combined_localization_changes.dedup();
-                            combined_localization_changes.sort();
+                            combined_localization_changes.sort_unstable();
                             combined_localization_changes
                         } else {
                             console_log!(
