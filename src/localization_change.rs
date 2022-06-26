@@ -103,11 +103,14 @@ impl LocalizationChangeCollection {
         changes: &[LocalizationChange],
     ) -> String {
         format!(
-            "Compared to {}: {}",
+            "Compared to {}:{}",
             utils::exact_version_string_from_tag(old_tag),
             match changes.len() {
-                1.. => Self::language_links(platform, old_tag, new_tag, changes),
-                _ => String::from("*No localization changes found*"),
+                1.. => format!(
+                    "\n- {}",
+                    Self::language_links(platform, old_tag, new_tag, changes)
+                ),
+                _ => String::from(" *No localization changes found*"),
             }
         )
     }
@@ -128,6 +131,6 @@ impl LocalizationChangeCollection {
                 )
             })
             .collect::<Vec<_>>()
-            .join(" • ")
+            .join("\n- ")
     }
 }
