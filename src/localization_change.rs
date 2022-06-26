@@ -2,7 +2,7 @@ use strum_macros::EnumIter;
 
 use crate::{language::Language, platform::Platform, utils};
 
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
 pub struct LocalizationChange {
     pub language: Language,
     pub filename: String,

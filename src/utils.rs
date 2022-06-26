@@ -246,7 +246,7 @@ pub fn localization_changes_from_comparison(
         .filter_map(|file| platform.localization_change(&file.filename))
         .collect::<Vec<_>>();
 
-    changes.sort_unstable_by_key(|change| change.language.language_reference_name.clone());
+    changes.sort();
 
     changes
 }

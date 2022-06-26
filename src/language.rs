@@ -1,19 +1,19 @@
 use locale_codes::{country, language, region};
 use std::fmt;
 
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
 pub struct Language {
-    pub language_code: String,
     pub language_reference_name: String,
     pub region: Option<Region>,
+    pub language_code: String,
 }
 
 impl Default for Language {
     fn default() -> Self {
         Self {
-            language_code: String::from("en"),
             language_reference_name: String::from("English"),
             region: None,
+            language_code: String::from("en"),
         }
     }
 }
@@ -39,9 +39,9 @@ impl Language {
                 };
 
                 Some(Self {
-                    language_code,
                     language_reference_name,
                     region,
+                    language_code,
                 })
             }
             _ => None,
@@ -66,10 +66,10 @@ impl fmt::Display for Language {
     }
 }
 
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
 pub struct Region {
-    pub code: String,
     pub name: String,
+    pub code: String,
 }
 
 impl Region {
@@ -78,8 +78,8 @@ impl Region {
         let name = region::lookup(country_code)?.name.clone();
 
         Some(Region {
-            code: territory_code.to_string(),
             name,
+            code: territory_code.to_string(),
         })
     }
 }
@@ -113,5 +113,20 @@ mod tests {
     #[test_case("v9")]
     fn language_from_code_none(code: &str) {
         assert!(Language::from_code(code).is_none());
+    }
+
+    #[test_case(&["pt_PT", "pt_BR", "en_US", "eo", "en"], &["en", "en_US", "eo", "pt_BR", "pt_PT"]; "basic test")]
+    fn language_ord(input: &[&str], output: &[&str]) {
+        let map = |x: &[&str]| {
+            x.iter()
+                .map(|code| Language::from_code(code).unwrap())
+                .collect::<Vec<_>>()
+        };
+
+        let mut input = map(input);
+        let output = map(output);
+
+        input.sort();
+        assert_eq!(input, output);
     }
 }
