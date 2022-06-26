@@ -250,8 +250,6 @@ Note: after clicking a link, it may take ~5-10s before GitHub jumps to the corre
 Compared to 1.2.3: *No localization changes found*
 
 Localization changes for the whole release are the same, as this is the first build of the release.
-
-Source of names: [languages](https://docs.rs/locale-codes/0.3.0/locale_codes/language), [regions](https://docs.rs/locale-codes/0.3.0/locale_codes/region).
 [/quote]
 [/details]".to_string(); "Android: one commit")]
     #[test_case(Android, "v1.2.3", "v1.2.4", vec![
@@ -275,8 +273,6 @@ Note: after clicking a link, it may take ~5-10s before GitHub jumps to the corre
 Compared to 1.2.3: *No localization changes found*
 
 Localization changes for the whole release are the same, as this is the first build of the release.
-
-Source of names: [languages](https://docs.rs/locale-codes/0.3.0/locale_codes/language), [regions](https://docs.rs/locale-codes/0.3.0/locale_codes/region).
 [/quote]
 [/details]".to_string(); "Android: two commits")]
     #[test_case(Android, "v1.2.3", "v1.2.4",
@@ -342,8 +338,6 @@ Note: after clicking a link, it may take ~5-10s before GitHub jumps to the corre
 Compared to 1.2.3: *No localization changes found*
 
 Localization changes for the whole release are the same, as this is the first build of the release.
-
-Source of names: [languages](https://docs.rs/locale-codes/0.3.0/locale_codes/language), [regions](https://docs.rs/locale-codes/0.3.0/locale_codes/region).
 [/quote]
 [/details]".to_string(); "Android: twenty one commits")]
     #[test_case(Desktop, "v1.2.3-beta.1", "v1.2.3-beta.2", vec![
@@ -363,8 +357,6 @@ Note: after clicking a link, it may take ~5-10s before GitHub jumps to the corre
 Compared to 1.2.3-beta.1: *No localization changes found*
 
 Localization changes for the whole release are the same, as this is the first build of the release.
-
-Source of names: [languages](https://docs.rs/locale-codes/0.3.0/locale_codes/language), [regions](https://docs.rs/locale-codes/0.3.0/locale_codes/region).
 [/quote]
 [/details]".to_string(); "Desktop: one commit")]
     #[test_case(Android, "v1.2.3", "v1.2.4", vec![
@@ -390,8 +382,6 @@ Compared to 1.1.5:
 - [English (`en`)](https://github.com/signalapp/Signal-Android/compare/v1.1.5...v1.2.4#diff-5e01f7d37a66e4ca03deefc205d8e7008661cdd0284a05aaba1858e6b7bf9103)
 - [English (`en`)](https://github.com/signalapp/Signal-Android/compare/v1.1.5...v1.2.4#diff-5e01f7d37a66e4ca03deefc205d8e7008661cdd0284a05aaba1858e6b7bf9103)
 - [English (`en`)](https://github.com/signalapp/Signal-Android/compare/v1.1.5...v1.2.4#diff-5e01f7d37a66e4ca03deefc205d8e7008661cdd0284a05aaba1858e6b7bf9103)
-
-Source of names: [languages](https://docs.rs/locale-codes/0.3.0/locale_codes/language), [regions](https://docs.rs/locale-codes/0.3.0/locale_codes/region).
 [/quote]
 [/details]".to_string(); "Android: one commit with localization changes")]
     #[test_case(Android, "v1.2.3", "v1.2.4", vec![
@@ -419,8 +409,6 @@ Compared to 1.1.5:
 - [English (`en`)](https://github.com/signalapp/Signal-Android/compare/v1.1.5...v1.2.4#diff-5e01f7d37a66e4ca03deefc205d8e7008661cdd0284a05aaba1858e6b7bf9103)
 
 **Note:** Localization changes for the whole release may not include all languages (GitHub API likely did not return all files). You can view the full comparison to 1.1.5 so far [on GitHub](https://github.com/signalapp/Signal-Android/compare/v1.1.5...v1.2.4).
-
-Source of names: [languages](https://docs.rs/locale-codes/0.3.0/locale_codes/language), [regions](https://docs.rs/locale-codes/0.3.0/locale_codes/region).
 [/quote]
 [/details]".to_string(); "Android: one commit with localization changes, incomplete release")]
     fn post_markdown(

@@ -121,10 +121,10 @@ mod tests {
 
     #[test_case(Android, "app/src/main/res/values/strings.xml", "English (`en`)"; "Android: en")]
     #[test_case(Android, "app/src/main/res/values-kab/strings.xml", "Kabyle (`kab`)"; "Android: kab")]
-    #[test_case(Android, "app/src/main/res/values-pa-rPK/strings.xml", "Panjabi (Pakistan) (`pa-PK`)"; "Android: pa dash r PK")]
+    #[test_case(Android, "app/src/main/res/values-pa-rPK/strings.xml", "Panjabi (`pa-PK`)"; "Android: pa dash r PK")]
     #[test_case(Desktop, "_locales/en/messages.json", "English (`en`)"; "Desktop: en")]
     #[test_case(Desktop, "_locales/kab/messages.json", "Kabyle (`kab`)"; "Desktop: kab")]
-    #[test_case(Desktop, "_locales/pa_PK/messages.json", "Panjabi (Pakistan) (`pa-PK`)"; "Desktop: pa underscore PK")]
+    #[test_case(Desktop, "_locales/pa_PK/messages.json", "Panjabi (`pa-PK`)"; "Desktop: pa underscore PK")]
     fn localization_change_language(platform: Platform, filename: &str, result: &str) {
         assert_eq!(
             platform

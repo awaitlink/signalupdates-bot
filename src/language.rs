@@ -1,19 +1,19 @@
-use locale_codes::{country, language, region};
+use locale_codes::language;
 use std::fmt;
 
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
 pub struct Language {
     pub language_reference_name: String,
-    pub region: Option<Region>,
     pub language_code: String,
+    pub region_code: Option<String>,
 }
 
 impl Default for Language {
     fn default() -> Self {
         Self {
             language_reference_name: String::from("English"),
-            region: None,
             language_code: String::from("en"),
+            region_code: None,
         }
     }
 }
@@ -33,15 +33,10 @@ impl Language {
                 let language_reference_name =
                     language::lookup(&language_code)?.reference_name.clone();
 
-                let region = match parts.get(1) {
-                    Some(territory_code) => Region::from_territory_code(territory_code),
-                    None => None,
-                };
-
                 Some(Self {
                     language_reference_name,
-                    region,
                     language_code,
+                    region_code: parts.get(1).map(|code| code.to_string()),
                 })
             }
             _ => None,
@@ -51,11 +46,11 @@ impl Language {
 
 impl fmt::Display for Language {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        match &self.region {
-            Some(region) => write!(
+        match &self.region_code {
+            Some(region_code) => write!(
                 f,
-                "{} ({}) (`{}-{}`)",
-                self.language_reference_name, region.name, self.language_code, region.code
+                "{} (`{}-{}`)",
+                self.language_reference_name, self.language_code, region_code
             ),
             None => write!(
                 f,
@@ -66,42 +61,24 @@ impl fmt::Display for Language {
     }
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
-pub struct Region {
-    pub name: String,
-    pub code: String,
-}
-
-impl Region {
-    pub fn from_territory_code(territory_code: &str) -> Option<Self> {
-        let country_code = country::lookup(territory_code)?.country_code;
-        let name = region::lookup(country_code)?.name.clone();
-
-        Some(Region {
-            name,
-            code: territory_code.to_string(),
-        })
-    }
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
     use test_case::test_case;
 
     #[test_case("en", "English (`en`)"; "en")]
-    #[test_case("en_US", "English (United States of America) (`en-US`)"; "en underscore US")]
-    #[test_case("en-US", "English (United States of America) (`en-US`)"; "en dash US")]
-    #[test_case("en-rUS", "English (United States of America) (`en-US`)"; "en dash r US")]
+    #[test_case("en_US", "English (`en-US`)"; "en underscore US")]
+    #[test_case("en-US", "English (`en-US`)"; "en dash US")]
+    #[test_case("en-rUS", "English (`en-US`)"; "en dash r US")]
     #[test_case("eo", "Esperanto (`eo`)"; "eo")]
     #[test_case("yue", "Yue Chinese (`yue`)"; "yue")]
     #[test_case("kab", "Kabyle (`kab`)"; "kab")]
-    #[test_case("pt_BR", "Portuguese (Brazil) (`pt-BR`)"; "pt underscore BR")]
-    #[test_case("pt_PT", "Portuguese (Portugal) (`pt-PT`)"; "pt underscore PT")]
-    #[test_case("zh_CN", "Chinese (China) (`zh-CN`)"; "zh underscore CN")]
-    #[test_case("zh_TW", "Chinese (Taiwan, Province of China) (`zh-TW`)"; "zh underscore TW")]
-    #[test_case("pa-rPK", "Panjabi (Pakistan) (`pa-PK`)"; "pa dash r PK")]
-    #[test_case("qu-rEC", "Quechua (Ecuador) (`qu-EC`)"; "qu dash r EC")]
+    #[test_case("pt_BR", "Portuguese (`pt-BR`)"; "pt underscore BR")]
+    #[test_case("pt_PT", "Portuguese (`pt-PT`)"; "pt underscore PT")]
+    #[test_case("zh_CN", "Chinese (`zh-CN`)"; "zh underscore CN")]
+    #[test_case("zh_TW", "Chinese (`zh-TW`)"; "zh underscore TW")]
+    #[test_case("pa-rPK", "Panjabi (`pa-PK`)"; "pa dash r PK")]
+    #[test_case("qu-rEC", "Quechua (`qu-EC`)"; "qu dash r EC")]
     fn language_from_code(code: &str, result: &str) {
         assert_eq!(Language::from_code(code).unwrap().to_string(), result);
     }

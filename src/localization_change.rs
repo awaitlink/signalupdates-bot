@@ -87,15 +87,10 @@ impl LocalizationChangeCollection {
             (Nothing, None) => format!("\n\n{} {} {}", none_fit_notice, build_diff_notice(), same_notice)
         };
 
-        let source_notice = match mode {
-            Nothing => "",
-            _ => "\n\nSource of names: [languages](https://docs.rs/locale-codes/0.3.0/locale_codes/language), [regions](https://docs.rs/locale-codes/0.3.0/locale_codes/region).",
-        };
-
         format!(
             "[details=\"Localization changes\"]
 [quote]
-{usage_instructions}{changes}{notice}{source_notice}
+{usage_instructions}{changes}{notice}
 [/quote]
 [/details]"
         )
