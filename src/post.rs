@@ -4,7 +4,7 @@ use strum::IntoEnumIterator;
 use worker::{console_log, Method, Url};
 
 use crate::{
-    localization_change::{LocalizationChangeCollection, LocalizationChangeCollectionRenderMode},
+    localization::{LocalizationChangeCollection, RenderMode},
     platform::Platform,
     types, utils,
 };
@@ -35,7 +35,7 @@ impl Post {
         }
     }
 
-    pub fn markdown_text(&self, mode: LocalizationChangeCollectionRenderMode) -> String {
+    pub fn markdown_text(&self, mode: RenderMode) -> String {
         let commits = self
             .commits
             .iter()
@@ -86,7 +86,7 @@ Gathered from [signalapp/Signal-{platform}]({comparison_url})
     ) -> anyhow::Result<u64> {
         let mut markdown_text: Option<String> = None;
 
-        for mode in LocalizationChangeCollectionRenderMode::iter() {
+        for mode in RenderMode::iter() {
             console_log!("trying localization change collection render mode = {mode:?}");
 
             let text = self.markdown_text(mode);
@@ -179,7 +179,7 @@ impl Commit {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::localization_change::LocalizationChange;
+    use crate::localization::LocalizationChange;
     use test_case::test_case;
     use Platform::*;
 
@@ -206,21 +206,21 @@ mod tests {
 
     fn empty_localization_change_collection() -> LocalizationChangeCollection {
         LocalizationChangeCollection {
-            build_localization_changes: vec![],
-            release_localization_changes: None,
-            is_release_complete: true,
+            build_changes: vec![],
+            release_changes: None,
+            are_release_changes_complete: true,
         }
     }
 
     fn simple_localization_change_collection(
-        is_release_complete: bool,
+        are_release_changes_complete: bool,
     ) -> LocalizationChangeCollection {
         LocalizationChangeCollection {
-            build_localization_changes: vec![
+            build_changes: vec![
                 default_android_localization_change(),
                 default_android_localization_change(),
             ],
-            release_localization_changes: Some((
+            release_changes: Some((
                 String::from("v1.1.5"),
                 vec![
                     default_android_localization_change(),
@@ -228,7 +228,7 @@ mod tests {
                     default_android_localization_change(),
                 ],
             )),
-            is_release_complete,
+            are_release_changes_complete,
         }
     }
 
@@ -425,6 +425,6 @@ Compared to 1.1.5:
             commits,
             localization_change_collection,
         )
-        .markdown_text(LocalizationChangeCollectionRenderMode::Full)
+        .markdown_text(RenderMode::Full)
     }
 }

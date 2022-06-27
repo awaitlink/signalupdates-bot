@@ -5,8 +5,7 @@ use semver::Version;
 use strum::IntoEnumIterator;
 use worker::{console_error, console_log, event, Env, ScheduleContext, ScheduledEvent};
 
-mod language;
-mod localization_change;
+mod localization;
 mod panic_hook;
 mod platform;
 mod post;
@@ -14,7 +13,7 @@ mod state;
 mod types;
 mod utils;
 
-use localization_change::LocalizationChangeCollection;
+use localization::LocalizationChangeCollection;
 use platform::Platform;
 use state::StateController;
 use utils::GitHubComparisonKind::*;
@@ -173,7 +172,7 @@ async fn check_platform(
                     last_version_of_previous_release
                 );
 
-                let mut is_release_complete = true;
+                let mut are_release_changes_complete = true;
                 let release_localization_changes = if &last_version_of_previous_release.1
                     == old_version
                 {
@@ -205,7 +204,7 @@ async fn check_platform(
                         == 300
                     {
                         console_log!("release_comparison has 300 files, likely incomplete");
-                        is_release_complete = false;
+                        are_release_changes_complete = false;
 
                         if !release_localization_changes.is_empty() {
                             console_log!(
@@ -242,9 +241,9 @@ async fn check_platform(
                 };
 
                 let localization_change_collection = LocalizationChangeCollection {
-                    build_localization_changes,
-                    release_localization_changes,
-                    is_release_complete,
+                    build_changes: build_localization_changes,
+                    release_changes: release_localization_changes,
+                    are_release_changes_complete,
                 };
 
                 let post = post::Post::new(

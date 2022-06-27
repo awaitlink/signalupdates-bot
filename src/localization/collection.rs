@@ -1,26 +1,20 @@
+use super::LocalizationChange;
+use crate::{platform::Platform, utils};
 use strum_macros::EnumIter;
 
-use crate::{language::Language, platform::Platform, utils};
-
-#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
-pub struct LocalizationChange {
-    pub language: Language,
-    pub filename: String,
-}
-
 #[derive(Debug, EnumIter, Clone, Copy)]
-pub enum LocalizationChangeCollectionRenderMode {
+pub enum RenderMode {
     Full,
     WithoutRelease,
     Nothing,
 }
-use LocalizationChangeCollectionRenderMode::*;
+use RenderMode::*;
 
 #[derive(Debug)]
 pub struct LocalizationChangeCollection {
-    pub build_localization_changes: Vec<LocalizationChange>,
-    pub release_localization_changes: Option<(String, Vec<LocalizationChange>)>,
-    pub is_release_complete: bool,
+    pub build_changes: Vec<LocalizationChange>,
+    pub release_changes: Option<(String, Vec<LocalizationChange>)>,
+    pub are_release_changes_complete: bool,
 }
 
 impl LocalizationChangeCollection {
@@ -29,15 +23,15 @@ impl LocalizationChangeCollection {
         platform: Platform,
         old_tag: &str,
         new_tag: &str,
-        mode: LocalizationChangeCollectionRenderMode,
+        mode: RenderMode,
     ) -> String {
-        let changes = match (mode, &self.release_localization_changes) {
+        let changes = match (mode, &self.release_changes) {
             (Full, Some((tag, changes))) => vec![
-                (old_tag, self.build_localization_changes.clone()),
+                (old_tag, self.build_changes.clone()),
                 (tag, changes.clone()),
             ],
             (Full, None) | (WithoutRelease, _) => {
-                vec![(old_tag, self.build_localization_changes.clone())]
+                vec![(old_tag, self.build_changes.clone())]
             }
             (Nothing, _) => vec![],
         }
@@ -69,8 +63,8 @@ impl LocalizationChangeCollection {
             )
         };
 
-        let notice = match (mode, &self.release_localization_changes) {
-            (Full, Some((tag, _))) => if self.is_release_complete {
+        let notice = match (mode, &self.release_changes) {
+            (Full, Some((tag, _))) => if self.are_release_changes_complete {
                 String::from("")
             } else {
                 format!(

@@ -79,7 +79,7 @@ mod tests {
     #[test_case("zh_TW", "Chinese (`zh-TW`)"; "zh underscore TW")]
     #[test_case("pa-rPK", "Panjabi (`pa-PK`)"; "pa dash r PK")]
     #[test_case("qu-rEC", "Quechua (`qu-EC`)"; "qu dash r EC")]
-    fn language_from_code(code: &str, result: &str) {
+    fn from_code_some(code: &str, result: &str) {
         assert_eq!(Language::from_code(code).unwrap().to_string(), result);
     }
 
@@ -88,12 +88,12 @@ mod tests {
     #[test_case("ldrtl")]
     #[test_case("night")]
     #[test_case("v9")]
-    fn language_from_code_none(code: &str) {
+    fn from_code_none(code: &str) {
         assert!(Language::from_code(code).is_none());
     }
 
     #[test_case(&["pt_PT", "pt_BR", "en_US", "eo", "en"], &["en", "en_US", "eo", "pt_BR", "pt_PT"]; "basic test")]
-    fn language_ord(input: &[&str], output: &[&str]) {
+    fn ord(input: &[&str], output: &[&str]) {
         let map = |x: &[&str]| {
             x.iter()
                 .map(|code| Language::from_code(code).unwrap())

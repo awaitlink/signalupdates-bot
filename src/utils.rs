@@ -8,9 +8,7 @@ use worker::{
     Response, Url,
 };
 
-use crate::{
-    localization_change::LocalizationChange, platform::Platform, types::github::Comparison,
-};
+use crate::{localization::LocalizationChange, platform::Platform, types::github::Comparison};
 
 pub const USER_AGENT: &str = "updates-bot";
 
