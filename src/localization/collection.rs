@@ -1,5 +1,5 @@
 use super::LocalizationChange;
-use crate::{platform::Platform, utils};
+use crate::{platform::Platform, types::github::Tag};
 use strum_macros::EnumIter;
 
 #[derive(Debug, EnumIter, Clone, Copy)]
@@ -13,7 +13,7 @@ use RenderMode::*;
 #[derive(Debug)]
 pub struct LocalizationChangeCollection {
     pub build_changes: Vec<LocalizationChange>,
-    pub release_changes: Option<(String, Vec<LocalizationChange>)>,
+    pub release_changes: Option<(Tag, Vec<LocalizationChange>)>,
     pub are_release_changes_complete: bool,
 }
 
@@ -21,8 +21,8 @@ impl LocalizationChangeCollection {
     pub fn to_string(
         &self,
         platform: Platform,
-        old_tag: &str,
-        new_tag: &str,
+        old_tag: &Tag,
+        new_tag: &Tag,
         mode: RenderMode,
     ) -> String {
         let changes = match (mode, &self.release_changes) {
@@ -52,14 +52,14 @@ impl LocalizationChangeCollection {
         let build_diff_notice = || {
             format!(
                 "You can view the full comparison to {} by following the \"gathered from\" link above.",
-                utils::exact_version_string_from_tag(old_tag)
+                old_tag.exact_version_string()
             )
         };
-        let release_diff_notice = |tag| {
+        let release_diff_notice = |tag: &Tag| {
             format!(
                 "You can view the full comparison to {} so far [on GitHub]({}).",
-                utils::exact_version_string_from_tag(tag),
-                platform.github_comparison_url(tag, new_tag, None)
+                tag.exact_version_string(),
+                platform.github_comparison_url(&tag.name, &new_tag.name, None)
             )
         };
 
@@ -92,13 +92,13 @@ impl LocalizationChangeCollection {
 
     fn string_for_localization_changes(
         platform: Platform,
-        old_tag: &str,
-        new_tag: &str,
+        old_tag: &Tag,
+        new_tag: &Tag,
         changes: &[LocalizationChange],
     ) -> String {
         format!(
             "Compared to {}:{}",
-            utils::exact_version_string_from_tag(old_tag),
+            old_tag.exact_version_string(),
             match changes.len() {
                 1.. => format!(
                     "\n- {}",
@@ -111,8 +111,8 @@ impl LocalizationChangeCollection {
 
     fn language_links(
         platform: Platform,
-        old_tag: &str,
-        new_tag: &str,
+        old_tag: &Tag,
+        new_tag: &Tag,
         changes: &[LocalizationChange],
     ) -> String {
         changes
@@ -121,7 +121,11 @@ impl LocalizationChangeCollection {
                 format!(
                     "[{}]({})",
                     change.language,
-                    platform.github_comparison_url(old_tag, new_tag, Some(&change.filename))
+                    platform.github_comparison_url(
+                        &old_tag.name,
+                        &new_tag.name,
+                        Some(&change.filename)
+                    )
                 )
             })
             .collect::<Vec<_>>()

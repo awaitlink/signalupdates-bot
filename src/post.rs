@@ -6,14 +6,15 @@ use worker::{console_log, Method, Url};
 use crate::{
     localization::{LocalizationChangeCollection, RenderMode},
     platform::Platform,
-    types, utils,
+    types::{self, github::Tag},
+    utils,
 };
 
 #[derive(Debug)]
 pub struct Post {
     platform: Platform,
-    old_tag: String,
-    new_tag: String,
+    old_tag: Tag,
+    new_tag: Tag,
     commits: Vec<Commit>,
     localization_change_collection: LocalizationChangeCollection,
 }
@@ -21,15 +22,15 @@ pub struct Post {
 impl Post {
     pub fn new(
         platform: Platform,
-        old_tag: impl Into<String>,
-        new_tag: impl Into<String>,
+        old_tag: Tag,
+        new_tag: Tag,
         commits: Vec<Commit>,
         localization_change_collection: LocalizationChangeCollection,
     ) -> Self {
         Self {
             platform,
-            old_tag: old_tag.into(),
-            new_tag: new_tag.into(),
+            old_tag,
+            new_tag,
             commits,
             localization_change_collection,
         }
@@ -44,12 +45,13 @@ impl Post {
             .collect::<Vec<_>>()
             .join("\n");
 
-        let old_version = utils::exact_version_string_from_tag(&self.old_tag);
-        let new_version = utils::exact_version_string_from_tag(&self.new_tag);
+        let old_version = &self.old_tag.exact_version_string();
+        let new_version = &self.new_tag.exact_version_string();
 
         let platform = self.platform;
         let availability_notice = platform.availability_notice();
-        let comparison_url = platform.github_comparison_url(&self.old_tag, &self.new_tag, None);
+        let comparison_url =
+            platform.github_comparison_url(&self.old_tag.name, &self.new_tag.name, None);
 
         let commits_count = self.commits.len();
         let (commits_prefix, commits_postfix) = match commits_count {
@@ -221,7 +223,9 @@ mod tests {
                 default_android_localization_change(),
             ],
             release_changes: Some((
-                String::from("v1.1.5"),
+                Tag {
+                    name: String::from("v1.1.5"),
+                },
                 vec![
                     default_android_localization_change(),
                     default_android_localization_change(),
@@ -413,15 +417,19 @@ Compared to 1.1.5:
 [/details]".to_string(); "Android: one commit with localization changes, incomplete release")]
     fn post_markdown(
         platform: Platform,
-        old_tag: impl Into<String>,
-        new_tag: impl Into<String>,
+        old_tag: &str,
+        new_tag: &str,
         commits: Vec<Commit>,
         localization_change_collection: LocalizationChangeCollection,
     ) -> String {
         Post::new(
             platform,
-            old_tag,
-            new_tag,
+            Tag {
+                name: String::from(old_tag),
+            },
+            Tag {
+                name: String::from(new_tag),
+            },
             commits,
             localization_change_collection,
         )

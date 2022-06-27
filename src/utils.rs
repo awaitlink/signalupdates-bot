@@ -8,19 +8,9 @@ use worker::{
     Response, Url,
 };
 
-use crate::{localization::LocalizationChange, platform::Platform, types::github::Comparison};
+use crate::{platform::Platform, types::github::Comparison};
 
 pub const USER_AGENT: &str = "updates-bot";
-
-pub fn version_from_tag(tag: &str) -> anyhow::Result<Version> {
-    lenient_semver::parse(tag)
-        .map_err(|e| anyhow!(e.to_string()))
-        .context("could not parse version from tag")
-}
-
-pub fn exact_version_string_from_tag(tag: &str) -> String {
-    tag.replace('v', "")
-}
 
 #[derive(Debug)]
 enum StringBindingKind {
@@ -232,58 +222,7 @@ pub async fn get_github_comparison(
     })
 }
 
-pub fn localization_changes_from_comparison(
-    platform: Platform,
-    comparison: &Comparison,
-) -> Vec<LocalizationChange> {
-    let mut changes = comparison
-        .files
-        .clone()
-        .unwrap()
-        .iter()
-        .filter_map(|file| platform.localization_change(&file.filename))
-        .collect::<Vec<_>>();
-
-    changes.sort_unstable();
-
-    changes
-}
-
 pub fn sha256_string(input: &str) -> String {
     let result = Sha256::digest(input.as_bytes());
     base16ct::lower::encode_string(&result)
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-    use test_case::test_case;
-
-    fn test_version(pre: Option<&str>, build: Option<&str>) -> Version {
-        use semver::{BuildMetadata, Prerelease};
-
-        Version {
-            major: 1,
-            minor: 2,
-            patch: 3,
-            pre: match pre {
-                Some(pre) => Prerelease::new(pre).unwrap(),
-                None => Prerelease::EMPTY,
-            },
-            build: match build {
-                Some(build) => BuildMetadata::new(build).unwrap(),
-                None => BuildMetadata::EMPTY,
-            },
-        }
-    }
-
-    #[test_case("v1.2.3" => test_version(None, None); "3 digits with v")]
-    #[test_case("1.2.3" => test_version(None, None); "3 digits without v")]
-    #[test_case("v1.2.3.4" => test_version(None, Some("4")); "4 digits with v")]
-    #[test_case("1.2.3.4" => test_version(None, Some("4")); "4 digits without v")]
-    #[test_case("v1.2.3-beta.1" => test_version(Some("beta.1"), None); "3 digits beta with v")]
-    #[test_case("1.2.3.4-beta" => test_version(Some("beta"), Some("4")); "4 digits beta without v")]
-    fn version_from_tag(tag: &str) -> Version {
-        super::version_from_tag(tag).unwrap()
-    }
 }

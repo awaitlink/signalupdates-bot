@@ -1,9 +1,9 @@
-use semver::Version;
-
 use super::*;
-use crate::utils;
+use anyhow::{anyhow, Context};
+use semver::Version;
+use serde::Serialize;
 
-#[derive(Deserialize, Debug, Clone)]
+#[derive(Deserialize, Serialize, Debug, Clone, PartialEq, Eq)]
 pub struct Tag {
     pub name: String,
 }
@@ -12,7 +12,7 @@ impl TryFrom<Tag> for Version {
     type Error = anyhow::Error;
 
     fn try_from(tag: Tag) -> Result<Self, Self::Error> {
-        utils::version_from_tag(&tag.name)
+        (&tag).try_into()
     }
 }
 
@@ -20,7 +20,15 @@ impl TryFrom<&Tag> for Version {
     type Error = anyhow::Error;
 
     fn try_from(tag: &Tag) -> Result<Self, Self::Error> {
-        utils::version_from_tag(&tag.name)
+        lenient_semver::parse(&tag.name)
+            .map_err(|e| anyhow!(e.to_string()))
+            .context("could not parse version from tag")
+    }
+}
+
+impl Tag {
+    pub fn exact_version_string(&self) -> String {
+        self.name.replace('v', "")
     }
 }
 
@@ -50,6 +58,39 @@ pub struct File {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use test_case::test_case;
+
+    fn test_version(pre: Option<&str>, build: Option<&str>) -> Version {
+        use semver::{BuildMetadata, Prerelease};
+
+        Version {
+            major: 1,
+            minor: 2,
+            patch: 3,
+            pre: match pre {
+                Some(pre) => Prerelease::new(pre).unwrap(),
+                None => Prerelease::EMPTY,
+            },
+            build: match build {
+                Some(build) => BuildMetadata::new(build).unwrap(),
+                None => BuildMetadata::EMPTY,
+            },
+        }
+    }
+
+    #[test_case("v1.2.3" => test_version(None, None); "3 digits with v")]
+    #[test_case("1.2.3" => test_version(None, None); "3 digits without v")]
+    #[test_case("v1.2.3.4" => test_version(None, Some("4")); "4 digits with v")]
+    #[test_case("1.2.3.4" => test_version(None, Some("4")); "4 digits without v")]
+    #[test_case("v1.2.3-beta.1" => test_version(Some("beta.1"), None); "3 digits beta with v")]
+    #[test_case("1.2.3.4-beta" => test_version(Some("beta"), Some("4")); "4 digits beta without v")]
+    fn version_from_tag(tag: &str) -> Version {
+        Tag {
+            name: tag.to_string(),
+        }
+        .try_into()
+        .unwrap()
+    }
 
     #[test]
     fn comparison_deserialization() {

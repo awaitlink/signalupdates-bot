@@ -18,6 +18,8 @@ use platform::Platform;
 use state::StateController;
 use utils::GitHubComparisonKind::*;
 
+use crate::localization::LocalizationChange;
+
 // Used for debugging, to manually trigger the bot outside of schedule.
 #[event(fetch)]
 pub async fn fetch(
@@ -80,9 +82,7 @@ async fn check_platform(
     let tags_to_post: Vec<(types::github::Tag, Version)> = tags
         .iter()
         .rev()
-        .skip_while(|(tag, _)| {
-            tag.name != state_controller.platform_state(platform).last_posted_tag
-        })
+        .skip_while(|(tag, _)| tag != &state_controller.platform_state(platform).last_posted_tag)
         .cloned()
         .collect();
 
@@ -116,9 +116,11 @@ async fn check_platform(
             Some(topic_id) => {
                 console_log!("topic_id = {topic_id}");
 
-                let last_posted_version = utils::version_from_tag(
-                    &state_controller.platform_state(platform).last_posted_tag,
-                )?;
+                let last_posted_version: Version = state_controller
+                    .platform_state(platform)
+                    .last_posted_tag
+                    .clone()
+                    .try_into()?;
 
                 let reply_to_post_number = if last_posted_version.major == new_version.major
                     && last_posted_version.minor == new_version.minor
@@ -151,7 +153,7 @@ async fn check_platform(
                 console_log!("commits.len() = {:?}", commits.len());
 
                 let build_localization_changes =
-                    utils::localization_changes_from_comparison(platform, &comparison);
+                    LocalizationChange::changes_from_comparison(platform, &comparison);
 
                 console_log!(
                     "build_localization_changes.len() = {:?}",
@@ -190,7 +192,7 @@ async fn check_platform(
                     console_log!("release_comparison = {:?}", release_comparison);
 
                     let mut release_localization_changes =
-                        utils::localization_changes_from_comparison(platform, &release_comparison);
+                        LocalizationChange::changes_from_comparison(platform, &release_comparison);
 
                     console_log!(
                         "release_localization_changes.len() = {:?}",
@@ -235,7 +237,7 @@ async fn check_platform(
                     );
 
                     Some((
-                        last_version_of_previous_release.0.name.clone(),
+                        last_version_of_previous_release.0.clone(),
                         combined_localization_changes,
                     ))
                 };
@@ -248,8 +250,8 @@ async fn check_platform(
 
                 let post = post::Post::new(
                     platform,
-                    &old_tag.name,
-                    &new_tag.name,
+                    old_tag.clone(),
+                    new_tag.clone(),
                     commits,
                     localization_change_collection,
                 );
@@ -264,7 +266,7 @@ async fn check_platform(
                 state_controller
                     .set_platform_state(
                         platform,
-                        state::PlatformState::new(&new_tag.name, Some(post_number)),
+                        state::PlatformState::new(new_tag.clone(), Some(post_number)),
                     )
                     .await
                     .context("could not set platform state")?;

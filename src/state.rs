@@ -3,7 +3,10 @@ use serde::{Deserialize, Serialize};
 use worker::Env;
 use worker_kv::KvStore;
 
-use crate::platform::Platform::{self, *};
+use crate::{
+    platform::Platform::{self, *},
+    types::github::Tag,
+};
 
 const STATE_KV_BINDING: &str = "STATE";
 const STATE_KV_KEY: &str = "state";
@@ -16,14 +19,14 @@ pub struct State {
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct PlatformState {
-    pub last_posted_tag: String,
+    pub last_posted_tag: Tag,
     pub last_post_number: Option<u64>,
 }
 
 impl PlatformState {
-    pub fn new(last_posted_tag: impl Into<String>, last_post_number: Option<u64>) -> Self {
+    pub fn new(last_posted_tag: Tag, last_post_number: Option<u64>) -> Self {
         Self {
-            last_posted_tag: last_posted_tag.into(),
+            last_posted_tag,
             last_post_number,
         }
     }
