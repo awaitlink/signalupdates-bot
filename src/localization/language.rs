@@ -1,5 +1,6 @@
-use locale_codes::language;
 use std::fmt;
+
+use locale_codes::language;
 
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
 pub struct Language {
@@ -63,8 +64,9 @@ impl fmt::Display for Language {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
     use test_case::test_case;
+
+    use super::*;
 
     #[test_case("en", "English (`en`)"; "en")]
     #[test_case("en_US", "English (`en-US`)"; "en underscore US")]

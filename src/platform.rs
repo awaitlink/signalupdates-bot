@@ -1,8 +1,8 @@
+use std::fmt;
+
 use lazy_static::lazy_static;
 use regex::Regex;
 use semver::Version;
-use std::fmt;
-use Platform::*;
 
 use crate::{
     localization::{Language, LocalizationChange},
@@ -16,6 +16,8 @@ pub enum Platform {
     Android,
     Desktop,
 }
+
+use Platform::*;
 
 impl Platform {
     pub const fn github_api_tags_url(&self) -> &'static str {
@@ -119,8 +121,9 @@ impl fmt::Display for Platform {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
     use test_case::test_case;
+
+    use super::*;
 
     #[test_case(Android, "app/src/main/res/values/strings.xml", "English (`en`)"; "Android: en")]
     #[test_case(Android, "app/src/main/res/values-kab/strings.xml", "Kabyle (`kab`)"; "Android: kab")]

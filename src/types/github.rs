@@ -1,7 +1,8 @@
-use super::*;
 use anyhow::{anyhow, Context};
 use semver::Version;
 use serde::Serialize;
+
+use super::*;
 
 #[derive(Deserialize, Serialize, Debug, Clone, PartialEq, Eq)]
 pub struct Tag {
@@ -57,8 +58,9 @@ pub struct File {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
     use test_case::test_case;
+
+    use super::*;
 
     fn test_version(pre: Option<&str>, build: Option<&str>) -> Version {
         use semver::{BuildMetadata, Prerelease};

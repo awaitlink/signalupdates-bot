@@ -1,6 +1,7 @@
+use strum_macros::EnumIter;
+
 use super::LocalizationChange;
 use crate::{platform::Platform, types::github::Tag};
-use strum_macros::EnumIter;
 
 #[derive(Debug, EnumIter, Clone, Copy)]
 pub enum RenderMode {
@@ -8,6 +9,7 @@ pub enum RenderMode {
     WithoutRelease,
     Nothing,
 }
+
 use RenderMode::*;
 
 #[derive(Debug)]

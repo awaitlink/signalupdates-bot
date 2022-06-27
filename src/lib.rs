@@ -13,12 +13,10 @@ mod state;
 mod types;
 mod utils;
 
-use localization::LocalizationChangeCollection;
+use localization::{LocalizationChange, LocalizationChangeCollection};
 use platform::Platform;
 use state::StateController;
 use utils::GitHubComparisonKind::*;
-
-use crate::localization::LocalizationChange;
 
 // Used for debugging, to manually trigger the bot outside of schedule.
 #[event(fetch)]

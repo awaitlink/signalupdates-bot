@@ -17,6 +17,7 @@ enum StringBindingKind {
     Secret,
     Var,
 }
+
 use StringBindingKind::*;
 
 fn get_env_string(env: &Env, kind: StringBindingKind, name: &str) -> anyhow::Result<String> {
@@ -137,6 +138,7 @@ pub enum GitHubComparisonKind {
     /// `total_commits` still indicates the total number of commits in the comparison.
     JustAllFiles,
 }
+
 use GitHubComparisonKind::*;
 
 pub async fn get_github_comparison(

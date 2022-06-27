@@ -180,10 +180,11 @@ impl Commit {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
-    use crate::localization::LocalizationChange;
     use test_case::test_case;
     use Platform::*;
+
+    use super::*;
+    use crate::localization::LocalizationChange;
 
     #[test_case(Android, "Test commit.", "abcdef" => "- Test commit. [[1]](https://github.com/signalapp/Signal-Android/commit/abcdef)\n".to_string(); "Android: one line")]
     #[test_case(Android, "Test commit.\nAnother line.", "abcdef" => "- Test commit. [[1]](https://github.com/signalapp/Signal-Android/commit/abcdef)\n\n    Another line.".to_string(); "Android: two lines")]
