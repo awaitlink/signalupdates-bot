@@ -19,7 +19,7 @@ pub struct Post<'a> {
     old_tag: Tag,
     new_tag: Tag,
     commits: Vec<Commit<'a>>,
-    localization_change_collection: LocalizationChangeCollection,
+    localization_change_collection: LocalizationChangeCollection<'a>,
 }
 
 impl<'a> Post<'a> {
@@ -28,7 +28,7 @@ impl<'a> Post<'a> {
         old_tag: Tag,
         new_tag: Tag,
         commits: Vec<Commit<'a>>,
-        localization_change_collection: LocalizationChangeCollection,
+        localization_change_collection: LocalizationChangeCollection<'a>,
     ) -> Self {
         Self {
             platform,
@@ -148,14 +148,14 @@ mod tests {
         platform::Platform::{self, *},
     };
 
-    fn default_android_localization_change() -> LocalizationChange {
+    fn default_android_localization_change() -> LocalizationChange<'static> {
         LocalizationChange {
             language: Default::default(),
-            filename: crate::platform::ANDROID_DEFAULT_STRINGS_FILENAME.to_string(),
+            filename: crate::platform::ANDROID_DEFAULT_STRINGS_FILENAME,
         }
     }
 
-    fn empty_localization_change_collection() -> LocalizationChangeCollection {
+    fn empty_localization_change_collection() -> LocalizationChangeCollection<'static> {
         LocalizationChangeCollection {
             build_changes: vec![],
             release_changes: None,
@@ -165,7 +165,7 @@ mod tests {
 
     fn simple_localization_change_collection(
         are_release_changes_complete: bool,
-    ) -> LocalizationChangeCollection {
+    ) -> LocalizationChangeCollection<'static> {
         LocalizationChangeCollection {
             build_changes: vec![
                 default_android_localization_change(),

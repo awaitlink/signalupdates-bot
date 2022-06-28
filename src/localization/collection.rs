@@ -13,13 +13,13 @@ pub enum RenderMode {
 use RenderMode::*;
 
 #[derive(Debug)]
-pub struct LocalizationChangeCollection {
-    pub build_changes: Vec<LocalizationChange>,
-    pub release_changes: Option<(Tag, Vec<LocalizationChange>)>,
+pub struct LocalizationChangeCollection<'a> {
+    pub build_changes: Vec<LocalizationChange<'a>>,
+    pub release_changes: Option<(Tag, Vec<LocalizationChange<'a>>)>,
     pub are_release_changes_complete: bool,
 }
 
-impl LocalizationChangeCollection {
+impl<'a> LocalizationChangeCollection<'a> {
     pub fn to_string(
         &self,
         platform: Platform,
@@ -126,7 +126,7 @@ impl LocalizationChangeCollection {
                     platform.github_comparison_url(
                         &old_tag.name,
                         &new_tag.name,
-                        Some(&change.filename)
+                        Some(change.filename)
                     )
                 )
             })

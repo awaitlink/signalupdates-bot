@@ -72,7 +72,7 @@ impl Platform {
         )
     }
 
-    pub fn localization_change(&self, filename: &str) -> Option<LocalizationChange> {
+    pub fn localization_change<'a>(&'a self, filename: &'a str) -> Option<LocalizationChange> {
         lazy_static! {
             static ref ANDROID_REGEX: Regex =
                 Regex::new(r"app/src/main/res/values-([a-zA-Z]{2,3}(-r[A-Z]{2})?)/strings\.xml")
@@ -86,7 +86,7 @@ impl Platform {
                 if filename == ANDROID_DEFAULT_STRINGS_FILENAME {
                     return Some(LocalizationChange {
                         language: Language::default(),
-                        filename: ANDROID_DEFAULT_STRINGS_FILENAME.to_string(),
+                        filename: ANDROID_DEFAULT_STRINGS_FILENAME,
                     });
                 }
 
@@ -99,10 +99,7 @@ impl Platform {
             .filter_map(|captures| captures.get(1))
             .map(|capture| capture.as_str())
             .find_map(Language::from_code)
-            .map(|language| LocalizationChange {
-                language,
-                filename: filename.to_string(),
-            })
+            .map(|language| LocalizationChange { language, filename })
     }
 }
 

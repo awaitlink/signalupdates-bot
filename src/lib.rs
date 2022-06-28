@@ -151,7 +151,7 @@ async fn check_platform(
                 console_log!("commits.len() = {:?}", commits.len());
 
                 let build_localization_changes =
-                    LocalizationChange::changes_from_comparison(platform, &comparison);
+                    LocalizationChange::changes_from_comparison(&platform, &comparison);
 
                 console_log!(
                     "build_localization_changes.len() = {:?}",
@@ -172,13 +172,14 @@ async fn check_platform(
                     last_version_of_previous_release
                 );
 
+                let release_comparison: types::github::Comparison;
                 let mut are_release_changes_complete = true;
                 let release_localization_changes = if &last_version_of_previous_release.1
                     == old_version
                 {
                     None
                 } else {
-                    let release_comparison = utils::get_github_comparison(
+                    release_comparison = utils::get_github_comparison(
                         JustAllFiles,
                         platform,
                         &last_version_of_previous_release.0.name,
@@ -190,7 +191,7 @@ async fn check_platform(
                     console_log!("release_comparison = {:?}", release_comparison);
 
                     let mut release_localization_changes =
-                        LocalizationChange::changes_from_comparison(platform, &release_comparison);
+                        LocalizationChange::changes_from_comparison(&platform, &release_comparison);
 
                     console_log!(
                         "release_localization_changes.len() = {:?}",
@@ -200,7 +201,11 @@ async fn check_platform(
                     // GitHub API only returns at most 300 files, despite
                     // https://docs.github.com/en/rest/commits/commits#compare-two-commits
                     // saying that it always returns all.
-                    let combined_localization_changes = if release_comparison.files.unwrap().len()
+                    let combined_localization_changes = if release_comparison
+                        .files
+                        .as_ref()
+                        .unwrap()
+                        .len()
                         == 300
                     {
                         console_log!("release_comparison has 300 files, likely incomplete");

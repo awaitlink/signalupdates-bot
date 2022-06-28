@@ -2,22 +2,22 @@ use super::Language;
 use crate::{platform::Platform, types::github::Comparison};
 
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
-pub struct LocalizationChange {
+pub struct LocalizationChange<'a> {
     pub language: Language,
-    pub filename: String,
+    pub filename: &'a str,
 }
 
-impl LocalizationChange {
+impl<'a> LocalizationChange<'a> {
     pub fn changes_from_comparison(
-        platform: Platform,
-        comparison: &Comparison,
-    ) -> Vec<LocalizationChange> {
+        platform: &'a Platform,
+        comparison: &'a Comparison,
+    ) -> Vec<LocalizationChange<'a>> {
         let mut changes = comparison
             .files
-            .clone()
+            .as_ref()
             .unwrap()
             .iter()
-            .filter_map(|file| platform.localization_change(&file.filename))
+            .filter_map(move |file| platform.localization_change(&file.filename))
             .collect::<Vec<_>>();
 
         changes.sort_unstable();
