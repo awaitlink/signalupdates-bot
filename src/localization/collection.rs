@@ -1,3 +1,5 @@
+use std::rc::Rc;
+
 use strum_macros::EnumIter;
 
 use super::LocalizationChange;
@@ -14,8 +16,8 @@ use RenderMode::*;
 
 #[derive(Debug)]
 pub struct LocalizationChangeCollection<'a> {
-    pub build_changes: Vec<LocalizationChange<'a>>,
-    pub release_changes: Option<(Tag, Vec<LocalizationChange<'a>>)>,
+    pub build_changes: Rc<Vec<LocalizationChange<'a>>>,
+    pub release_changes: Option<(Tag, Rc<Vec<LocalizationChange<'a>>>)>,
     pub are_release_changes_complete: bool,
 }
 

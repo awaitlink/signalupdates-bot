@@ -1,5 +1,7 @@
 #![feature(array_windows)]
 
+use std::rc::Rc;
+
 use anyhow::{anyhow, Context};
 use semver::Version;
 use strum::IntoEnumIterator;
@@ -150,8 +152,9 @@ async fn check_platform(
 
                 console_log!("commits.len() = {:?}", commits.len());
 
-                let build_localization_changes =
-                    LocalizationChange::changes_from_comparison(&platform, &comparison);
+                let build_localization_changes = Rc::new(
+                    LocalizationChange::changes_from_comparison(&platform, &comparison),
+                );
 
                 console_log!(
                     "build_localization_changes.len() = {:?}",
@@ -217,21 +220,21 @@ async fn check_platform(
                             );
 
                             let mut combined_localization_changes =
-                                build_localization_changes.clone();
+                                (*build_localization_changes).clone();
                             combined_localization_changes.append(&mut release_localization_changes);
                             combined_localization_changes.dedup();
                             combined_localization_changes.sort_unstable();
-                            combined_localization_changes
+                            Rc::new(combined_localization_changes)
                         } else {
                             console_log!(
                                 "release_localization_changes is empty, taking build_localization_changes"
                             );
 
-                            build_localization_changes.clone()
+                            Rc::clone(&build_localization_changes)
                         }
                     } else {
                         console_log!("release_comparison appears to be complete");
-                        release_localization_changes
+                        Rc::new(release_localization_changes)
                     };
 
                     console_log!(
