@@ -39,15 +39,16 @@ impl<'a> Post<'a> {
         }
     }
 
-    pub fn markdown_text(&self, mode: RenderMode) -> String {
-        let commits = self
-            .commits
+    fn commits_markdown(&self) -> String {
+        self.commits
             .iter()
             .enumerate()
             .map(|(index, commit)| commit.markdown_text(index + 1))
             .collect::<Vec<_>>()
-            .join("\n");
+            .join("\n")
+    }
 
+    fn markdown_text(&self, commits_markdown: &str, mode: RenderMode) -> String {
         let old_version = &self.old_tag.exact_version_string();
         let new_version = &self.new_tag.exact_version_string();
 
@@ -75,7 +76,7 @@ impl<'a> Post<'a> {
             "## New Version: {new_version}{availability_notice}
 [quote]
 {commits_count} new commit{commits_word_suffix} since {old_version}:
-{commits_prefix}{commits}{commits_postfix}
+{commits_prefix}{commits_markdown}{commits_postfix}
 ---
 Gathered from [signalapp/Signal-{platform}]({comparison_url})
 [/quote]
@@ -89,31 +90,33 @@ Gathered from [signalapp/Signal-{platform}]({comparison_url})
         topic_id: u64,
         reply_to_post_number: Option<u64>,
     ) -> anyhow::Result<u64> {
-        let mut markdown_text: Option<String> = None;
+        let commits_markdown = self.commits_markdown();
+
+        let mut post_markdown: Option<String> = None;
 
         for mode in RenderMode::iter() {
             console_log!("trying localization change collection render mode = {mode:?}");
 
-            let text = self.markdown_text(mode);
+            let text = self.markdown_text(&commits_markdown, mode);
             console_log!("text.len() = {}", text.len());
 
             if text.len() > 32_000 {
                 console_log!("text is likely too long to post");
-                markdown_text = None;
+                post_markdown = None;
             } else {
-                markdown_text = Some(text);
+                post_markdown = Some(text);
                 break;
             }
         }
 
-        if markdown_text.is_none() {
+        if post_markdown.is_none() {
             bail!("could not make a post that fits within the allowed character count")
         }
 
         let body = json!({
             "topic_id": topic_id,
             "reply_to_post_number": reply_to_post_number,
-            "raw": markdown_text,
+            "raw": post_markdown,
         });
 
         let url = Url::parse("https://community.signalusers.org/posts.json")
@@ -368,7 +371,7 @@ Compared to 1.1.5:
         commits: Vec<Commit>,
         localization_change_collection: LocalizationChangeCollection,
     ) -> String {
-        Post::new(
+        let post = Post::new(
             platform,
             Tag {
                 name: String::from(old_tag),
@@ -378,7 +381,8 @@ Compared to 1.1.5:
             },
             commits,
             localization_change_collection,
-        )
-        .markdown_text(RenderMode::Full)
+        );
+
+        post.markdown_text(&post.commits_markdown(), RenderMode::Full)
     }
 }
