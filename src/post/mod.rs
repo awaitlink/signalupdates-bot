@@ -14,20 +14,20 @@ mod commit;
 pub use commit::Commit;
 
 #[derive(Debug)]
-pub struct Post {
+pub struct Post<'a> {
     platform: Platform,
     old_tag: Tag,
     new_tag: Tag,
-    commits: Vec<Commit>,
+    commits: Vec<Commit<'a>>,
     localization_change_collection: LocalizationChangeCollection,
 }
 
-impl Post {
+impl<'a> Post<'a> {
     pub fn new(
         platform: Platform,
         old_tag: Tag,
         new_tag: Tag,
-        commits: Vec<Commit>,
+        commits: Vec<Commit<'a>>,
         localization_change_collection: LocalizationChangeCollection,
     ) -> Self {
         Self {
@@ -183,7 +183,7 @@ mod tests {
     }
 
     #[test_case(Android, "v1.2.3", "v1.2.4", vec![
-        Commit::new(Android, "Test commit.", "abcdef")
+        Commit::new(Android, "Test commit.".into(), "abcdef".into())
     ], empty_localization_change_collection() => "## New Version: 1.2.4
 (Not Yet) Available via [Firebase App Distribution](https://community.signalusers.org/t/17538)
 [quote]
@@ -203,8 +203,8 @@ Localization changes for the whole release are the same, as this is the first bu
 [/quote]
 [/details]".to_string(); "Android: one commit")]
     #[test_case(Android, "v1.2.3", "v1.2.4", vec![
-        Commit::new(Android, "Test commit.", "abcdef"),
-        Commit::new(Android, "Bump version to 1.2.4", "abc123")
+        Commit::new(Android, "Test commit.".into(), "abcdef".into()),
+        Commit::new(Android, "Bump version to 1.2.4".into(), "abc123".into())
     ], empty_localization_change_collection() => "## New Version: 1.2.4
 (Not Yet) Available via [Firebase App Distribution](https://community.signalusers.org/t/17538)
 [quote]
@@ -226,9 +226,9 @@ Localization changes for the whole release are the same, as this is the first bu
 [/quote]
 [/details]".to_string(); "Android: two commits")]
     #[test_case(Android, "v1.2.3", "v1.2.4",
-    std::iter::repeat(Commit::new(Android, "Test commit.", "abcdef"))
+    std::iter::repeat(Commit::new(Android, "Test commit.".into(), "abcdef".into()))
         .take(20)
-        .chain(vec![Commit::new(Android, "Bump version to 1.2.4", "abc123")].iter().cloned())
+        .chain(vec![Commit::new(Android, "Bump version to 1.2.4".into(), "abc123".into())].iter().cloned())
         .collect(),
     empty_localization_change_collection() => "## New Version: 1.2.4
 (Not Yet) Available via [Firebase App Distribution](https://community.signalusers.org/t/17538)
@@ -291,7 +291,7 @@ Localization changes for the whole release are the same, as this is the first bu
 [/quote]
 [/details]".to_string(); "Android: twenty one commits")]
     #[test_case(Desktop, "v1.2.3-beta.1", "v1.2.3-beta.2", vec![
-        Commit::new(Desktop, "Test commit.", "abcdef")
+        Commit::new(Desktop, "Test commit.".into(), "abcdef".into())
     ], empty_localization_change_collection() => "## New Version: 1.2.3-beta.2
 [quote]
 1 new commit since 1.2.3-beta.1:
@@ -310,7 +310,7 @@ Localization changes for the whole release are the same, as this is the first bu
 [/quote]
 [/details]".to_string(); "Desktop: one commit")]
     #[test_case(Android, "v1.2.3", "v1.2.4", vec![
-        Commit::new(Android, "Test commit.", "abcdef")
+        Commit::new(Android, "Test commit.".into(), "abcdef".into())
     ], simple_localization_change_collection(true) => "## New Version: 1.2.4
 (Not Yet) Available via [Firebase App Distribution](https://community.signalusers.org/t/17538)
 [quote]
@@ -335,7 +335,7 @@ Compared to 1.1.5:
 [/quote]
 [/details]".to_string(); "Android: one commit with localization changes")]
     #[test_case(Android, "v1.2.3", "v1.2.4", vec![
-    Commit::new(Android, "Test commit.", "abcdef")
+    Commit::new(Android, "Test commit.".into(), "abcdef".into())
 ], simple_localization_change_collection(false) => "## New Version: 1.2.4
 (Not Yet) Available via [Firebase App Distribution](https://community.signalusers.org/t/17538)
 [quote]
