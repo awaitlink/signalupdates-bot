@@ -43,22 +43,23 @@ impl Language {
             _ => None,
         }
     }
+
+    pub fn full_code(&self) -> String {
+        match &self.region_code {
+            Some(region_code) => format!("{}-{}", self.language_code, region_code),
+            None => self.language_code.to_string(),
+        }
+    }
 }
 
 impl fmt::Display for Language {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        match &self.region_code {
-            Some(region_code) => write!(
-                f,
-                "{} (`{}-{}`)",
-                self.language_reference_name, self.language_code, region_code
-            ),
-            None => write!(
-                f,
-                "{} (`{}`)",
-                self.language_reference_name, self.language_code
-            ),
-        }
+        write!(
+            f,
+            "{} (`{}`)",
+            self.language_reference_name,
+            self.full_code()
+        )
     }
 }
 

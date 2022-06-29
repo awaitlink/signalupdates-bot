@@ -221,7 +221,7 @@ async fn check_platform(
                         changes
                             .changes
                             .iter()
-                            .map(|change| change.language.language_code.clone())
+                            .map(|change| change.language.full_code())
                             .collect()
                     })
                     .unwrap_or_else(Vec::new);
