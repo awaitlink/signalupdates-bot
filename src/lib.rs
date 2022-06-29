@@ -217,14 +217,11 @@ async fn check_platform(
 
                 let localization_change_codes = release_localization_changes
                     .as_ref()
-                    .map(|changes| {
-                        changes
-                            .changes
-                            .iter()
-                            .map(|change| change.language.full_code())
-                            .collect()
-                    })
-                    .unwrap_or_else(Vec::new);
+                    .unwrap_or(&build_localization_changes)
+                    .changes
+                    .iter()
+                    .map(|change| change.language.full_code())
+                    .collect();
 
                 let post = post::Post::new(
                     platform,
