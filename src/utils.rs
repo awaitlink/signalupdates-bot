@@ -42,7 +42,7 @@ pub fn topic_id_override(env: &Env) -> anyhow::Result<Option<u64>> {
 }
 
 pub async fn get_topic_id(
-    api_key: String,
+    api_key: &str,
     platform: Platform,
     version: &Version,
 ) -> anyhow::Result<Option<u64>> {
@@ -63,8 +63,8 @@ pub async fn get_topic_id(
     }
 }
 
-pub async fn get_json_from_url<T: DeserializeOwned>(url: impl Into<String>) -> anyhow::Result<T> {
-    let url = Url::parse(&url.into()).context("could not parse URL")?;
+pub async fn get_json_from_url<T: DeserializeOwned>(url: &str) -> anyhow::Result<T> {
+    let url = Url::parse(url).context("could not parse URL")?;
     let request = create_request(url, Method::Get, None, None)?;
     json_from_configuration(Fetch::Request(request)).await
 }
@@ -104,14 +104,14 @@ pub fn create_request(
     url: Url,
     method: Method,
     body: Option<Value>,
-    discourse_api_key: Option<String>,
+    discourse_api_key: Option<&str>,
 ) -> anyhow::Result<Request> {
     console_log!("constructing request for url {url}");
 
     let mut headers = Headers::new();
 
     if let Some(api_key) = discourse_api_key {
-        headers.set("User-Api-Key", &api_key).unwrap();
+        headers.set("User-Api-Key", api_key).unwrap();
     }
 
     headers.set("Content-Type", "application/json").unwrap();

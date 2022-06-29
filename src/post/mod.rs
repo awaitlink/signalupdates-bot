@@ -86,7 +86,7 @@ Gathered from [signalapp/Signal-{platform}]({comparison_url})
 
     pub async fn post(
         &self,
-        api_key: String,
+        api_key: &str,
         topic_id: u64,
         reply_to_post_number: Option<u64>,
     ) -> anyhow::Result<u64> {

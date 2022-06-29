@@ -107,7 +107,7 @@ async fn check_platform(
                 console_log!("using topic id override: {id}");
                 Some(id)
             }
-            None => utils::get_topic_id(discourse_api_key.clone(), platform, new_version)
+            None => utils::get_topic_id(&discourse_api_key, platform, new_version)
                 .await
                 .context("could not find topic_id")?,
         };
@@ -263,7 +263,7 @@ async fn check_platform(
                 );
 
                 let post_number = post
-                    .post(discourse_api_key.clone(), topic_id, reply_to_post_number)
+                    .post(&discourse_api_key, topic_id, reply_to_post_number)
                     .await
                     .context("could not post to Discourse")?;
 
