@@ -140,13 +140,7 @@ async fn check_platform(
                 let commits: Vec<post::Commit> = comparison
                     .commits
                     .iter()
-                    .map(|github_commit| {
-                        post::Commit::new(
-                            platform,
-                            &github_commit.commit.message,
-                            &github_commit.sha,
-                        )
-                    })
+                    .map(|github_commit| post::Commit::from_github_commit(platform, github_commit))
                     .collect();
 
                 console_log!("commits.len() = {:?}", commits.len());

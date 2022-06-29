@@ -3,7 +3,7 @@ use std::borrow::Cow;
 use lazy_static::lazy_static;
 use regex::Regex;
 
-use crate::platform::Platform;
+use crate::{platform::Platform, types::github};
 
 #[derive(Debug, Clone)]
 pub struct Commit<'a> {
@@ -19,6 +19,10 @@ impl<'a> Commit<'a> {
             full_message,
             sha,
         }
+    }
+
+    pub fn from_github_commit(platform: Platform, github_commit: &'a github::Commit) -> Self {
+        Self::new(platform, &github_commit.commit.message, &github_commit.sha)
     }
 
     pub fn markdown_text(&self, number: usize) -> String {
