@@ -119,14 +119,8 @@ async fn check_platform(
             Some(topic_id) => {
                 console_log!("topic_id = {topic_id}");
 
-                let last_posted_version: Version = state_controller
-                    .platform_state(platform)
-                    .last_posted_tag
-                    .clone()
-                    .try_into()?;
-
-                let same_release = last_posted_version.major == new_version.major
-                    && last_posted_version.minor == new_version.minor;
+                let same_release = old_version.major == new_version.major
+                    && old_version.minor == new_version.minor;
                 console_log!("same_release = {}", same_release);
 
                 let reply_to_post_number = if same_release {
@@ -165,55 +159,58 @@ async fn check_platform(
                     None,
                 );
 
-                let last_version_of_previous_release = tags
-                    .iter()
-                    .find(|(_, version)| {
-                        version.minor < new_version.minor || version.major < new_version.major
-                    })
-                    .ok_or_else(|| {
-                        anyhow!("could not determine last version of previous release")
-                    })?;
-
-                console_log!(
-                    "last_version_of_previous_release = {:?}",
-                    last_version_of_previous_release
-                );
-
                 let localization_change_codes_complete = build_localization_changes.complete
                     && (!same_release
                         || state_controller
                             .platform_state(platform)
                             .localization_change_codes_complete);
 
-                let release_localization_changes =
-                    if &last_version_of_previous_release.1 == old_version {
-                        None
-                    } else if same_release {
-                        let mut changes: Vec<_> = state_controller
-                            .platform_state(platform)
-                            .localization_change_codes
-                            .iter()
-                            .map(|code| LocalizationChange {
-                                language: Language::from_code(code).unwrap(),
-                                filename: platform.filename_for_language_code(code),
-                            })
-                            .chain(build_localization_changes.changes.iter().cloned())
-                            .collect();
+                let release_localization_changes = if !same_release {
+                    console_log!("first build of the release, release_localization_changes = None");
+                    None
+                } else {
+                    let last_version_of_previous_release = tags
+                        .iter()
+                        .find(|(_, version)| {
+                            version.minor < new_version.minor || version.major < new_version.major
+                        })
+                        .ok_or_else(|| {
+                            anyhow!("could not determine last version of previous release")
+                        })?;
 
-                        changes.sort_unstable();
+                    console_log!(
+                        "last_version_of_previous_release = {:?}",
+                        last_version_of_previous_release
+                    );
 
-                        let release_localization_changes = LocalizationChanges {
-                            platform,
-                            old_tag: &last_version_of_previous_release.0,
-                            new_tag,
-                            complete: localization_change_codes_complete,
-                            changes: Rc::new(changes),
-                        };
+                    let mut changes: Vec<_> = state_controller
+                        .platform_state(platform)
+                        .localization_change_codes
+                        .iter()
+                        .map(|code| LocalizationChange {
+                            language: Language::from_code(code).unwrap(),
+                            filename: platform.filename_for_language_code(code),
+                        })
+                        .chain(build_localization_changes.changes.iter().cloned())
+                        .collect();
 
-                        Some(release_localization_changes)
-                    } else {
-                        Some(build_localization_changes.clone())
+                    changes.sort_unstable();
+
+                    let release_localization_changes = LocalizationChanges {
+                        platform,
+                        old_tag: &last_version_of_previous_release.0,
+                        new_tag,
+                        complete: localization_change_codes_complete,
+                        changes: Rc::new(changes),
                     };
+
+                    console_log!(
+                        "release_localization_changes = {:?}",
+                        release_localization_changes
+                    );
+
+                    Some(release_localization_changes)
+                };
 
                 let localization_change_codes = release_localization_changes
                     .as_ref()
