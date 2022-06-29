@@ -73,7 +73,10 @@ impl<'a> LocalizationChanges<'a> {
             Rc::new(changes)
         };
 
-        console_log!("after combining changes.len() = {:?}", changes.len());
+        console_log!(
+            "after (potentially) combining, changes.len() = {:?}",
+            changes.len()
+        );
 
         Self {
             platform: *platform,
@@ -120,7 +123,7 @@ impl fmt::Display for LocalizationChanges<'_> {
             (
                 "At least ",
                 format!(
-                    "\n**Note:** These changes may not include all languages (GitHub API likely did not return all files). {}",
+                    "\n:warning: These changes may not include all languages (GitHub API likely did not return all files). {}",
                     self.full_comparison_notice()
                 )
             )
@@ -128,7 +131,7 @@ impl fmt::Display for LocalizationChanges<'_> {
 
         write!(
             f,
-            "### {}{} changes compared to {}:{}{}",
+            "#### {}{} changes since {}:{}{}",
             incomplete_notice.0,
             self.changes.len(),
             self.old_tag.exact_version_string(),
