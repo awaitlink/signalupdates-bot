@@ -58,8 +58,8 @@ pub async fn get_topic_id(
         (Some(post_stream), _) => match post_stream.posts.first() {
             Some(post) => Ok(Some(post.topic_id)),
             None => {
-                console_warn!("no posts in topic");
-                Ok(None)
+                console_error!("response = {:?}", response);
+                bail!("no posts in topic")
             }
         },
         (None, Some(error_type)) if error_type == "not_found" => {
