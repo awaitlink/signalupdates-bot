@@ -15,7 +15,7 @@ mod state;
 mod types;
 mod utils;
 
-use localization::{LocalizationChange, LocalizationChangeCollection};
+use localization::{LocalizationChangeCollection, LocalizationChanges};
 use platform::Platform;
 use state::StateController;
 use utils::GitHubComparisonKind::*;
@@ -152,13 +152,12 @@ async fn check_platform(
 
                 console_log!("commits.len() = {:?}", commits.len());
 
-                let build_localization_changes = Rc::new(
-                    LocalizationChange::changes_from_comparison(&platform, &comparison),
-                );
-
-                console_log!(
-                    "build_localization_changes.len() = {:?}",
-                    build_localization_changes.len()
+                let build_localization_changes = LocalizationChanges::from_comparison(
+                    &platform,
+                    old_tag.clone(),
+                    new_tag.clone(),
+                    &comparison,
+                    None,
                 );
 
                 let last_version_of_previous_release = tags
@@ -176,90 +175,41 @@ async fn check_platform(
                 );
 
                 let release_comparison: types::github::Comparison;
-                let mut are_release_changes_complete = true;
-                let release_localization_changes = if &last_version_of_previous_release.1
-                    == old_version
-                {
-                    None
-                } else {
-                    release_comparison = utils::get_github_comparison(
-                        JustAllFiles,
-                        platform,
-                        &last_version_of_previous_release.0.name,
-                        &new_tag.name,
-                    )
-                    .await
-                    .context("could not get release comparison from GitHub")?;
-
-                    console_log!("release_comparison = {:?}", release_comparison);
-
-                    let mut release_localization_changes =
-                        LocalizationChange::changes_from_comparison(&platform, &release_comparison);
-
-                    console_log!(
-                        "release_localization_changes.len() = {:?}",
-                        release_localization_changes.len()
-                    );
-
-                    // GitHub API only returns at most 300 files, despite
-                    // https://docs.github.com/en/rest/commits/commits#compare-two-commits
-                    // saying that it always returns all.
-                    let combined_localization_changes = if release_comparison
-                        .files
-                        .as_ref()
-                        .unwrap()
-                        .len()
-                        == 300
-                    {
-                        console_log!("release_comparison has 300 files, likely incomplete");
-                        are_release_changes_complete = false;
-
-                        if !release_localization_changes.is_empty() {
-                            console_log!(
-                                "merging release_localization_changes and build_localization_changes"
-                            );
-
-                            let mut combined_localization_changes =
-                                (*build_localization_changes).clone();
-                            combined_localization_changes.append(&mut release_localization_changes);
-                            combined_localization_changes.dedup();
-                            combined_localization_changes.sort_unstable();
-                            Rc::new(combined_localization_changes)
-                        } else {
-                            console_log!(
-                                "release_localization_changes is empty, taking build_localization_changes"
-                            );
-
-                            Rc::clone(&build_localization_changes)
-                        }
+                let release_localization_changes =
+                    if &last_version_of_previous_release.1 == old_version {
+                        None
                     } else {
-                        console_log!("release_comparison appears to be complete");
-                        Rc::new(release_localization_changes)
+                        release_comparison = utils::get_github_comparison(
+                            JustAllFiles,
+                            platform,
+                            &last_version_of_previous_release.0.name,
+                            &new_tag.name,
+                        )
+                        .await
+                        .context("could not get release comparison from GitHub")?;
+
+                        console_log!("release_comparison = {:?}", release_comparison);
+
+                        let release_localization_changes = LocalizationChanges::from_comparison(
+                            &platform,
+                            last_version_of_previous_release.0.clone(),
+                            new_tag.clone(),
+                            &release_comparison,
+                            Some(Rc::clone(&build_localization_changes.changes)),
+                        );
+
+                        Some(release_localization_changes)
                     };
-
-                    console_log!(
-                        "combined_localization_changes.len() = {:?}",
-                        combined_localization_changes.len()
-                    );
-
-                    Some((
-                        last_version_of_previous_release.0.clone(),
-                        combined_localization_changes,
-                    ))
-                };
-
-                let localization_change_collection = LocalizationChangeCollection {
-                    build_changes: build_localization_changes,
-                    release_changes: release_localization_changes,
-                    are_release_changes_complete,
-                };
 
                 let post = post::Post::new(
                     platform,
                     old_tag.clone(),
                     new_tag.clone(),
                     commits,
-                    localization_change_collection,
+                    LocalizationChangeCollection {
+                        build_changes: build_localization_changes,
+                        release_changes: release_localization_changes,
+                    },
                 );
 
                 let post_number = post

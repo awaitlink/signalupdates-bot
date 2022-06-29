@@ -65,12 +65,7 @@ impl<'a> Post<'a> {
 
         let commits_word_suffix = if commits_count == 1 { "" } else { "s" };
 
-        let localization_changes_string = self.localization_change_collection.to_string(
-            platform,
-            &self.old_tag,
-            &self.new_tag,
-            mode,
-        );
+        let localization_changes_string = self.localization_change_collection.to_string(mode);
 
         format!(
             "## New Version: {new_version}{availability_notice}
@@ -146,7 +141,7 @@ mod tests {
 
     use super::*;
     use crate::{
-        localization::LocalizationChange,
+        localization::{LocalizationChange, LocalizationChanges},
         platform::Platform::{self, *},
     };
 
@@ -157,39 +152,66 @@ mod tests {
         }
     }
 
-    fn empty_localization_change_collection() -> LocalizationChangeCollection<'static> {
+    fn empty_localization_change_collection(
+        platform: Platform,
+        old_tag: &str,
+        new_tag: &str,
+    ) -> LocalizationChangeCollection<'static> {
         LocalizationChangeCollection {
-            build_changes: Rc::new(vec![]),
+            build_changes: LocalizationChanges {
+                platform,
+                old_tag: Tag {
+                    name: String::from(old_tag),
+                },
+                new_tag: Tag {
+                    name: String::from(new_tag),
+                },
+                complete: true,
+                changes: Rc::new(vec![]),
+            },
             release_changes: None,
-            are_release_changes_complete: true,
         }
     }
 
-    fn simple_localization_change_collection(
+    fn simple_android_localization_change_collection(
         are_release_changes_complete: bool,
     ) -> LocalizationChangeCollection<'static> {
         LocalizationChangeCollection {
-            build_changes: Rc::new(vec![
-                default_android_localization_change(),
-                default_android_localization_change(),
-            ]),
-            release_changes: Some((
-                Tag {
+            build_changes: LocalizationChanges {
+                platform: Android,
+                old_tag: Tag {
+                    name: String::from("v1.2.3"),
+                },
+                new_tag: Tag {
+                    name: String::from("v1.2.4"),
+                },
+                complete: true,
+                changes: Rc::new(vec![
+                    default_android_localization_change(),
+                    default_android_localization_change(),
+                ]),
+            },
+            release_changes: Some(LocalizationChanges {
+                platform: Android,
+                old_tag: Tag {
                     name: String::from("v1.1.5"),
                 },
-                Rc::new(vec![
+                new_tag: Tag {
+                    name: String::from("v1.2.4"),
+                },
+                complete: are_release_changes_complete,
+                changes: Rc::new(vec![
                     default_android_localization_change(),
                     default_android_localization_change(),
                     default_android_localization_change(),
                 ]),
-            )),
-            are_release_changes_complete,
+            }),
         }
     }
 
     #[test_case(Android, "v1.2.3", "v1.2.4", vec![
         Commit::new(Android, "Test commit.", "abcdef")
-    ], empty_localization_change_collection() => "## New Version: 1.2.4
+    ], empty_localization_change_collection(Android, "v1.2.3", "v1.2.4") => "## New Version: 1.2.4
 (Not Yet) Available via [Firebase App Distribution](https://community.signalusers.org/t/17538)
 [quote]
 1 new commit since 1.2.3:
@@ -202,7 +224,8 @@ Gathered from [signalapp/Signal-Android](https://github.com/signalapp/Signal-And
 [quote]
 Note: after clicking a link, it may take ~5-10s before GitHub jumps to the corresponding file.
 
-Compared to 1.2.3: *No localization changes found*
+### 0 changes compared to 1.2.3:
+*No localization changes found*
 
 Localization changes for the whole release are the same, as this is the first build of the release.
 [/quote]
@@ -210,7 +233,7 @@ Localization changes for the whole release are the same, as this is the first bu
     #[test_case(Android, "v1.2.3", "v1.2.4", vec![
         Commit::new(Android, "Test commit.", "abcdef"),
         Commit::new(Android, "Bump version to 1.2.4", "abc123")
-    ], empty_localization_change_collection() => "## New Version: 1.2.4
+    ], empty_localization_change_collection(Android, "v1.2.3", "v1.2.4") => "## New Version: 1.2.4
 (Not Yet) Available via [Firebase App Distribution](https://community.signalusers.org/t/17538)
 [quote]
 2 new commits since 1.2.3:
@@ -225,7 +248,8 @@ Gathered from [signalapp/Signal-Android](https://github.com/signalapp/Signal-And
 [quote]
 Note: after clicking a link, it may take ~5-10s before GitHub jumps to the corresponding file.
 
-Compared to 1.2.3: *No localization changes found*
+### 0 changes compared to 1.2.3:
+*No localization changes found*
 
 Localization changes for the whole release are the same, as this is the first build of the release.
 [/quote]
@@ -235,7 +259,7 @@ Localization changes for the whole release are the same, as this is the first bu
         .take(20)
         .chain(vec![Commit::new(Android, "Bump version to 1.2.4", "abc123")].iter().cloned())
         .collect(),
-    empty_localization_change_collection() => "## New Version: 1.2.4
+    empty_localization_change_collection(Android, "v1.2.3", "v1.2.4") => "## New Version: 1.2.4
 (Not Yet) Available via [Firebase App Distribution](https://community.signalusers.org/t/17538)
 [quote]
 21 new commits since 1.2.3:
@@ -290,14 +314,15 @@ Gathered from [signalapp/Signal-Android](https://github.com/signalapp/Signal-And
 [quote]
 Note: after clicking a link, it may take ~5-10s before GitHub jumps to the corresponding file.
 
-Compared to 1.2.3: *No localization changes found*
+### 0 changes compared to 1.2.3:
+*No localization changes found*
 
 Localization changes for the whole release are the same, as this is the first build of the release.
 [/quote]
 [/details]".to_string(); "Android: twenty one commits")]
     #[test_case(Desktop, "v1.2.3-beta.1", "v1.2.3-beta.2", vec![
         Commit::new(Desktop, "Test commit.", "abcdef")
-    ], empty_localization_change_collection() => "## New Version: 1.2.3-beta.2
+    ], empty_localization_change_collection(Desktop, "1.2.3-beta.1", "v1.2.3-beta.2") => "## New Version: 1.2.3-beta.2
 [quote]
 1 new commit since 1.2.3-beta.1:
 - Test commit. [[1]](https://github.com/signalapp/Signal-Desktop/commit/abcdef)
@@ -309,14 +334,15 @@ Gathered from [signalapp/Signal-Desktop](https://github.com/signalapp/Signal-Des
 [quote]
 Note: after clicking a link, it may take ~5-10s before GitHub jumps to the corresponding file.
 
-Compared to 1.2.3-beta.1: *No localization changes found*
+### 0 changes compared to 1.2.3-beta.1:
+*No localization changes found*
 
 Localization changes for the whole release are the same, as this is the first build of the release.
 [/quote]
 [/details]".to_string(); "Desktop: one commit")]
     #[test_case(Android, "v1.2.3", "v1.2.4", vec![
         Commit::new(Android, "Test commit.", "abcdef")
-    ], simple_localization_change_collection(true) => "## New Version: 1.2.4
+    ], simple_android_localization_change_collection(true) => "## New Version: 1.2.4
 (Not Yet) Available via [Firebase App Distribution](https://community.signalusers.org/t/17538)
 [quote]
 1 new commit since 1.2.3:
@@ -329,11 +355,11 @@ Gathered from [signalapp/Signal-Android](https://github.com/signalapp/Signal-And
 [quote]
 Note: after clicking a link, it may take ~5-10s before GitHub jumps to the corresponding file.
 
-Compared to 1.2.3:
+### 2 changes compared to 1.2.3:
 - [English (`en`)](https://github.com/signalapp/Signal-Android/compare/v1.2.3...v1.2.4#diff-5e01f7d37a66e4ca03deefc205d8e7008661cdd0284a05aaba1858e6b7bf9103)
 - [English (`en`)](https://github.com/signalapp/Signal-Android/compare/v1.2.3...v1.2.4#diff-5e01f7d37a66e4ca03deefc205d8e7008661cdd0284a05aaba1858e6b7bf9103)
 
-Compared to 1.1.5:
+### 3 changes compared to 1.1.5:
 - [English (`en`)](https://github.com/signalapp/Signal-Android/compare/v1.1.5...v1.2.4#diff-5e01f7d37a66e4ca03deefc205d8e7008661cdd0284a05aaba1858e6b7bf9103)
 - [English (`en`)](https://github.com/signalapp/Signal-Android/compare/v1.1.5...v1.2.4#diff-5e01f7d37a66e4ca03deefc205d8e7008661cdd0284a05aaba1858e6b7bf9103)
 - [English (`en`)](https://github.com/signalapp/Signal-Android/compare/v1.1.5...v1.2.4#diff-5e01f7d37a66e4ca03deefc205d8e7008661cdd0284a05aaba1858e6b7bf9103)
@@ -341,7 +367,7 @@ Compared to 1.1.5:
 [/details]".to_string(); "Android: one commit with localization changes")]
     #[test_case(Android, "v1.2.3", "v1.2.4", vec![
     Commit::new(Android, "Test commit.", "abcdef")
-], simple_localization_change_collection(false) => "## New Version: 1.2.4
+], simple_android_localization_change_collection(false) => "## New Version: 1.2.4
 (Not Yet) Available via [Firebase App Distribution](https://community.signalusers.org/t/17538)
 [quote]
 1 new commit since 1.2.3:
@@ -354,16 +380,15 @@ Gathered from [signalapp/Signal-Android](https://github.com/signalapp/Signal-And
 [quote]
 Note: after clicking a link, it may take ~5-10s before GitHub jumps to the corresponding file.
 
-Compared to 1.2.3:
+### 2 changes compared to 1.2.3:
 - [English (`en`)](https://github.com/signalapp/Signal-Android/compare/v1.2.3...v1.2.4#diff-5e01f7d37a66e4ca03deefc205d8e7008661cdd0284a05aaba1858e6b7bf9103)
 - [English (`en`)](https://github.com/signalapp/Signal-Android/compare/v1.2.3...v1.2.4#diff-5e01f7d37a66e4ca03deefc205d8e7008661cdd0284a05aaba1858e6b7bf9103)
 
-Compared to 1.1.5:
+### At least 3 changes compared to 1.1.5:
+**Note:** These changes may not include all languages (GitHub API likely did not return all files). You can view the full comparison to 1.1.5 so far [here](https://github.com/signalapp/Signal-Android/compare/v1.1.5...v1.2.4).
 - [English (`en`)](https://github.com/signalapp/Signal-Android/compare/v1.1.5...v1.2.4#diff-5e01f7d37a66e4ca03deefc205d8e7008661cdd0284a05aaba1858e6b7bf9103)
 - [English (`en`)](https://github.com/signalapp/Signal-Android/compare/v1.1.5...v1.2.4#diff-5e01f7d37a66e4ca03deefc205d8e7008661cdd0284a05aaba1858e6b7bf9103)
 - [English (`en`)](https://github.com/signalapp/Signal-Android/compare/v1.1.5...v1.2.4#diff-5e01f7d37a66e4ca03deefc205d8e7008661cdd0284a05aaba1858e6b7bf9103)
-
-**Note:** Localization changes for the whole release may not include all languages (GitHub API likely did not return all files). You can view the full comparison to 1.1.5 so far [on GitHub](https://github.com/signalapp/Signal-Android/compare/v1.1.5...v1.2.4).
 [/quote]
 [/details]".to_string(); "Android: one commit with localization changes, incomplete release")]
     fn post_markdown(

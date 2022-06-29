@@ -3,6 +3,7 @@ use std::fmt;
 use lazy_static::lazy_static;
 use regex::Regex;
 use semver::Version;
+use strum_macros::EnumIter;
 
 use crate::{
     localization::{Language, LocalizationChange},
@@ -11,7 +12,7 @@ use crate::{
 
 pub const ANDROID_DEFAULT_STRINGS_FILENAME: &str = "app/src/main/res/values/strings.xml";
 
-#[derive(Debug, Clone, Copy, strum_macros::EnumIter)]
+#[derive(Debug, Clone, Copy, EnumIter, PartialEq, Eq)]
 pub enum Platform {
     Android,
     Desktop,
