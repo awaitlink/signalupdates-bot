@@ -53,17 +53,24 @@ async fn check_all_platforms(env: &Env) -> anyhow::Result<()> {
     console_log!("loaded state from KV: {:?}", state_controller.state());
 
     for platform in Platform::iter() {
-        check_platform(&mut state_controller, env, platform).await?
+        let has_posted = check_platform(&mut state_controller, env, platform).await?;
+
+        if has_posted {
+            console_warn!("already posted for {platform} and currently doing only one post per invocation, done");
+            break;
+        }
     }
 
     Ok(())
 }
 
+/// Returns `Ok(true)` iff a new post has been successfully made, `Ok(false)`
+/// if no post was made, and `Err(...)` in case of an unexpected error.
 async fn check_platform(
     state_controller: &mut StateController,
     env: &Env,
     platform: Platform,
-) -> anyhow::Result<()> {
+) -> anyhow::Result<bool> {
     console_log!("checking platform = {platform}");
 
     let all_tags: Vec<types::github::Tag> =
@@ -92,11 +99,13 @@ async fn check_platform(
     console_log!("tags_to_post = {:?}", tags_to_post);
 
     if tags_to_post.len() <= 1 {
-        console_log!("latest version is already posted, finishing");
-        return Ok(());
+        console_log!("latest version is already posted");
+        return Ok(false);
     }
 
-    for [(old_tag, old_version), (new_tag, new_version)] in tags_to_post.array_windows() {
+    if let Some([(old_tag, old_version), (new_tag, new_version)]) =
+        tags_to_post.array_windows().next()
+    {
         console_log!(
             "looking at [old_tag: {:?}, new_tag: {:?}]",
             old_tag,
@@ -252,20 +261,15 @@ async fn check_platform(
                     "saved platform state to KV: {:?}",
                     state_controller.platform_state(platform)
                 );
+
+                return Ok(true);
             }
             None => {
-                console_warn!("no topic found, may be not created yet; not trying more tags");
-                break;
+                console_warn!("no topic found, may be not created yet");
+                return Ok(false);
             }
-        }
-
-        if tags_to_post.len() >= 3 {
-            console_warn!(
-                "currently doing only one post per platform per invocation, exiting loop"
-            );
-            break;
         }
     }
 
-    Ok(())
+    Ok(false)
 }
