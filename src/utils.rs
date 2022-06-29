@@ -54,11 +54,17 @@ pub async fn get_topic_id(
     let request = create_request(url, Method::Get, None, Some(api_key))?;
     let response: crate::types::discourse::TopicResponse = get_json_from_request(request).await?;
 
-    match response.post_stream.posts.first() {
-        Some(post) => Ok(Some(post.topic_id)),
+    match response.post_stream {
+        Some(post_stream) => match post_stream.posts.first() {
+            Some(post) => Ok(Some(post.topic_id)),
+            None => {
+                console_log!("no posts in topic");
+                Ok(None)
+            }
+        },
         None => {
-            console_log!("no posts in topic");
-            Ok(None)
+            console_log!("response = {:?}", response);
+            bail!("discourse API response did not include the post stream, request likely failed")
         }
     }
 }

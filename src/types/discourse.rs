@@ -14,7 +14,10 @@ pub struct PostApiResponse {
 
 #[derive(Deserialize, Debug)]
 pub struct TopicResponse {
-    pub post_stream: PostStream,
+    pub post_stream: Option<PostStream>,
+
+    #[serde(flatten)]
+    pub other_fields: HashMap<String, Value>,
 }
 
 #[derive(Deserialize, Debug)]
