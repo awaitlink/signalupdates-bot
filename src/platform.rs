@@ -48,7 +48,7 @@ impl Platform {
     pub fn github_comparison_url(&self, old: &str, new: &str, filename: Option<&str>) -> String {
         match filename {
             Some(filename) => format!(
-                "https://github.com/signalapp/Signal-{self}/compare/{old}...{new}#diff-{}",
+                "https://github.com/signalapp/Signal-{self}/compare/{old}..{new}#diff-{}", // note: using `..` instead of `...`
                 utils::sha256_string(filename)
             ),
             None => format!("https://github.com/signalapp/Signal-{self}/compare/{old}...{new}"),
