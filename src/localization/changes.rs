@@ -1,6 +1,6 @@
 use std::{fmt, rc::Rc};
 
-use worker::console_log;
+use worker::{console_log, console_warn};
 
 use super::LocalizationChange;
 use crate::{
@@ -42,7 +42,7 @@ impl<'a> LocalizationChanges<'a> {
         // https://docs.github.com/en/rest/commits/commits#compare-two-commits
         // saying that it always returns all.
         let changes = if comparison.files.as_ref().unwrap().len() == 300 {
-            console_log!("`comparison` has 300 files, likely incomplete");
+            console_warn!("`comparison` has 300 files, likely incomplete");
             complete = false;
 
             match if_incomplete_combine_with {

@@ -5,7 +5,9 @@ use std::rc::Rc;
 use anyhow::{anyhow, Context};
 use semver::Version;
 use strum::IntoEnumIterator;
-use worker::{console_error, console_log, event, Env, ScheduleContext, ScheduledEvent};
+use worker::{
+    console_error, console_log, console_warn, event, Env, ScheduleContext, ScheduledEvent,
+};
 
 mod localization;
 mod panic_hook;
@@ -104,7 +106,7 @@ async fn check_platform(
 
         let topic_id = match utils::topic_id_override(env)? {
             Some(id) => {
-                console_log!("using topic id override: {id}");
+                console_warn!("using topic id override: {id}");
                 Some(id)
             }
             None => utils::get_topic_id(&discourse_api_key, platform, new_version)
@@ -233,13 +235,15 @@ async fn check_platform(
                 );
             }
             None => {
-                console_log!("no topic found, may be not created yet; not trying more tags");
+                console_warn!("no topic found, may be not created yet; not trying more tags");
                 break;
             }
         }
 
         if tags_to_post.len() >= 3 {
-            console_log!("currently doing only one post per platform per invocation, exiting loop");
+            console_warn!(
+                "currently doing only one post per platform per invocation, exiting loop"
+            );
             break;
         }
     }

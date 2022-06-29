@@ -1,7 +1,7 @@
 use anyhow::{bail, Context};
 use serde_json::json;
 use strum::IntoEnumIterator;
-use worker::{console_log, Method, Url};
+use worker::{console_error, console_log, console_warn, Method, Url};
 
 use crate::{
     localization::{LocalizationChangeCollection, RenderMode},
@@ -96,7 +96,7 @@ Gathered from [signalapp/Signal-{platform}]({comparison_url})
             console_log!("text.len() = {}", text.len());
 
             if text.len() > 32_000 {
-                console_log!("text is likely too long to post");
+                console_warn!("text is likely too long to post");
                 post_markdown = None;
             } else {
                 post_markdown = Some(text);
@@ -124,7 +124,7 @@ Gathered from [signalapp/Signal-{platform}]({comparison_url})
         match api_response.post_number {
             Some(number) => Ok(number),
             None => {
-                console_log!("api_response = {:?}", api_response);
+                console_error!("api_response = {:?}", api_response);
                 bail!(
                     "discourse API response did not include the post number, posting likely failed"
                 )

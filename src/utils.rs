@@ -4,8 +4,8 @@ use serde::de::DeserializeOwned;
 use serde_json::Value;
 use sha2::{Digest, Sha256};
 use worker::{
-    console_log, wasm_bindgen::JsValue, Env, Fetch, Headers, Method, Request, RequestInit,
-    Response, Url,
+    console_error, console_log, console_warn, wasm_bindgen::JsValue, Env, Fetch, Headers, Method,
+    Request, RequestInit, Response, Url,
 };
 
 use crate::{platform::Platform, types::github::Comparison};
@@ -58,12 +58,12 @@ pub async fn get_topic_id(
         Some(post_stream) => match post_stream.posts.first() {
             Some(post) => Ok(Some(post.topic_id)),
             None => {
-                console_log!("no posts in topic");
+                console_warn!("no posts in topic");
                 Ok(None)
             }
         },
         None => {
-            console_log!("response = {:?}", response);
+            console_error!("response = {:?}", response);
             bail!("discourse API response did not include the post stream, request likely failed")
         }
     }
