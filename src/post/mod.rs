@@ -16,8 +16,8 @@ pub use commit::Commit;
 #[derive(Debug)]
 pub struct Post<'a> {
     platform: Platform,
-    old_tag: Tag,
-    new_tag: Tag,
+    old_tag: &'a Tag,
+    new_tag: &'a Tag,
     commits: Vec<Commit<'a>>,
     localization_change_collection: LocalizationChangeCollection<'a>,
 }
@@ -25,8 +25,8 @@ pub struct Post<'a> {
 impl<'a> Post<'a> {
     pub fn new(
         platform: Platform,
-        old_tag: Tag,
-        new_tag: Tag,
+        old_tag: &'a Tag,
+        new_tag: &'a Tag,
         commits: Vec<Commit<'a>>,
         localization_change_collection: LocalizationChangeCollection<'a>,
     ) -> Self {
@@ -152,66 +152,9 @@ mod tests {
         }
     }
 
-    fn empty_localization_change_collection(
-        platform: Platform,
-        old_tag: &str,
-        new_tag: &str,
-    ) -> LocalizationChangeCollection<'static> {
-        LocalizationChangeCollection {
-            build_changes: LocalizationChanges {
-                platform,
-                old_tag: Tag {
-                    name: String::from(old_tag),
-                },
-                new_tag: Tag {
-                    name: String::from(new_tag),
-                },
-                complete: true,
-                changes: Rc::new(vec![]),
-            },
-            release_changes: None,
-        }
-    }
-
-    fn simple_android_localization_change_collection(
-        are_release_changes_complete: bool,
-    ) -> LocalizationChangeCollection<'static> {
-        LocalizationChangeCollection {
-            build_changes: LocalizationChanges {
-                platform: Android,
-                old_tag: Tag {
-                    name: String::from("v1.2.3"),
-                },
-                new_tag: Tag {
-                    name: String::from("v1.2.4"),
-                },
-                complete: true,
-                changes: Rc::new(vec![
-                    default_android_localization_change(),
-                    default_android_localization_change(),
-                ]),
-            },
-            release_changes: Some(LocalizationChanges {
-                platform: Android,
-                old_tag: Tag {
-                    name: String::from("v1.1.5"),
-                },
-                new_tag: Tag {
-                    name: String::from("v1.2.4"),
-                },
-                complete: are_release_changes_complete,
-                changes: Rc::new(vec![
-                    default_android_localization_change(),
-                    default_android_localization_change(),
-                    default_android_localization_change(),
-                ]),
-            }),
-        }
-    }
-
     #[test_case(Android, "v1.2.3", "v1.2.4", vec![
         Commit::new(Android, "Test commit.", "abcdef")
-    ], empty_localization_change_collection(Android, "v1.2.3", "v1.2.4") => "## New Version: 1.2.4
+    ], None => "## New Version: 1.2.4
 (Not Yet) Available via [Firebase App Distribution](https://community.signalusers.org/t/17538)
 [quote]
 1 new commit since 1.2.3:
@@ -233,7 +176,7 @@ Localization changes for the whole release are the same, as this is the first bu
     #[test_case(Android, "v1.2.3", "v1.2.4", vec![
         Commit::new(Android, "Test commit.", "abcdef"),
         Commit::new(Android, "Bump version to 1.2.4", "abc123")
-    ], empty_localization_change_collection(Android, "v1.2.3", "v1.2.4") => "## New Version: 1.2.4
+    ], None => "## New Version: 1.2.4
 (Not Yet) Available via [Firebase App Distribution](https://community.signalusers.org/t/17538)
 [quote]
 2 new commits since 1.2.3:
@@ -259,7 +202,7 @@ Localization changes for the whole release are the same, as this is the first bu
         .take(20)
         .chain(vec![Commit::new(Android, "Bump version to 1.2.4", "abc123")].iter().cloned())
         .collect(),
-    empty_localization_change_collection(Android, "v1.2.3", "v1.2.4") => "## New Version: 1.2.4
+    None => "## New Version: 1.2.4
 (Not Yet) Available via [Firebase App Distribution](https://community.signalusers.org/t/17538)
 [quote]
 21 new commits since 1.2.3:
@@ -322,7 +265,7 @@ Localization changes for the whole release are the same, as this is the first bu
 [/details]".to_string(); "Android: twenty one commits")]
     #[test_case(Desktop, "v1.2.3-beta.1", "v1.2.3-beta.2", vec![
         Commit::new(Desktop, "Test commit.", "abcdef")
-    ], empty_localization_change_collection(Desktop, "1.2.3-beta.1", "v1.2.3-beta.2") => "## New Version: 1.2.3-beta.2
+    ], None => "## New Version: 1.2.3-beta.2
 [quote]
 1 new commit since 1.2.3-beta.1:
 - Test commit. [[1]](https://github.com/signalapp/Signal-Desktop/commit/abcdef)
@@ -342,7 +285,7 @@ Localization changes for the whole release are the same, as this is the first bu
 [/details]".to_string(); "Desktop: one commit")]
     #[test_case(Android, "v1.2.3", "v1.2.4", vec![
         Commit::new(Android, "Test commit.", "abcdef")
-    ], simple_android_localization_change_collection(true) => "## New Version: 1.2.4
+    ], Some(true) => "## New Version: 1.2.4
 (Not Yet) Available via [Firebase App Distribution](https://community.signalusers.org/t/17538)
 [quote]
 1 new commit since 1.2.3:
@@ -367,7 +310,7 @@ Note: after clicking a link, it may take ~5-10s before GitHub jumps to the corre
 [/details]".to_string(); "Android: one commit with localization changes")]
     #[test_case(Android, "v1.2.3", "v1.2.4", vec![
     Commit::new(Android, "Test commit.", "abcdef")
-], simple_android_localization_change_collection(false) => "## New Version: 1.2.4
+    ], Some(false) => "## New Version: 1.2.4
 (Not Yet) Available via [Firebase App Distribution](https://community.signalusers.org/t/17538)
 [quote]
 1 new commit since 1.2.3:
@@ -396,16 +339,52 @@ Note: after clicking a link, it may take ~5-10s before GitHub jumps to the corre
         old_tag: &str,
         new_tag: &str,
         commits: Vec<Commit>,
-        localization_change_collection: LocalizationChangeCollection,
+        localization_change_collection: Option<bool>,
     ) -> String {
+        let older_tag = Tag::new("v1.1.5");
+        let old_tag = Tag::new(old_tag);
+        let new_tag = Tag::new(new_tag);
+
+        let localization_change_collection = match localization_change_collection {
+            Some(are_release_changes_complete) => LocalizationChangeCollection {
+                build_changes: LocalizationChanges {
+                    platform: Android,
+                    old_tag: &old_tag,
+                    new_tag: &new_tag,
+                    complete: true,
+                    changes: Rc::new(vec![
+                        default_android_localization_change(),
+                        default_android_localization_change(),
+                    ]),
+                },
+                release_changes: Some(LocalizationChanges {
+                    platform: Android,
+                    old_tag: &older_tag,
+                    new_tag: &new_tag,
+                    complete: are_release_changes_complete,
+                    changes: Rc::new(vec![
+                        default_android_localization_change(),
+                        default_android_localization_change(),
+                        default_android_localization_change(),
+                    ]),
+                }),
+            },
+            None => LocalizationChangeCollection {
+                build_changes: LocalizationChanges {
+                    platform,
+                    old_tag: &old_tag,
+                    new_tag: &new_tag,
+                    complete: true,
+                    changes: Rc::new(vec![]),
+                },
+                release_changes: None,
+            },
+        };
+
         let post = Post::new(
             platform,
-            Tag {
-                name: String::from(old_tag),
-            },
-            Tag {
-                name: String::from(new_tag),
-            },
+            &old_tag,
+            &new_tag,
             commits,
             localization_change_collection,
         );

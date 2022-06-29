@@ -28,6 +28,10 @@ impl TryFrom<&Tag> for Version {
 }
 
 impl Tag {
+    pub fn new(name: impl Into<String>) -> Self {
+        Self { name: name.into() }
+    }
+
     pub fn exact_version_string(&self) -> String {
         self.name.replace('v', "")
     }

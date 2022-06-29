@@ -11,8 +11,8 @@ use crate::{
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct LocalizationChanges<'a> {
     pub platform: Platform,
-    pub old_tag: Tag,
-    pub new_tag: Tag,
+    pub old_tag: &'a Tag,
+    pub new_tag: &'a Tag,
     pub complete: bool,
     pub changes: Rc<Vec<LocalizationChange<'a>>>,
 }
@@ -21,8 +21,8 @@ impl<'a> LocalizationChanges<'a> {
     /// Note: assumes `if_incomplete_combine_with` is sorted.
     pub fn from_comparison(
         platform: &'a Platform,
-        old_tag: Tag,
-        new_tag: Tag,
+        old_tag: &'a Tag,
+        new_tag: &'a Tag,
         comparison: &'a Comparison,
         if_incomplete_combine_with: Option<Rc<Vec<LocalizationChange<'a>>>>,
     ) -> LocalizationChanges<'a> {

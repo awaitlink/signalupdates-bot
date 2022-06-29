@@ -156,8 +156,8 @@ async fn check_platform(
 
                 let build_localization_changes = LocalizationChanges::from_comparison(
                     &platform,
-                    old_tag.clone(),
-                    new_tag.clone(),
+                    old_tag,
+                    new_tag,
                     &comparison,
                     None,
                 );
@@ -194,8 +194,8 @@ async fn check_platform(
 
                         let release_localization_changes = LocalizationChanges::from_comparison(
                             &platform,
-                            last_version_of_previous_release.0.clone(),
-                            new_tag.clone(),
+                            &last_version_of_previous_release.0,
+                            new_tag,
                             &release_comparison,
                             Some(Rc::clone(&build_localization_changes.changes)),
                         );
@@ -205,8 +205,8 @@ async fn check_platform(
 
                 let post = post::Post::new(
                     platform,
-                    old_tag.clone(),
-                    new_tag.clone(),
+                    old_tag,
+                    new_tag,
                     commits,
                     LocalizationChangeCollection {
                         build_changes: build_localization_changes,
