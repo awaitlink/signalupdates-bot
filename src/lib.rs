@@ -17,7 +17,9 @@ mod state;
 mod types;
 mod utils;
 
-use localization::{LocalizationChangeCollection, LocalizationChanges};
+use localization::{
+    Language, LocalizationChange, LocalizationChangeCollection, LocalizationChanges,
+};
 use platform::Platform;
 use state::StateController;
 use utils::GitHubComparisonKind::*;
@@ -124,9 +126,11 @@ async fn check_platform(
                     .clone()
                     .try_into()?;
 
-                let reply_to_post_number = if last_posted_version.major == new_version.major
-                    && last_posted_version.minor == new_version.minor
-                {
+                let same_release = last_posted_version.major == new_version.major
+                    && last_posted_version.minor == new_version.minor;
+                console_log!("same_release = {}", same_release);
+
+                let reply_to_post_number = if same_release {
                     state_controller.platform_state(platform).last_post_number
                 } else {
                     None
@@ -176,32 +180,52 @@ async fn check_platform(
                     last_version_of_previous_release
                 );
 
-                let release_comparison: types::github::Comparison;
+                let localization_change_codes_complete = build_localization_changes.complete
+                    && (!same_release
+                        || state_controller
+                            .platform_state(platform)
+                            .localization_change_codes_complete);
+
                 let release_localization_changes =
                     if &last_version_of_previous_release.1 == old_version {
                         None
-                    } else {
-                        release_comparison = utils::get_github_comparison(
-                            JustAllFiles,
+                    } else if same_release {
+                        let mut changes: Vec<_> = state_controller
+                            .platform_state(platform)
+                            .localization_change_codes
+                            .iter()
+                            .map(|code| LocalizationChange {
+                                language: Language::from_code(code).unwrap(),
+                                filename: platform.filename_for_language_code(code),
+                            })
+                            .chain(build_localization_changes.changes.iter().cloned())
+                            .collect();
+
+                        changes.sort_unstable();
+
+                        let release_localization_changes = LocalizationChanges {
                             platform,
-                            &last_version_of_previous_release.0.name,
-                            &new_tag.name,
-                        )
-                        .await
-                        .context("could not get release comparison from GitHub")?;
-
-                        console_log!("release_comparison = {:?}", release_comparison);
-
-                        let release_localization_changes = LocalizationChanges::from_comparison(
-                            &platform,
-                            &last_version_of_previous_release.0,
+                            old_tag: &last_version_of_previous_release.0,
                             new_tag,
-                            &release_comparison,
-                            Some(Rc::clone(&build_localization_changes.changes)),
-                        );
+                            complete: localization_change_codes_complete,
+                            changes: Rc::new(changes),
+                        };
 
                         Some(release_localization_changes)
+                    } else {
+                        Some(build_localization_changes.clone())
                     };
+
+                let localization_change_codes = release_localization_changes
+                    .as_ref()
+                    .map(|changes| {
+                        changes
+                            .changes
+                            .iter()
+                            .map(|change| change.language.language_code.clone())
+                            .collect()
+                    })
+                    .unwrap_or_else(Vec::new);
 
                 let post = post::Post::new(
                     platform,
@@ -224,7 +248,12 @@ async fn check_platform(
                 state_controller
                     .set_platform_state(
                         platform,
-                        state::PlatformState::new(new_tag.clone(), Some(post_number)),
+                        state::PlatformState::new(
+                            new_tag.clone(),
+                            Some(post_number),
+                            localization_change_codes,
+                            localization_change_codes_complete,
+                        ),
                     )
                     .await
                     .context("could not set platform state")?;

@@ -14,7 +14,7 @@ pub struct LocalizationChanges<'a> {
     pub old_tag: &'a Tag,
     pub new_tag: &'a Tag,
     pub complete: bool,
-    pub changes: Rc<Vec<LocalizationChange<'a>>>,
+    pub changes: Rc<Vec<LocalizationChange>>,
 }
 
 impl<'a> LocalizationChanges<'a> {
@@ -24,7 +24,7 @@ impl<'a> LocalizationChanges<'a> {
         old_tag: &'a Tag,
         new_tag: &'a Tag,
         comparison: &'a Comparison,
-        if_incomplete_combine_with: Option<Rc<Vec<LocalizationChange<'a>>>>,
+        if_incomplete_combine_with: Option<Rc<Vec<LocalizationChange>>>,
     ) -> LocalizationChanges<'a> {
         let mut complete = true;
 
@@ -106,7 +106,7 @@ impl<'a> LocalizationChanges<'a> {
                     self.platform.github_comparison_url(
                         &self.old_tag.name,
                         &self.new_tag.name,
-                        Some(change.filename)
+                        Some(&change.filename)
                     )
                 )
             })

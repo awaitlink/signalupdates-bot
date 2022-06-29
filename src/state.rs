@@ -21,13 +21,25 @@ pub struct State {
 pub struct PlatformState {
     pub last_posted_tag: Tag,
     pub last_post_number: Option<u64>,
+
+    #[serde(default)]
+    pub localization_change_codes: Vec<String>,
+    #[serde(default)]
+    pub localization_change_codes_complete: bool,
 }
 
 impl PlatformState {
-    pub fn new(last_posted_tag: Tag, last_post_number: Option<u64>) -> Self {
+    pub fn new(
+        last_posted_tag: Tag,
+        last_post_number: Option<u64>,
+        localization_change_codes: Vec<String>,
+        localization_change_codes_complete: bool,
+    ) -> Self {
         Self {
             last_posted_tag,
             last_post_number,
+            localization_change_codes,
+            localization_change_codes_complete,
         }
     }
 }

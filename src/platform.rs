@@ -73,6 +73,20 @@ impl Platform {
         )
     }
 
+    /// Expects `code` in `aa-BB` format only.
+    pub fn filename_for_language_code(&self, code: &str) -> String {
+        match self {
+            Android => match code {
+                "en" => ANDROID_DEFAULT_STRINGS_FILENAME.to_owned(),
+                _ => format!(
+                    "app/src/main/res/values-{}/strings.xml",
+                    code.replace('-', "-r")
+                ),
+            },
+            Desktop => format!("_locales/{}/messages.json", code.replace('-', "_")),
+        }
+    }
+
     pub fn localization_change<'a>(&'a self, filename: &'a str) -> Option<LocalizationChange> {
         lazy_static! {
             static ref ANDROID_REGEX: Regex =
@@ -85,10 +99,7 @@ impl Platform {
         let captures_iter = match self {
             Android => {
                 if filename == ANDROID_DEFAULT_STRINGS_FILENAME {
-                    return Some(LocalizationChange {
-                        language: Language::default(),
-                        filename: ANDROID_DEFAULT_STRINGS_FILENAME,
-                    });
+                    return Some(LocalizationChange::default_for_android());
                 }
 
                 ANDROID_REGEX.captures_iter(filename)
@@ -100,7 +111,10 @@ impl Platform {
             .filter_map(|captures| captures.get(1))
             .map(|capture| capture.as_str())
             .find_map(Language::from_code)
-            .map(|language| LocalizationChange { language, filename })
+            .map(|language| LocalizationChange {
+                language,
+                filename: filename.to_owned(),
+            })
     }
 }
 
@@ -122,6 +136,14 @@ mod tests {
     use test_case::test_case;
 
     use super::*;
+
+    #[test_case(Android, "en", "app/src/main/res/values/strings.xml"; "Android: en")]
+    #[test_case(Android, "en-US", "app/src/main/res/values-en-rUS/strings.xml"; "Android: en dash US")]
+    #[test_case(Desktop, "en", "_locales/en/messages.json"; "Desktop: en")]
+    #[test_case(Desktop, "en-US", "_locales/en_US/messages.json"; "Desktop: en dash US")]
+    fn filename_for_language_code(platform: Platform, code: &str, result: &str) {
+        assert_eq!(platform.filename_for_language_code(code), result);
+    }
 
     #[test_case(Android, "app/src/main/res/values/strings.xml", "English (`en`)"; "Android: en")]
     #[test_case(Android, "app/src/main/res/values-kab/strings.xml", "Kabyle (`kab`)"; "Android: kab")]

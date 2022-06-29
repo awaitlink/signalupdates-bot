@@ -1,17 +1,16 @@
 use super::Language;
 
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
-pub struct LocalizationChange<'a> {
+pub struct LocalizationChange {
     pub language: Language,
-    pub filename: &'a str,
+    pub filename: String,
 }
 
-impl LocalizationChange<'_> {
-    #[cfg(test)]
-    pub fn default_for_android() -> LocalizationChange<'static> {
+impl LocalizationChange {
+    pub fn default_for_android() -> LocalizationChange {
         LocalizationChange {
             language: Default::default(),
-            filename: crate::platform::ANDROID_DEFAULT_STRINGS_FILENAME,
+            filename: crate::platform::ANDROID_DEFAULT_STRINGS_FILENAME.to_owned(),
         }
     }
 }
