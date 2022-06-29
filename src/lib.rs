@@ -239,7 +239,7 @@ async fn check_platform(
         }
 
         if tags_to_post.len() >= 3 {
-            console_log!("currently doing only one post per invocation, exiting loop");
+            console_log!("currently doing only one post per platform per invocation, exiting loop");
             break;
         }
     }
