@@ -136,32 +136,16 @@ pub fn create_request(
         .context("could not create request")
 }
 
-#[derive(Debug)]
-pub enum GitHubComparisonKind {
-    /// Full comparison including all commits and files.
-    Full,
-    /// A comparison that only includes 1 commit, but includes all files.
-    /// `total_commits` still indicates the total number of commits in the comparison.
-    JustAllFiles,
-}
-
-use GitHubComparisonKind::*;
-
 pub async fn get_github_comparison(
-    kind: GitHubComparisonKind,
     platform: Platform,
     old_tag: &str,
     new_tag: &str,
 ) -> anyhow::Result<Comparison> {
-    console_log!("getting comparison kind = {kind:?}");
+    console_log!("getting full comparison");
 
     let mut page = 1;
-    let per_page = match kind {
-        Full => 100,
-        JustAllFiles => 1,
-    };
 
-    let mut url_string = platform.github_api_comparison_url(old_tag, new_tag, page, per_page);
+    let mut url_string = platform.github_api_comparison_url(old_tag, new_tag, page, 100);
 
     let mut total_commits;
     let mut commits = vec![];
@@ -187,13 +171,6 @@ pub async fn get_github_comparison(
             files.append(part_files);
         }
 
-        if let JustAllFiles = kind {
-            // All files are on the first page according to
-            // https://docs.github.com/en/rest/commits/commits#compare-two-commits
-            console_log!("just all files were requested, which are all on the first page, done");
-            break;
-        }
-
         let link_header_string = response
             .headers()
             .get("Link")
@@ -214,14 +191,12 @@ pub async fn get_github_comparison(
         }
     }
 
-    if let Full = kind {
-        if total_commits != commits.len() {
-            bail!(
-                "incomplete full comparison: total_commits = {total_commits} but commits.len() = {}, commits = {commits:?}",
-                commits.len()
-            )
-        };
-    }
+    if total_commits != commits.len() {
+        bail!(
+            "incomplete full comparison: total_commits = {total_commits} but commits.len() = {}, commits = {commits:?}",
+            commits.len()
+        )
+    };
 
     Ok(Comparison {
         total_commits,

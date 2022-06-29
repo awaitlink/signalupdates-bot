@@ -22,7 +22,6 @@ use localization::{
 };
 use platform::Platform;
 use state::StateController;
-use utils::GitHubComparisonKind::*;
 
 // Used for debugging, to manually trigger the bot outside of schedule.
 #[event(fetch)]
@@ -138,7 +137,7 @@ async fn check_platform(
                 console_log!("reply_to_post_number = {:?}", reply_to_post_number);
 
                 let comparison =
-                    utils::get_github_comparison(Full, platform, &old_tag.name, &new_tag.name)
+                    utils::get_github_comparison(platform, &old_tag.name, &new_tag.name)
                         .await
                         .context("could not get build comparison from GitHub")?;
 
