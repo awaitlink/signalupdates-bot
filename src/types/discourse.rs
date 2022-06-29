@@ -16,6 +16,8 @@ pub struct PostApiResponse {
 pub struct TopicResponse {
     pub post_stream: Option<PostStream>,
 
+    pub error_type: Option<String>,
+
     #[serde(flatten)]
     pub other_fields: HashMap<String, Value>,
 }
