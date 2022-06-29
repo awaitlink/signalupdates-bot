@@ -66,7 +66,7 @@ mod tests {
     #[test_case(Android, "Revert \"Test commit\".\nThis reverts commit fedcba.", "abcdef" => "- Revert \"Test commit\". [[1]](https://github.com/signalapp/Signal-Android/commit/abcdef)\n".to_string(); "Android: This reverts commit is removed")]
     #[test_case(Desktop, "Test commit.", "abcdef" => "- Test commit. [[1]](https://github.com/signalapp/Signal-Desktop/commit/abcdef)\n".to_string(); "Desktop: one line")]
     #[test_case(Desktop, "Test commit. Test @mention!\nTest@mention2.", "abcdef" => "- Test commit. Test `@mention`! [[1]](https://github.com/signalapp/Signal-Desktop/commit/abcdef)\n\n    Test`@mention2`.".to_string(); "Desktop: two lines with mention")]
-    fn commit_markdown<'a>(platform: Platform, full_message: &str, sha: &str) -> String {
-        Commit::new(platform, full_message.into(), sha.into()).markdown_text(1)
+    fn commit_markdown(platform: Platform, full_message: &str, sha: &str) -> String {
+        Commit::new(platform, full_message, sha).markdown_text(1)
     }
 }
