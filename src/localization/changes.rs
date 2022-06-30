@@ -18,14 +18,14 @@ pub struct LocalizationChanges<'a> {
 }
 
 impl<'a> LocalizationChanges<'a> {
-    /// Note: assumes `comparison.files` doesn't contain duplicates.
+    /// Note: assumes `comparison.files` is not `None` and doesn't contain duplicates.
     pub fn from_comparison(
         platform: &'a Platform,
         old_tag: &'a Tag,
         new_tag: &'a Tag,
         comparison: &'a Comparison,
     ) -> LocalizationChanges<'a> {
-        let complete = comparison.are_files_likely_complete();
+        let complete = comparison.are_files_likely_complete().unwrap();
         console_log!("complete = {}", complete);
 
         let mut changes = comparison

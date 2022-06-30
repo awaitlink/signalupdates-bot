@@ -52,8 +52,12 @@ impl Comparison {
 
     /// Indicates whether `files` in this comparison is likely complete or not.
     /// (see also [`GITHUB_API_MAX_FILES`]).
-    pub fn are_files_likely_complete(&self) -> bool {
-        self.files.as_ref().unwrap().len() != Self::GITHUB_API_MAX_FILES
+    ///
+    /// Returns `None` if `self.files` is `None`.
+    pub fn are_files_likely_complete(&self) -> Option<bool> {
+        self.files
+            .as_ref()
+            .map(|files| files.len() != Self::GITHUB_API_MAX_FILES)
     }
 }
 
