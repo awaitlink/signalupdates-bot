@@ -170,6 +170,11 @@ async fn check_platform(
                         })
                         .collect();
 
+                    console_log!(
+                        "localization_change_commits = {:?}",
+                        localization_change_commits
+                    );
+
                     if !localization_change_commits.is_empty() {
                         let mut all_complete = true;
 
