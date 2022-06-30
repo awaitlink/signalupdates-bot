@@ -1,3 +1,5 @@
+use std::collections::HashMap;
+
 use anyhow::{bail, Context};
 use serde_json::json;
 use strum::IntoEnumIterator;
@@ -11,7 +13,9 @@ use crate::{
 };
 
 mod commit;
+
 pub use commit::Commit;
+use commit::CommitStatus;
 
 #[derive(Debug)]
 pub struct Post<'a> {
@@ -40,10 +44,43 @@ impl<'a> Post<'a> {
     }
 
     fn commits_markdown(&self) -> String {
+        let mut map = HashMap::new();
+
+        for commit in self.commits.iter() {
+            if let Some(sha) = commit.reverted_commit_sha() {
+                map.insert(sha, commit.sha());
+            }
+        }
+
+        let reverse_map: HashMap<_, _> = map
+            .iter()
+            .map(|(reverted, reverted_by)| (reverted_by, reverted))
+            .collect();
+
+        let commit_numbers: HashMap<&str, usize> =
+            self.commits.iter().map(Commit::sha).zip(1..).collect();
+
         self.commits
             .iter()
-            .enumerate()
-            .map(|(index, commit)| commit.markdown_text(index + 1))
+            .zip(1..)
+            .map(|(commit, number)| {
+                commit.markdown_text(
+                    number,
+                    match (map.get(commit.sha()), reverse_map.get(&commit.sha())) {
+                        (Some(reverted_by), Some(&reverted)) => CommitStatus::Both {
+                            reverts: commit_numbers[reverted],
+                            is_reverted_by: commit_numbers[reverted_by],
+                        },
+                        (Some(other_sha), None) => {
+                            CommitStatus::IsRevertedBy(commit_numbers[other_sha])
+                        }
+                        (None, Some(&other_sha)) => {
+                            CommitStatus::Reverts(commit_numbers[other_sha])
+                        }
+                        (None, None) => CommitStatus::Normal,
+                    },
+                )
+            })
             .collect::<Vec<_>>()
             .join("\n")
     }
@@ -135,6 +172,7 @@ Gathered from [signalapp/Signal-{platform}]({comparison_url})
 
 #[cfg(test)]
 mod tests {
+    use pretty_assertions::assert_str_eq;
     use test_case::test_case;
 
     use super::*;
@@ -145,7 +183,7 @@ mod tests {
 
     #[test_case(Android, "v1.2.3", "v1.2.4", vec![
         Commit::new(Android, "Test commit.", "abcdef")
-    ], None => "## New Version: 1.2.4
+    ], None, "## New Version: 1.2.4
 (Not Yet) Available via [Firebase App Distribution](https://community.signalusers.org/t/17538)
 [quote]
 1 new commit since 1.2.3:
@@ -163,11 +201,11 @@ Note: after clicking a link, it may take ~5-10s before GitHub jumps to the corre
 
 Localization changes for the whole release are the same, as this is the first build of the release.
 [/quote]
-[/details]".to_string(); "Android: one commit")]
+[/details]"; "Android: one commit")]
     #[test_case(Android, "v1.2.3", "v1.2.4", vec![
         Commit::new(Android, "Test commit.", "abcdef"),
         Commit::new(Android, "Bump version to 1.2.4", "abc123")
-    ], None => "## New Version: 1.2.4
+    ], None, "## New Version: 1.2.4
 (Not Yet) Available via [Firebase App Distribution](https://community.signalusers.org/t/17538)
 [quote]
 2 new commits since 1.2.3:
@@ -187,13 +225,43 @@ Note: after clicking a link, it may take ~5-10s before GitHub jumps to the corre
 
 Localization changes for the whole release are the same, as this is the first build of the release.
 [/quote]
-[/details]".to_string(); "Android: two commits")]
+[/details]"; "Android: two commits")]
+    #[test_case(Android, "v1.2.3", "v1.2.4", vec![
+        Commit::new(Android, "Test commit.", "abc111"),
+        Commit::new(Android, "Revert \"Test commit.\".\nThis reverts commit abc111.", "abc222"),
+        Commit::new(Android, "Revert \"Revert \"Test commit.\".\".\nThis reverts commit abc222.", "abc333"),
+        Commit::new(Android, "Test commit 2.", "abc444"),
+    ], None, "## New Version: 1.2.4
+(Not Yet) Available via [Firebase App Distribution](https://community.signalusers.org/t/17538)
+[quote]
+4 new commits since 1.2.3:
+- <del>Test commit. [[1]](https://github.com/signalapp/Signal-Android/commit/abc111)</del> (reverted by [2])
+
+- <del>Revert \"Test commit.\". [[2]](https://github.com/signalapp/Signal-Android/commit/abc222)</del> (reverts [1], reverted by [3])
+
+- <ins>Revert \"Revert \"Test commit.\".\". [[3]](https://github.com/signalapp/Signal-Android/commit/abc333)</ins> (reverts [2])
+
+- Test commit 2. [[4]](https://github.com/signalapp/Signal-Android/commit/abc444)
+
+---
+Gathered from [signalapp/Signal-Android](https://github.com/signalapp/Signal-Android/compare/v1.2.3...v1.2.4)
+[/quote]
+[details=\"Localization changes\"]
+[quote]
+Note: after clicking a link, it may take ~5-10s before GitHub jumps to the corresponding file.
+
+#### 0 changes since 1.2.3:
+*No localization changes found*
+
+Localization changes for the whole release are the same, as this is the first build of the release.
+[/quote]
+[/details]"; "Android: four commits with reverts")]
     #[test_case(Android, "v1.2.3", "v1.2.4",
     std::iter::repeat(Commit::new(Android, "Test commit.", "abcdef"))
         .take(20)
         .chain(vec![Commit::new(Android, "Bump version to 1.2.4", "abc123")].iter().cloned())
         .collect(),
-    None => "## New Version: 1.2.4
+    None, "## New Version: 1.2.4
 (Not Yet) Available via [Firebase App Distribution](https://community.signalusers.org/t/17538)
 [quote]
 21 new commits since 1.2.3:
@@ -253,10 +321,10 @@ Note: after clicking a link, it may take ~5-10s before GitHub jumps to the corre
 
 Localization changes for the whole release are the same, as this is the first build of the release.
 [/quote]
-[/details]".to_string(); "Android: twenty one commits")]
+[/details]"; "Android: twenty one commits")]
     #[test_case(Desktop, "v1.2.3-beta.1", "v1.2.3-beta.2", vec![
         Commit::new(Desktop, "Test commit.", "abcdef")
-    ], None => "## New Version: 1.2.3-beta.2
+    ], None, "## New Version: 1.2.3-beta.2
 [quote]
 1 new commit since 1.2.3-beta.1:
 - Test commit. [[1]](https://github.com/signalapp/Signal-Desktop/commit/abcdef)
@@ -273,10 +341,10 @@ Note: after clicking a link, it may take ~5-10s before GitHub jumps to the corre
 
 Localization changes for the whole release are the same, as this is the first build of the release.
 [/quote]
-[/details]".to_string(); "Desktop: one commit")]
+[/details]"; "Desktop: one commit")]
     #[test_case(Android, "v1.2.3", "v1.2.4", vec![
         Commit::new(Android, "Test commit.", "abcdef")
-    ], Some(true) => "## New Version: 1.2.4
+    ], Some(true), "## New Version: 1.2.4
 (Not Yet) Available via [Firebase App Distribution](https://community.signalusers.org/t/17538)
 [quote]
 1 new commit since 1.2.3:
@@ -298,14 +366,15 @@ Note: after clicking a link, it may take ~5-10s before GitHub jumps to the corre
 - [English (`en`)](https://github.com/signalapp/Signal-Android/compare/v1.1.5..v1.2.4#diff-5e01f7d37a66e4ca03deefc205d8e7008661cdd0284a05aaba1858e6b7bf9103)
 - [English (`en`)](https://github.com/signalapp/Signal-Android/compare/v1.1.5..v1.2.4#diff-5e01f7d37a66e4ca03deefc205d8e7008661cdd0284a05aaba1858e6b7bf9103)
 [/quote]
-[/details]".to_string(); "Android: one commit with localization changes")]
+[/details]"; "Android: one commit with localization changes")]
     fn post_markdown(
         platform: Platform,
         old_tag: &str,
         new_tag: &str,
         commits: Vec<Commit>,
         localization_change_collection: Option<bool>,
-    ) -> String {
+        result: &str,
+    ) {
         let older_tag = Tag::new("v1.1.5");
         let old_tag = Tag::new(old_tag);
         let new_tag = Tag::new(new_tag);
@@ -354,6 +423,9 @@ Note: after clicking a link, it may take ~5-10s before GitHub jumps to the corre
             localization_change_collection,
         );
 
-        post.markdown_text(&post.commits_markdown(), RenderMode::Full)
+        assert_str_eq!(
+            post.markdown_text(&post.commits_markdown(), RenderMode::Full),
+            result
+        );
     }
 }
