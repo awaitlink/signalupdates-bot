@@ -23,6 +23,14 @@ use localization::{
 use platform::Platform;
 use state::StateController;
 
+enum PlatformCheckOutcome {
+    LatestVersionIsAlreadyPosted,
+    TopicNotFound,
+    Posted,
+}
+
+use PlatformCheckOutcome::*;
+
 // Used for debugging, to manually trigger the bot outside of schedule.
 #[event(fetch)]
 pub async fn fetch(
@@ -53,24 +61,26 @@ async fn check_all_platforms(env: &Env) -> anyhow::Result<()> {
     console_log!("loaded state from KV: {:?}", state_controller.state());
 
     for platform in Platform::iter() {
-        let has_posted = check_platform(&mut state_controller, env, platform).await?;
+        let outcome = check_platform(&mut state_controller, env, platform).await?;
 
-        if has_posted {
-            console_warn!("already posted for {platform} and currently doing only one post per invocation, done");
-            break;
+        match outcome {
+            LatestVersionIsAlreadyPosted => console_log!("latest version is already posted"),
+            TopicNotFound => console_warn!("no topic found, may be not created yet"),
+            Posted => {
+                console_warn!("already posted for {platform} and currently doing only one post per invocation, done");
+                break;
+            }
         }
     }
 
     Ok(())
 }
 
-/// Returns `Ok(true)` iff a new post has been successfully made, `Ok(false)`
-/// if no post was made, and `Err(...)` in case of an unexpected error.
 async fn check_platform(
     state_controller: &mut StateController,
     env: &Env,
     platform: Platform,
-) -> anyhow::Result<bool> {
+) -> anyhow::Result<PlatformCheckOutcome> {
     console_log!("checking platform = {platform}");
 
     let all_tags: Vec<types::github::Tag> =
@@ -97,11 +107,6 @@ async fn check_platform(
         .collect();
 
     console_log!("tags_to_post = {:?}", tags_to_post);
-
-    if tags_to_post.len() <= 1 {
-        console_log!("latest version is already posted");
-        return Ok(false);
-    }
 
     if let Some([(old_tag, old_version), (new_tag, new_version)]) =
         tags_to_post.array_windows().next()
@@ -260,14 +265,11 @@ async fn check_platform(
                     state_controller.platform_state(platform)
                 );
 
-                return Ok(true);
+                Ok(Posted)
             }
-            None => {
-                console_warn!("no topic found, may be not created yet");
-                return Ok(false);
-            }
+            None => Ok(TopicNotFound),
         }
+    } else {
+        Ok(LatestVersionIsAlreadyPosted)
     }
-
-    Ok(false)
 }
