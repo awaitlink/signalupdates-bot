@@ -161,44 +161,50 @@ async fn check_platform(
                     LocalizationChanges::from_comparison(platform, old_tag, new_tag, &comparison);
 
                 if let Completeness::Incomplete = build_localization_changes.completeness {
-                    let updated_language_translations_commits = commits.iter().filter(|commit| {
-                        commit
-                            .full_message()
-                            .contains(platform.localization_change_commit_message())
-                    });
+                    let localization_change_commits: Vec<_> = commits
+                        .iter()
+                        .filter(|commit| {
+                            commit
+                                .full_message()
+                                .contains(platform.localization_change_commit_message())
+                        })
+                        .collect();
 
-                    let mut all_complete = true;
+                    if !localization_change_commits.is_empty() {
+                        let mut all_complete = true;
 
-                    for commit in updated_language_translations_commits {
-                        let with_files = utils::get_github_commit(platform, commit.sha()).await?;
+                        for commit in localization_change_commits {
+                            let with_files =
+                                utils::get_github_commit(platform, commit.sha()).await?;
 
-                        console_log!("with_files = {:?}", with_files);
+                            console_log!("with_files = {:?}", with_files);
 
-                        let mut changes =
-                            platform.localization_change_vec_from_files(&with_files.files);
+                            let mut changes =
+                                platform.localization_change_vec_from_files(&with_files.files);
 
-                        console_log!("changes = {:?}", changes);
+                            console_log!("changes = {:?}", changes);
 
-                        build_localization_changes.changes.append(&mut changes);
-                        build_localization_changes.changes.sort_unstable();
-                        build_localization_changes.changes.dedup();
+                            build_localization_changes.changes.append(&mut changes);
+                            build_localization_changes.changes.sort_unstable();
+                            build_localization_changes.changes.dedup();
 
-                        let complete = with_files.are_files_likely_complete().unwrap();
-                        console_log!(
-                            "for commit.sha = {} files.complete = {complete}",
-                            commit.sha()
-                        );
+                            let complete = with_files.are_files_likely_complete().unwrap();
+                            console_log!(
+                                "for commit.sha = {} files.complete = {complete}",
+                                commit.sha()
+                            );
 
-                        all_complete &= complete;
-                    }
+                            all_complete &= complete;
+                        }
 
-                    if all_complete {
-                        build_localization_changes.completeness = Completeness::LikelyComplete;
+                        if all_complete {
+                            build_localization_changes.completeness = Completeness::LikelyComplete;
 
-                        console_log!(
-                            "got complete files for all \"Updated language translations\" commits, build_localization_changes.completeness = {:?}",
-                            build_localization_changes.completeness
-                        );
+                            console_log!(
+                                "got complete files for all \"Updated language translations\" commits, build_localization_changes.completeness = {:?}",
+                                build_localization_changes.completeness
+                            );
+                        }
                     }
                 }
 
