@@ -72,6 +72,13 @@ impl Platform {
         )
     }
 
+    pub const fn localization_change_commit_message(&self) -> &'static str {
+        match self {
+            Android => "Updated language translations",
+            Desktop => "Update strings",
+        }
+    }
+
     /// Expects `code` in `aa-BB` format only.
     pub fn filename_for_language_code(&self, code: &str) -> String {
         match self {

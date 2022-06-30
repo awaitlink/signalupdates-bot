@@ -164,7 +164,7 @@ async fn check_platform(
                     let updated_language_translations_commits = commits.iter().filter(|commit| {
                         commit
                             .full_message()
-                            .contains("Updated language translations")
+                            .contains(platform.localization_change_commit_message())
                     });
 
                     let mut all_complete = true;
