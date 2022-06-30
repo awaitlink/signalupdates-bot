@@ -197,6 +197,7 @@ async fn check_platform(
                         .chain(build_localization_changes.changes.iter().cloned())
                         .collect();
 
+                    changes.dedup();
                     changes.sort_unstable();
 
                     let release_localization_changes = LocalizationChanges {
