@@ -243,11 +243,15 @@ where
 
         merge(&mut result, &mut part);
 
-        let link_header_string = response
-            .headers()
-            .get("Link")
-            .unwrap()
-            .ok_or_else(|| anyhow!("no `Link` header in GitHub's response"))?;
+        let link_header_string = match response.headers().get("Link").unwrap() {
+            Some(header_string) => header_string,
+            None => {
+                console_warn!(
+                    "no `Link` header in GitHub's response, likely done getting paginated response"
+                );
+                break;
+            }
+        };
 
         let link_header = parse_link_header::parse_with_rel(&link_header_string)
             .context("could not parse `Link` header")?;

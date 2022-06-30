@@ -171,18 +171,34 @@ async fn check_platform(
 
                     for commit in updated_language_translations_commits {
                         let with_files = utils::get_github_commit(platform, commit.sha()).await?;
+
+                        console_log!("with_files = {:?}", with_files);
+
                         let mut changes =
                             platform.localization_change_vec_from_files(&with_files.files);
+
+                        console_log!("changes = {:?}", changes);
 
                         build_localization_changes.changes.append(&mut changes);
                         build_localization_changes.changes.sort_unstable();
                         build_localization_changes.changes.dedup();
 
-                        all_complete &= with_files.are_files_likely_complete().unwrap();
+                        let complete = with_files.are_files_likely_complete().unwrap();
+                        console_log!(
+                            "for commit.sha = {} files.complete = {complete}",
+                            commit.sha()
+                        );
+
+                        all_complete &= complete;
                     }
 
                     if all_complete {
                         build_localization_changes.completeness = Completeness::LikelyComplete;
+
+                        console_log!(
+                            "got complete files for all \"Updated language translations\" commits, build_localization_changes.completeness = {:?}",
+                            build_localization_changes.completeness
+                        );
                     }
                 }
 
