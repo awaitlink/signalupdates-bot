@@ -135,8 +135,6 @@ Gathered from [signalapp/Signal-{platform}]({comparison_url})
 
 #[cfg(test)]
 mod tests {
-    use std::rc::Rc;
-
     use test_case::test_case;
 
     use super::*;
@@ -319,21 +317,21 @@ Note: after clicking a link, it may take ~5-10s before GitHub jumps to the corre
                     old_tag: &old_tag,
                     new_tag: &new_tag,
                     complete: true,
-                    changes: Rc::new(vec![
+                    changes: vec![
                         LocalizationChange::default_for_android(),
                         LocalizationChange::default_for_android(),
-                    ]),
+                    ],
                 },
                 release_changes: Some(LocalizationChanges {
                     platform: Android,
                     old_tag: &older_tag,
                     new_tag: &new_tag,
                     complete: are_release_changes_complete,
-                    changes: Rc::new(vec![
+                    changes: vec![
                         LocalizationChange::default_for_android(),
                         LocalizationChange::default_for_android(),
                         LocalizationChange::default_for_android(),
-                    ]),
+                    ],
                 }),
             },
             None => LocalizationChangeCollection {
@@ -342,7 +340,7 @@ Note: after clicking a link, it may take ~5-10s before GitHub jumps to the corre
                     old_tag: &old_tag,
                     new_tag: &new_tag,
                     complete: true,
-                    changes: Rc::new(vec![]),
+                    changes: vec![],
                 },
                 release_changes: None,
             },

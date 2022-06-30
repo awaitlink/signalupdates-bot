@@ -1,6 +1,6 @@
-use std::{fmt, rc::Rc};
+use std::fmt;
 
-use worker::{console_log, console_warn};
+use worker::console_log;
 
 use super::LocalizationChange;
 use crate::{
@@ -14,19 +14,19 @@ pub struct LocalizationChanges<'a> {
     pub old_tag: &'a Tag,
     pub new_tag: &'a Tag,
     pub complete: bool,
-    pub changes: Rc<Vec<LocalizationChange>>,
+    pub changes: Vec<LocalizationChange>,
 }
 
 impl<'a> LocalizationChanges<'a> {
-    /// Note: assumes `if_incomplete_combine_with` is sorted.
+    /// Note: assumes `comparison.files` doesn't contain duplicates.
     pub fn from_comparison(
         platform: &'a Platform,
         old_tag: &'a Tag,
         new_tag: &'a Tag,
         comparison: &'a Comparison,
-        if_incomplete_combine_with: Option<Rc<Vec<LocalizationChange>>>,
     ) -> LocalizationChanges<'a> {
-        let mut complete = true;
+        let complete = comparison.is_likely_complete();
+        console_log!("complete = {}", complete);
 
         let mut changes = comparison
             .files
@@ -36,47 +36,9 @@ impl<'a> LocalizationChanges<'a> {
             .filter_map(move |file| platform.localization_change(&file.filename))
             .collect::<Vec<_>>();
 
+        changes.sort_unstable();
+
         console_log!("changes.len() = {:?}", changes.len());
-
-        // GitHub API only returns at most 300 files, despite
-        // https://docs.github.com/en/rest/commits/commits#compare-two-commits
-        // saying that it always returns all.
-        let changes = if comparison.files.as_ref().unwrap().len() == 300 {
-            console_warn!("`comparison` has 300 files, likely incomplete");
-            complete = false;
-
-            match if_incomplete_combine_with {
-                Some(if_incomplete_combine_with) => {
-                    if !changes.is_empty() {
-                        console_log!("merging `changes` and `if_incomplete_combine_with`");
-
-                        let mut combined = (*if_incomplete_combine_with).clone();
-                        combined.append(&mut changes);
-                        combined.dedup();
-                        combined.sort_unstable();
-                        Rc::new(combined)
-                    } else {
-                        console_log!("`changes` is empty, taking `if_incomplete_combine_with`");
-
-                        Rc::clone(&if_incomplete_combine_with)
-                    }
-                }
-                None => {
-                    console_log!("no `if_incomplete_combine_with` specified, taking `changes`");
-                    changes.sort_unstable();
-                    Rc::new(changes)
-                }
-            }
-        } else {
-            console_log!("`comparison` appears to be complete");
-            changes.sort_unstable();
-            Rc::new(changes)
-        };
-
-        console_log!(
-            "after (potentially) combining, changes.len() = {:?}",
-            changes.len()
-        );
 
         Self {
             platform: *platform,
@@ -151,8 +113,6 @@ impl fmt::Display for LocalizationChanges<'_> {
 
 #[cfg(test)]
 mod tests {
-    use std::rc::Rc;
-
     use test_case::test_case;
 
     use super::*;
@@ -219,7 +179,7 @@ mod tests {
             old_tag: &old_tag,
             new_tag: &new_tag,
             complete,
-            changes: Rc::new(changes),
+            changes,
         };
 
         assert_eq!(changes.to_string(), result);

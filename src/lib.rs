@@ -1,7 +1,5 @@
 #![feature(array_windows)]
 
-use std::rc::Rc;
-
 use anyhow::{anyhow, Context};
 use semver::Version;
 use strum::IntoEnumIterator;
@@ -159,13 +157,8 @@ async fn check_platform(
 
                 console_log!("commits.len() = {:?}", commits.len());
 
-                let build_localization_changes = LocalizationChanges::from_comparison(
-                    &platform,
-                    old_tag,
-                    new_tag,
-                    &comparison,
-                    None,
-                );
+                let build_localization_changes =
+                    LocalizationChanges::from_comparison(&platform, old_tag, new_tag, &comparison);
 
                 let localization_change_codes_complete = build_localization_changes.complete
                     && (!same_release
@@ -210,7 +203,7 @@ async fn check_platform(
                         old_tag: &last_version_of_previous_release.0,
                         new_tag,
                         complete: localization_change_codes_complete,
-                        changes: Rc::new(changes),
+                        changes,
                     };
 
                     console_log!(
