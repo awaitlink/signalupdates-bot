@@ -2,7 +2,10 @@ use std::fmt;
 
 use worker::console_log;
 
-use super::LocalizationChange;
+use super::{
+    Completeness::{self, *},
+    LocalizationChange,
+};
 use crate::{
     platform::Platform,
     types::github::{Comparison, Tag},
@@ -13,14 +16,14 @@ pub struct LocalizationChanges<'a> {
     pub platform: Platform,
     pub old_tag: &'a Tag,
     pub new_tag: &'a Tag,
-    pub complete: bool,
+    pub completeness: Completeness,
     pub changes: Vec<LocalizationChange>,
 }
 
 impl<'a> LocalizationChanges<'a> {
     /// Note: assumes `comparison.files` is not `None` and doesn't contain duplicates.
     pub fn from_comparison(
-        platform: &'a Platform,
+        platform: Platform,
         old_tag: &'a Tag,
         new_tag: &'a Tag,
         comparison: &'a Comparison,
@@ -28,23 +31,16 @@ impl<'a> LocalizationChanges<'a> {
         let complete = comparison.are_files_likely_complete().unwrap();
         console_log!("complete = {}", complete);
 
-        let mut changes = comparison
-            .files
-            .as_ref()
-            .unwrap()
-            .iter()
-            .filter_map(move |file| platform.localization_change(&file.filename))
-            .collect::<Vec<_>>();
-
+        let mut changes = platform.localization_change_vec_from_files(&comparison.files);
         changes.sort_unstable();
 
         console_log!("changes.len() = {:?}", changes.len());
 
         Self {
-            platform: *platform,
+            platform,
             old_tag,
             new_tag,
-            complete,
+            completeness: if complete { Complete } else { Incomplete },
             changes,
         }
     }
@@ -79,16 +75,16 @@ impl<'a> LocalizationChanges<'a> {
 
 impl fmt::Display for LocalizationChanges<'_> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        let (at_least, warning) = if self.complete {
-            ("", String::new())
-        } else {
-            (
+        let (at_least, warning) = match self.completeness {
+            Incomplete | LikelyComplete => (
                 "At least ",
                 format!(
-                    "\n:warning: These changes may not include all languages (GitHub API likely did not return all files). {}",
+                    "\n{} {}",
+                    self.completeness.warning_text(),
                     self.full_comparison_notice()
-                )
-            )
+                ),
+            ),
+            Complete => ("", String::new()),
         };
 
         let old_version = self.old_tag.exact_version_string();
@@ -122,25 +118,34 @@ mod tests {
         platform::Platform::{self, *},
     };
 
-    #[test_case(Android, "v1.2.3", "v1.2.4", true, vec![
+    #[test_case(Android, "v1.2.3", "v1.2.4", Complete, vec![
         LocalizationChange::default_for_android(),
         LocalizationChange::default_for_android()
     ], "#### 2 changes since 1.2.3:
 - [English (`en`)](https://github.com/signalapp/Signal-Android/compare/v1.2.3..v1.2.4#diff-5e01f7d37a66e4ca03deefc205d8e7008661cdd0284a05aaba1858e6b7bf9103)
 - [English (`en`)](https://github.com/signalapp/Signal-Android/compare/v1.2.3..v1.2.4#diff-5e01f7d37a66e4ca03deefc205d8e7008661cdd0284a05aaba1858e6b7bf9103)"; "Android: 2 changes, complete")]
-    #[test_case(Android, "v1.1.5", "v1.2.4", false, vec![
+    #[test_case(Android, "v1.1.5", "v1.2.4", Incomplete, vec![
         LocalizationChange::default_for_android(),
         LocalizationChange::default_for_android(),
         LocalizationChange::default_for_android(),
     ], "#### At least 3 changes since 1.1.5:
-:warning: These changes may not include all languages (GitHub API likely did not return all files). You can view the full comparison to 1.1.5 so far [here](https://github.com/signalapp/Signal-Android/compare/v1.1.5...v1.2.4).
+:warning: For technical reasons, not all languages may be listed below. You can view the full comparison to 1.1.5 so far [here](https://github.com/signalapp/Signal-Android/compare/v1.1.5...v1.2.4).
 - [English (`en`)](https://github.com/signalapp/Signal-Android/compare/v1.1.5..v1.2.4#diff-5e01f7d37a66e4ca03deefc205d8e7008661cdd0284a05aaba1858e6b7bf9103)
 - [English (`en`)](https://github.com/signalapp/Signal-Android/compare/v1.1.5..v1.2.4#diff-5e01f7d37a66e4ca03deefc205d8e7008661cdd0284a05aaba1858e6b7bf9103)
 - [English (`en`)](https://github.com/signalapp/Signal-Android/compare/v1.1.5..v1.2.4#diff-5e01f7d37a66e4ca03deefc205d8e7008661cdd0284a05aaba1858e6b7bf9103)"; "Android: 3 changes, incomplete")]
-    #[test_case(Android, "v1.1.5", "v1.2.4", false, std::iter::repeat(
+    #[test_case(Android, "v1.1.5", "v1.2.4", LikelyComplete, vec![
+        LocalizationChange::default_for_android(),
+        LocalizationChange::default_for_android(),
+        LocalizationChange::default_for_android(),
+    ], "#### At least 3 changes since 1.1.5:
+For technical reasons, not all languages may be listed below. However, everything from \"Updated language translations.\" commits is listed, so the list is likely complete. You can view the full comparison to 1.1.5 so far [here](https://github.com/signalapp/Signal-Android/compare/v1.1.5...v1.2.4).
+- [English (`en`)](https://github.com/signalapp/Signal-Android/compare/v1.1.5..v1.2.4#diff-5e01f7d37a66e4ca03deefc205d8e7008661cdd0284a05aaba1858e6b7bf9103)
+- [English (`en`)](https://github.com/signalapp/Signal-Android/compare/v1.1.5..v1.2.4#diff-5e01f7d37a66e4ca03deefc205d8e7008661cdd0284a05aaba1858e6b7bf9103)
+- [English (`en`)](https://github.com/signalapp/Signal-Android/compare/v1.1.5..v1.2.4#diff-5e01f7d37a66e4ca03deefc205d8e7008661cdd0284a05aaba1858e6b7bf9103)"; "Android: 3 changes, likely complete")]
+    #[test_case(Android, "v1.1.5", "v1.2.4", Incomplete, std::iter::repeat(
         LocalizationChange::default_for_android()
     ).take(21).collect(), "#### At least 21 changes since 1.1.5:
-:warning: These changes may not include all languages (GitHub API likely did not return all files). You can view the full comparison to 1.1.5 so far [here](https://github.com/signalapp/Signal-Android/compare/v1.1.5...v1.2.4).
+:warning: For technical reasons, not all languages may be listed below. You can view the full comparison to 1.1.5 so far [here](https://github.com/signalapp/Signal-Android/compare/v1.1.5...v1.2.4).
 [details=\"Show changes\"]
 - [English (`en`)](https://github.com/signalapp/Signal-Android/compare/v1.1.5..v1.2.4#diff-5e01f7d37a66e4ca03deefc205d8e7008661cdd0284a05aaba1858e6b7bf9103)
 - [English (`en`)](https://github.com/signalapp/Signal-Android/compare/v1.1.5..v1.2.4#diff-5e01f7d37a66e4ca03deefc205d8e7008661cdd0284a05aaba1858e6b7bf9103)
@@ -168,7 +173,7 @@ mod tests {
         platform: Platform,
         old_tag: &str,
         new_tag: &str,
-        complete: bool,
+        completeness: Completeness,
         changes: Vec<LocalizationChange>,
         result: &str,
     ) {
@@ -179,7 +184,7 @@ mod tests {
             platform,
             old_tag: &old_tag,
             new_tag: &new_tag,
-            complete,
+            completeness,
             changes,
         };
 

@@ -16,7 +16,7 @@ mod types;
 mod utils;
 
 use localization::{
-    Language, LocalizationChange, LocalizationChangeCollection, LocalizationChanges,
+    Completeness, Language, LocalizationChange, LocalizationChangeCollection, LocalizationChanges,
 };
 use platform::Platform;
 use state::StateController;
@@ -157,14 +157,44 @@ async fn check_platform(
 
                 console_log!("commits.len() = {:?}", commits.len());
 
-                let build_localization_changes =
-                    LocalizationChanges::from_comparison(&platform, old_tag, new_tag, &comparison);
+                let mut build_localization_changes =
+                    LocalizationChanges::from_comparison(platform, old_tag, new_tag, &comparison);
 
-                let localization_change_codes_complete = build_localization_changes.complete
-                    && (!same_release
-                        || state_controller
+                if let Completeness::Incomplete = build_localization_changes.completeness {
+                    let updated_language_translations_commits = commits.iter().filter(|commit| {
+                        commit
+                            .full_message()
+                            .contains("Updated language translations")
+                    });
+
+                    let mut all_complete = true;
+
+                    for commit in updated_language_translations_commits {
+                        let with_files = utils::get_github_commit(platform, commit.sha()).await?;
+                        let mut changes =
+                            platform.localization_change_vec_from_files(&with_files.files);
+
+                        build_localization_changes.changes.append(&mut changes);
+                        build_localization_changes.changes.sort_unstable();
+                        build_localization_changes.changes.dedup();
+
+                        all_complete &= with_files.are_files_likely_complete().unwrap();
+                    }
+
+                    if all_complete {
+                        build_localization_changes.completeness = Completeness::LikelyComplete;
+                    }
+                }
+
+                let localization_change_codes_completeness = build_localization_changes
+                    .completeness
+                    .min(if !same_release {
+                        Completeness::Complete
+                    } else {
+                        state_controller
                             .platform_state(platform)
-                            .localization_change_codes_complete);
+                            .localization_change_codes_completeness
+                    });
 
                 let release_localization_changes = if !same_release {
                     console_log!("first build of the release, release_localization_changes = None");
@@ -202,7 +232,7 @@ async fn check_platform(
                         platform,
                         old_tag: &last_version_of_previous_release.0,
                         new_tag,
-                        complete: localization_change_codes_complete,
+                        completeness: localization_change_codes_completeness,
                         changes,
                     };
 
@@ -247,7 +277,7 @@ async fn check_platform(
                             new_tag.clone(),
                             Some(post_number),
                             localization_change_codes,
-                            localization_change_codes_complete,
+                            localization_change_codes_completeness,
                         ),
                     )
                     .await

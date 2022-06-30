@@ -179,7 +179,7 @@ mod tests {
 
     use super::*;
     use crate::{
-        localization::{LocalizationChange, LocalizationChanges},
+        localization::{Completeness, LocalizationChange, LocalizationChanges},
         platform::Platform::{self, *},
     };
 
@@ -349,7 +349,7 @@ Localization changes for the whole release are the same, as this is the first bu
 [/details]"; "Desktop: one commit")]
     #[test_case(Android, "v1.2.3", "v1.2.4", vec![
         Commit::new(Android, "Test commit.", "abcdef")
-    ], Some(true), "## New Version: 1.2.4
+    ], Some(Completeness::Complete), "## New Version: 1.2.4
 (Not Yet) Available via [Firebase App Distribution](https://community.signalusers.org/t/17538)
 [quote]
 1 new commit since 1.2.3:
@@ -377,7 +377,7 @@ Note: after clicking a link, it may take ~5-10s before GitHub jumps to the corre
         old_tag: &str,
         new_tag: &str,
         commits: Vec<Commit>,
-        localization_change_collection: Option<bool>,
+        localization_change_collection: Option<Completeness>,
         result: &str,
     ) {
         let older_tag = Tag::new("v1.1.5");
@@ -385,12 +385,12 @@ Note: after clicking a link, it may take ~5-10s before GitHub jumps to the corre
         let new_tag = Tag::new(new_tag);
 
         let localization_change_collection = match localization_change_collection {
-            Some(are_release_changes_complete) => LocalizationChangeCollection {
+            Some(completeness) => LocalizationChangeCollection {
                 build_changes: LocalizationChanges {
                     platform: Android,
                     old_tag: &old_tag,
                     new_tag: &new_tag,
-                    complete: true,
+                    completeness: Completeness::Complete,
                     changes: vec![
                         LocalizationChange::default_for_android(),
                         LocalizationChange::default_for_android(),
@@ -400,7 +400,7 @@ Note: after clicking a link, it may take ~5-10s before GitHub jumps to the corre
                     platform: Android,
                     old_tag: &older_tag,
                     new_tag: &new_tag,
-                    complete: are_release_changes_complete,
+                    completeness,
                     changes: vec![
                         LocalizationChange::default_for_android(),
                         LocalizationChange::default_for_android(),
@@ -413,7 +413,7 @@ Note: after clicking a link, it may take ~5-10s before GitHub jumps to the corre
                     platform,
                     old_tag: &old_tag,
                     new_tag: &new_tag,
-                    complete: true,
+                    completeness: Completeness::Complete,
                     changes: vec![],
                 },
                 release_changes: None,

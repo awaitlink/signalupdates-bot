@@ -45,7 +45,7 @@ pub struct Comparison {
 }
 
 impl Comparison {
-    /// GitHub API only returns at most this many files, despite
+    /// GitHub API only returns at most this many files in a comparison, despite
     /// https://docs.github.com/en/rest/commits/commits#compare-two-commits
     /// saying that it always returns all.
     pub const GITHUB_API_MAX_FILES: usize = 300;
@@ -65,6 +65,23 @@ impl Comparison {
 pub struct Commit {
     pub sha: String,
     pub commit: CommitData,
+    pub files: Option<Vec<File>>,
+}
+
+impl Commit {
+    /// GitHub API only returns at most this many files in a commit, according to
+    /// https://docs.github.com/en/rest/commits/commits#get-a-commit.
+    pub const GITHUB_API_MAX_FILES: usize = 3000;
+
+    /// Indicates whether `files` in this commit is likely complete or not.
+    /// (see also [`GITHUB_API_MAX_FILES`]).
+    ///
+    /// Returns `None` if `self.files` is `None`.
+    pub fn are_files_likely_complete(&self) -> Option<bool> {
+        self.files
+            .as_ref()
+            .map(|files| files.len() != Self::GITHUB_API_MAX_FILES)
+    }
 }
 
 #[derive(Deserialize, Debug, Clone, PartialEq, Eq)]
@@ -391,7 +408,8 @@ mod tests {
                     sha: "6dcb09b5b57875f334f61aebed695e2e4193db5e".to_string(),
                     commit: CommitData {
                         message: "Fix all the bugs".to_string()
-                    }
+                    },
+                    files: None,
                 }],
                 files: Some(vec![File {
                     filename: "file1.txt".to_string()

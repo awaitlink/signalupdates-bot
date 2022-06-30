@@ -7,6 +7,7 @@ use strum_macros::EnumIter;
 
 use crate::{
     localization::{Language, LocalizationChange},
+    types::github::File,
     utils,
 };
 
@@ -35,14 +36,8 @@ impl Platform {
         }
     }
 
-    pub fn github_api_comparison_url(
-        &self,
-        old: &str,
-        new: &str,
-        page: usize,
-        per_page: usize,
-    ) -> String {
-        format!("https://api.github.com/repos/signalapp/Signal-{self}/compare/{old}...{new}?page={page}&per_page={per_page}")
+    pub fn github_api_comparison_url(&self, old: &str, new: &str) -> String {
+        format!("https://api.github.com/repos/signalapp/Signal-{self}/compare/{old}...{new}")
     }
 
     pub fn github_comparison_url(&self, old: &str, new: &str, filename: Option<&str>) -> String {
@@ -53,6 +48,10 @@ impl Platform {
             ),
             None => format!("https://github.com/signalapp/Signal-{self}/compare/{old}...{new}"),
         }
+    }
+
+    pub fn github_api_commit_url(&self, sha: &str) -> String {
+        format!("https://api.github.com/repos/signalapp/Signal-{self}/commits/{sha}")
     }
 
     pub fn github_commit_url(&self, sha: &str) -> String {
@@ -115,6 +114,18 @@ impl Platform {
                 language,
                 filename: filename.to_owned(),
             })
+    }
+
+    pub fn localization_change_vec_from_files(
+        &self,
+        files: &Option<Vec<File>>,
+    ) -> Vec<LocalizationChange> {
+        files
+            .as_ref()
+            .unwrap()
+            .iter()
+            .filter_map(move |file| self.localization_change(&file.filename))
+            .collect()
     }
 }
 

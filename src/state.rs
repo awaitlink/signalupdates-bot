@@ -4,6 +4,7 @@ use worker::Env;
 use worker_kv::KvStore;
 
 use crate::{
+    localization::Completeness,
     platform::Platform::{self, *},
     types::github::Tag,
 };
@@ -25,7 +26,7 @@ pub struct PlatformState {
     #[serde(default)]
     pub localization_change_codes: Vec<String>,
     #[serde(default)]
-    pub localization_change_codes_complete: bool,
+    pub localization_change_codes_completeness: Completeness,
 }
 
 impl PlatformState {
@@ -33,13 +34,13 @@ impl PlatformState {
         last_posted_tag: Tag,
         last_post_number: Option<u64>,
         localization_change_codes: Vec<String>,
-        localization_change_codes_complete: bool,
+        localization_change_codes_completeness: Completeness,
     ) -> Self {
         Self {
             last_posted_tag,
             last_post_number,
             localization_change_codes,
-            localization_change_codes_complete,
+            localization_change_codes_completeness,
         }
     }
 }

@@ -37,6 +37,10 @@ impl<'a> Commit<'a> {
         Self::new(platform, &github_commit.commit.message, &github_commit.sha)
     }
 
+    pub fn full_message(&self) -> &str {
+        self.full_message
+    }
+
     pub fn sha(&self) -> &str {
         self.sha
     }
