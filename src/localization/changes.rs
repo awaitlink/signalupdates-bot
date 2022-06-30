@@ -25,7 +25,7 @@ impl<'a> LocalizationChanges<'a> {
         new_tag: &'a Tag,
         comparison: &'a Comparison,
     ) -> LocalizationChanges<'a> {
-        let complete = comparison.is_likely_complete();
+        let complete = comparison.are_files_likely_complete();
         console_log!("complete = {}", complete);
 
         let mut changes = comparison

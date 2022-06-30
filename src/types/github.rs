@@ -45,12 +45,14 @@ pub struct Comparison {
 }
 
 impl Comparison {
-    const GITHUB_API_MAX_FILES: usize = 300;
+    /// GitHub API only returns at most this many files, despite
+    /// https://docs.github.com/en/rest/commits/commits#compare-two-commits
+    /// saying that it always returns all.
+    pub const GITHUB_API_MAX_FILES: usize = 300;
 
-    // GitHub API only returns at most `GITHUB_API_MAX_FILES` files, despite
-    // https://docs.github.com/en/rest/commits/commits#compare-two-commits
-    // saying that it always returns all.
-    pub fn is_likely_complete(&self) -> bool {
+    /// Indicates whether `files` in this comparison is likely complete or not.
+    /// (see also [`GITHUB_API_MAX_FILES`]).
+    pub fn are_files_likely_complete(&self) -> bool {
         self.files.as_ref().unwrap().len() != Self::GITHUB_API_MAX_FILES
     }
 }
