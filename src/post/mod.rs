@@ -66,17 +66,19 @@ impl<'a> Post<'a> {
             .map(|(commit, number)| {
                 commit.markdown_text(
                     number,
-                    match (map.get(commit.sha()), reverse_map.get(&commit.sha())) {
-                        (Some(reverted_by), Some(&reverted)) => CommitStatus::Both {
-                            reverts: commit_numbers[reverted],
-                            is_reverted_by: commit_numbers[reverted_by],
+                    match (
+                        map.get(commit.sha())
+                            .and_then(|sha| commit_numbers.get(sha) /* there should always be a commit number for this sha, but leaving as is */),
+                        reverse_map
+                            .get(&commit.sha())
+                            .and_then(|&sha| commit_numbers.get(sha)),
+                    ) {
+                        (Some(&reverted_by), Some(&reverted)) => CommitStatus::Both {
+                            reverts: reverted,
+                            is_reverted_by: reverted_by,
                         },
-                        (Some(other_sha), None) => {
-                            CommitStatus::IsRevertedBy(commit_numbers[other_sha])
-                        }
-                        (None, Some(&other_sha)) => {
-                            CommitStatus::Reverts(commit_numbers[other_sha])
-                        }
+                        (Some(&reverted_by), None) => CommitStatus::IsRevertedBy(reverted_by),
+                        (None, Some(&reverted)) => CommitStatus::Reverts(reverted),
                         (None, None) => CommitStatus::Normal,
                     },
                 )
@@ -230,18 +232,21 @@ Localization changes for the whole release are the same, as this is the first bu
         Commit::new(Android, "Test commit.", "abc111"),
         Commit::new(Android, "Revert \"Test commit.\".\nThis reverts commit abc111.", "abc222"),
         Commit::new(Android, "Revert \"Revert \"Test commit.\".\".\nThis reverts commit abc222.", "abc333"),
-        Commit::new(Android, "Test commit 2.", "abc444"),
+        Commit::new(Android, "Revert \"Test commit 0.\".\nThis reverts commit abc000.", "abc444"),
+        Commit::new(Android, "Test commit 2.", "abc555"),
     ], None, "## New Version: 1.2.4
 (Not Yet) Available via [Firebase App Distribution](https://community.signalusers.org/t/17538)
 [quote]
-4 new commits since 1.2.3:
+5 new commits since 1.2.3:
 - <del>Test commit. [[1]](https://github.com/signalapp/Signal-Android/commit/abc111)</del> (reverted by [2])
 
 - <del>Revert \"Test commit.\". [[2]](https://github.com/signalapp/Signal-Android/commit/abc222)</del> (reverts [1], reverted by [3])
 
 - <ins>Revert \"Revert \"Test commit.\".\". [[3]](https://github.com/signalapp/Signal-Android/commit/abc333)</ins> (reverts [2])
 
-- Test commit 2. [[4]](https://github.com/signalapp/Signal-Android/commit/abc444)
+- Revert \"Test commit 0.\". [[4]](https://github.com/signalapp/Signal-Android/commit/abc444)
+
+- Test commit 2. [[5]](https://github.com/signalapp/Signal-Android/commit/abc555)
 
 ---
 Gathered from [signalapp/Signal-Android](https://github.com/signalapp/Signal-Android/compare/v1.2.3...v1.2.4)
@@ -255,7 +260,7 @@ Note: after clicking a link, it may take ~5-10s before GitHub jumps to the corre
 
 Localization changes for the whole release are the same, as this is the first build of the release.
 [/quote]
-[/details]"; "Android: four commits with reverts")]
+[/details]"; "Android: five commits with reverts")]
     #[test_case(Android, "v1.2.3", "v1.2.4",
     std::iter::repeat(Commit::new(Android, "Test commit.", "abcdef"))
         .take(20)
