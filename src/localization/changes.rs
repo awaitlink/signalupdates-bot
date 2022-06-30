@@ -113,6 +113,7 @@ impl fmt::Display for LocalizationChanges<'_> {
 
 #[cfg(test)]
 mod tests {
+    use pretty_assertions::assert_str_eq;
     use test_case::test_case;
 
     use super::*;
@@ -182,6 +183,6 @@ mod tests {
             changes,
         };
 
-        assert_eq!(changes.to_string(), result);
+        assert_str_eq!(changes.to_string(), result);
     }
 }

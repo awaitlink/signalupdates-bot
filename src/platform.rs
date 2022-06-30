@@ -133,6 +133,7 @@ impl fmt::Display for Platform {
 
 #[cfg(test)]
 mod tests {
+    use pretty_assertions::assert_str_eq;
     use test_case::test_case;
 
     use super::*;
@@ -142,7 +143,7 @@ mod tests {
     #[test_case(Desktop, "en", "_locales/en/messages.json"; "Desktop: en")]
     #[test_case(Desktop, "en-US", "_locales/en_US/messages.json"; "Desktop: en dash US")]
     fn filename_for_language_code(platform: Platform, code: &str, result: &str) {
-        assert_eq!(platform.filename_for_language_code(code), result);
+        assert_str_eq!(platform.filename_for_language_code(code), result);
     }
 
     #[test_case(Android, "app/src/main/res/values/strings.xml", "English (`en`)"; "Android: en")]
@@ -152,7 +153,7 @@ mod tests {
     #[test_case(Desktop, "_locales/kab/messages.json", "Kabyle (`kab`)"; "Desktop: kab")]
     #[test_case(Desktop, "_locales/pa_PK/messages.json", "Panjabi (`pa-PK`)"; "Desktop: pa underscore PK")]
     fn localization_change_language(platform: Platform, filename: &str, result: &str) {
-        assert_eq!(
+        assert_str_eq!(
             platform
                 .localization_change(filename)
                 .unwrap()

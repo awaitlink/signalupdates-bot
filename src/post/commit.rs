@@ -102,6 +102,7 @@ impl<'a> Commit<'a> {
 
 #[cfg(test)]
 mod tests {
+    use pretty_assertions::assert_str_eq;
     use test_case::test_case;
 
     use super::*;
@@ -159,7 +160,7 @@ mod tests {
         status: CommitStatus,
         result: &str,
     ) {
-        assert_eq!(
+        assert_str_eq!(
             Commit::new(platform, full_message, sha).markdown_text(2, status),
             result
         );

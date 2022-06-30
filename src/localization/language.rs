@@ -65,6 +65,7 @@ impl fmt::Display for Language {
 
 #[cfg(test)]
 mod tests {
+    use pretty_assertions::{assert_eq, assert_str_eq};
     use test_case::test_case;
 
     use super::*;
@@ -83,7 +84,7 @@ mod tests {
     #[test_case("pa-rPK", "Panjabi (`pa-PK`)"; "pa dash r PK")]
     #[test_case("qu-rEC", "Quechua (`qu-EC`)"; "qu dash r EC")]
     fn from_code_some(code: &str, result: &str) {
-        assert_eq!(Language::from_code(code).unwrap().to_string(), result);
+        assert_str_eq!(Language::from_code(code).unwrap().to_string(), result);
     }
 
     // Some of the values-* folders in Signal Android are not for localization.

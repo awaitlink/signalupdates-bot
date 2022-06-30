@@ -79,6 +79,7 @@ pub struct File {
 
 #[cfg(test)]
 mod tests {
+    use pretty_assertions::assert_eq;
     use test_case::test_case;
 
     use super::*;
@@ -101,18 +102,20 @@ mod tests {
         }
     }
 
-    #[test_case("v1.2.3" => test_version(None, None); "3 digits with v")]
-    #[test_case("1.2.3" => test_version(None, None); "3 digits without v")]
-    #[test_case("v1.2.3.4" => test_version(None, Some("4")); "4 digits with v")]
-    #[test_case("1.2.3.4" => test_version(None, Some("4")); "4 digits without v")]
-    #[test_case("v1.2.3-beta.1" => test_version(Some("beta.1"), None); "3 digits beta with v")]
-    #[test_case("1.2.3.4-beta" => test_version(Some("beta"), Some("4")); "4 digits beta without v")]
-    fn version_from_tag(tag: &str) -> Version {
-        Tag {
+    #[test_case("v1.2.3", test_version(None, None); "3 digits with v")]
+    #[test_case("1.2.3", test_version(None, None); "3 digits without v")]
+    #[test_case("v1.2.3.4", test_version(None, Some("4")); "4 digits with v")]
+    #[test_case("1.2.3.4", test_version(None, Some("4")); "4 digits without v")]
+    #[test_case("v1.2.3-beta.1", test_version(Some("beta.1"), None); "3 digits beta with v")]
+    #[test_case("1.2.3.4-beta", test_version(Some("beta"), Some("4")); "4 digits beta without v")]
+    fn version_from_tag(tag: &str, result: Version) {
+        let version: Version = Tag {
             name: tag.to_string(),
         }
         .try_into()
-        .unwrap()
+        .unwrap();
+
+        assert_eq!(version, result);
     }
 
     #[test]
