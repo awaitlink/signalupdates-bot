@@ -28,6 +28,10 @@ impl Platform {
         }
     }
 
+    pub fn should_show_commit_details(&self) -> bool {
+        matches!(self, Android | Desktop)
+    }
+
     pub fn github_api_comparison_url(&self, old: &str, new: &str) -> String {
         format!("https://api.github.com/repos/signalapp/Signal-{self}/compare/{old}...{new}")
     }

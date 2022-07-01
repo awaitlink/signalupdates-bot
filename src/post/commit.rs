@@ -101,7 +101,9 @@ impl<'a> Commit<'a> {
 
         let main_content = format!("- {prefix}{message} [[{number}]]({commit_url}){suffix}\n");
         let details = match message_lines.len() {
-            2.. => format!("\n    {}", message_lines[1..].join("\n    ")),
+            (2..) if self.platform.should_show_commit_details() => {
+                format!("\n    {}", message_lines[1..].join("\n    "))
+            }
             _ => String::new(),
         };
 
@@ -179,6 +181,11 @@ mod tests {
         Desktop, "Test commit. Test @mention!\nTest@mention2.", "abcdef", Normal,
         "- Test commit. Test `@mention`! [[2]](https://github.com/signalapp/Signal-Desktop/commit/abcdef)\n\n    Test`@mention2`.";
         "Desktop: two lines with mention"
+    )]
+    #[test_case(
+        Ios, "Test commit. Continuation.\nContinuation 2.\nContinuation 3.", "abcdef", Normal,
+        "- Test commit. Continuation. [[2]](https://github.com/signalapp/Signal-iOS/commit/abcdef)\n";
+        "iOS: three lines, details are not shown"
     )]
     fn commit_markdown(
         platform: Platform,
