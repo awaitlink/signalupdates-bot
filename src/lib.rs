@@ -63,6 +63,8 @@ async fn check_all_platforms(env: &Env) -> anyhow::Result<()> {
     for platform in Platform::iter() {
         let outcome = check_platform(&mut state_controller, env, platform).await?;
 
+        console_log!("----------------------------------------------------------------------");
+
         match outcome {
             LatestVersionIsAlreadyPosted => console_log!("latest version is already posted"),
             NewTopicNotFound => console_warn!("no topic found, may be not created yet"),
@@ -368,7 +370,7 @@ async fn post_archiving_message_if_necessary(
 
     match old_topic_id {
         Some(old_topic_id) => {
-            console_log!("old_topic_id = {new_topic_id}");
+            console_log!("old_topic_id = {old_topic_id}");
 
             let markdown_text = utils::archiving_post_markdown(new_topic_id);
             console_log!("markdown_text.len() = {}", markdown_text.len());
