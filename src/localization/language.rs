@@ -44,7 +44,7 @@ impl fmt::Display for Language {
 
 impl From<Language> for String {
     fn from(language: Language) -> Self {
-        language.to_string()
+        language.full_code()
     }
 }
 
