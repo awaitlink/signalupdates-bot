@@ -21,7 +21,7 @@ use localization::{
 use platform::Platform;
 use state::StateController;
 
-const POSTING_DELAY_MILLISECONDS: u64 = 2500;
+const POSTING_DELAY_MILLISECONDS: u64 = 3000;
 
 enum PlatformCheckOutcome {
     LatestVersionIsAlreadyPosted,
