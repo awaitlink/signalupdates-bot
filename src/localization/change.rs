@@ -278,7 +278,7 @@ mod tests {
     )]
     #[test_case(
         Ios, &[AppStoreDescription, AppStoreReleaseNotes], "en-US",
-        "English (`en-US`): [App Store description](https://github.com/signalapp/Signal-iOS/compare/v1.2.3..v1.2.4#diff-e7a69d0898d3b2197f77bec55cad6b6d2ff8c973b873bfbe0fe568a1c710ef9c), [App Store release notes](https://github.com/signalapp/Signal-iOS/compare/v1.2.3..v1.2.4#diff-4256fffd9552dba2d12fe36150428ff03b2ede950c4040c5d840a6d6b1240df8)";
+        "English (`en-US`): [description](https://github.com/signalapp/Signal-iOS/compare/v1.2.3..v1.2.4#diff-e7a69d0898d3b2197f77bec55cad6b6d2ff8c973b873bfbe0fe568a1c710ef9c), [release notes](https://github.com/signalapp/Signal-iOS/compare/v1.2.3..v1.2.4#diff-4256fffd9552dba2d12fe36150428ff03b2ede950c4040c5d840a6d6b1240df8)";
         "iOS app store: en dash US"
     )]
     fn string(platform: Platform, kinds: &[StringsFileKind], language_code: &str, result: &str) {

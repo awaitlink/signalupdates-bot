@@ -73,8 +73,8 @@ impl fmt::Display for StringsFileKind {
                 Main => "main",
                 InfoPlist => "info plist",
                 PluralAware => "plural aware",
-                AppStoreDescription => "App Store description",
-                AppStoreReleaseNotes => "App Store release notes",
+                AppStoreDescription => "description",
+                AppStoreReleaseNotes => "release notes",
             }
         )
     }
