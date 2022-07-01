@@ -10,17 +10,13 @@ pub enum Completeness {
 
 use Completeness::*;
 
-use crate::platform::Platform;
-
 impl Completeness {
-    pub fn warning_text(&self, platform: Platform) -> String {
+    pub const fn warning_text(&self) -> &'static str {
         match self {
-            Incomplete => String::from(":warning: For technical reasons, not all languages may be listed below."),
-            LikelyComplete => format!(
-                "For technical reasons, not all languages may be listed below. However, everything from \"{}\" commits is listed, so the list is likely complete.",
-                platform.localization_change_commit_message()
-            ),
-            Complete => String::new(),
+            Incomplete => ":warning: For technical reasons, not all languages may be listed below.",
+            LikelyComplete =>
+                "For technical reasons, not all languages may be listed below. However, everything from \"Updated language translations\" and similar commits is listed, so the list is likely complete.",
+            Complete => "",
         }
     }
 }

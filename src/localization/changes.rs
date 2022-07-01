@@ -80,7 +80,7 @@ impl fmt::Display for LocalizationChanges<'_> {
                 "At least ",
                 format!(
                     "\n{} {}",
-                    self.completeness.warning_text(self.platform),
+                    self.completeness.warning_text(),
                     self.full_comparison_notice()
                 ),
             ),
@@ -138,7 +138,7 @@ mod tests {
         LocalizationChange::default_for_android(),
         LocalizationChange::default_for_android(),
     ], "#### At least 3 changes since 1.1.5:
-For technical reasons, not all languages may be listed below. However, everything from \"Updated language translations\" commits is listed, so the list is likely complete. You can view the full comparison to 1.1.5 so far [here](https://github.com/signalapp/Signal-Android/compare/v1.1.5...v1.2.4).
+For technical reasons, not all languages may be listed below. However, everything from \"Updated language translations\" and similar commits is listed, so the list is likely complete. You can view the full comparison to 1.1.5 so far [here](https://github.com/signalapp/Signal-Android/compare/v1.1.5...v1.2.4).
 - [English (`en`)](https://github.com/signalapp/Signal-Android/compare/v1.1.5..v1.2.4#diff-5e01f7d37a66e4ca03deefc205d8e7008661cdd0284a05aaba1858e6b7bf9103)
 - [English (`en`)](https://github.com/signalapp/Signal-Android/compare/v1.1.5..v1.2.4#diff-5e01f7d37a66e4ca03deefc205d8e7008661cdd0284a05aaba1858e6b7bf9103)
 - [English (`en`)](https://github.com/signalapp/Signal-Android/compare/v1.1.5..v1.2.4#diff-5e01f7d37a66e4ca03deefc205d8e7008661cdd0284a05aaba1858e6b7bf9103)"; "Android: 3 changes, likely complete")]

@@ -37,8 +37,13 @@ impl<'a> Commit<'a> {
         Self::new(platform, &github_commit.commit.message, &github_commit.sha)
     }
 
-    pub fn full_message(&self) -> &str {
-        self.full_message
+    pub fn is_likely_localization_change(&self) -> bool {
+        let lowercase = self.full_message.to_lowercase();
+
+        lowercase.contains("language")
+            || lowercase.contains("translation")
+            || lowercase.contains("string")
+            || lowercase.contains("release note")
     }
 
     pub fn sha(&self) -> &str {
@@ -106,11 +111,29 @@ impl<'a> Commit<'a> {
 
 #[cfg(test)]
 mod tests {
-    use pretty_assertions::assert_str_eq;
+    use pretty_assertions::{assert_eq, assert_str_eq};
+    use strum::IntoEnumIterator;
     use test_case::test_case;
 
     use super::*;
     use crate::platform::Platform::{self, *};
+
+    #[test_case(true, "Updated language translations.")]
+    #[test_case(true, "Update strings")]
+    #[test_case(true, "Updates strings")]
+    #[test_case(true, "Update translations")]
+    #[test_case(true, "Update release notes")]
+    #[test_case(true, "Update release notes & App Store descriptions")]
+    #[test_case(false, "Update GitHub Actions")]
+    #[test_case(false, "Test commit.")]
+    fn is_likely_localization_change(result: bool, message: &str) {
+        for platform in Platform::iter() {
+            assert_eq!(
+                Commit::new(platform, message, "abcdef").is_likely_localization_change(),
+                result
+            );
+        }
+    }
 
     #[test_case(
         Android, "Test commit.", "abcdef", Normal,

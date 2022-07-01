@@ -163,11 +163,7 @@ async fn check_platform(
                 if let Completeness::Incomplete = build_localization_changes.completeness {
                     let localization_change_commits: Vec<_> = commits
                         .iter()
-                        .filter(|commit| {
-                            commit
-                                .full_message()
-                                .contains(platform.localization_change_commit_message())
-                        })
+                        .filter(|commit| commit.is_likely_localization_change())
                         .collect();
 
                     console_log!(
