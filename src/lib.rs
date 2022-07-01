@@ -63,8 +63,6 @@ async fn check_all_platforms(env: &Env) -> anyhow::Result<()> {
     for platform in Platform::iter() {
         let outcome = check_platform(&mut state_controller, env, platform).await?;
 
-        console_log!("----------------------------------------------------------------------");
-
         match outcome {
             LatestVersionIsAlreadyPosted => console_log!("latest version is already posted"),
             NewTopicNotFound => console_warn!("no topic found, may be not created yet"),
@@ -73,6 +71,8 @@ async fn check_all_platforms(env: &Env) -> anyhow::Result<()> {
                 break;
             }
         }
+
+        console_log!("----------------------------------------------------------------------");
     }
 
     Ok(())
