@@ -16,7 +16,7 @@ mod types;
 mod utils;
 
 use localization::{
-    Completeness, Language, LocalizationChange, LocalizationChangeCollection, LocalizationChanges,
+    Completeness, LocalizationChange, LocalizationChangeCollection, LocalizationChanges,
 };
 use platform::Platform;
 use state::StateController;
@@ -84,7 +84,7 @@ async fn check_platform(
     console_log!("checking platform = {platform}");
 
     let all_tags: Vec<types::github::Tag> =
-        utils::get_json_from_url(platform.github_api_tags_url())
+        utils::get_json_from_url(&platform.github_api_tags_url())
             .await
             .context("could not fetch tags from GitHub")?;
 
@@ -191,8 +191,10 @@ async fn check_platform(
 
                             console_log!("with_files = {:?}", with_files);
 
-                            let mut changes =
-                                platform.localization_change_vec_from_files(&with_files.files);
+                            let mut changes = LocalizationChange::unsorted_changes_from_files(
+                                platform,
+                                &with_files.files,
+                            );
 
                             console_log!("changes = {:?}", changes);
 
@@ -220,14 +222,14 @@ async fn check_platform(
                     }
                 }
 
-                let localization_change_codes_completeness = build_localization_changes
+                let localization_changes_completeness = build_localization_changes
                     .completeness
                     .min(if !same_release {
                         Completeness::Complete
                     } else {
                         state_controller
                             .platform_state(platform)
-                            .localization_change_codes_completeness
+                            .localization_changes_completeness
                     });
 
                 let release_localization_changes = if !same_release {
@@ -250,13 +252,10 @@ async fn check_platform(
 
                     let mut changes: Vec<_> = state_controller
                         .platform_state(platform)
-                        .localization_change_codes
+                        .localization_changes
                         .iter()
-                        .map(|code| LocalizationChange {
-                            language: Language::from_code(code).unwrap(),
-                            filename: platform.filename_for_language_code(code),
-                        })
-                        .chain(build_localization_changes.changes.iter().cloned())
+                        .chain(build_localization_changes.changes.iter())
+                        .cloned()
                         .collect();
 
                     changes.sort_unstable();
@@ -266,7 +265,7 @@ async fn check_platform(
                         platform,
                         old_tag: &last_version_of_previous_release.0,
                         new_tag,
-                        completeness: localization_change_codes_completeness,
+                        completeness: localization_changes_completeness,
                         changes,
                     };
 
@@ -278,13 +277,11 @@ async fn check_platform(
                     Some(release_localization_changes)
                 };
 
-                let localization_change_codes = release_localization_changes
+                let localization_changes = release_localization_changes
                     .as_ref()
                     .unwrap_or(&build_localization_changes)
                     .changes
-                    .iter()
-                    .map(|change| change.language.full_code())
-                    .collect();
+                    .clone();
 
                 let post = post::Post::new(
                     platform,
@@ -310,8 +307,8 @@ async fn check_platform(
                         state::PlatformState {
                             last_posted_tag: new_tag.clone(),
                             last_post_number: Some(post_number),
-                            localization_change_codes,
-                            localization_change_codes_completeness,
+                            localization_changes,
+                            localization_changes_completeness,
                             posted_archiving_message: false,
                         },
                     )

@@ -1,8 +1,11 @@
 use std::fmt;
 
+use anyhow::{anyhow, bail};
 use locale_codes::language;
+use serde::{Deserialize, Serialize};
 
-#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
+#[derive(Deserialize, Serialize, Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
+#[serde(try_from = "&str", into = "String")]
 pub struct Language {
     pub language_reference_name: String,
     pub language_code: String,
@@ -20,30 +23,6 @@ impl Default for Language {
 }
 
 impl Language {
-    pub fn from_code(code: &str) -> Option<Self> {
-        let canonical_code = code.replace("-r", "_").replace('-', "_");
-        let parts = canonical_code.split('_').collect::<Vec<_>>();
-
-        match parts.len() {
-            1..=2 => {
-                let language_code = parts[0].to_string();
-                if !(2..=3).contains(&language_code.len()) {
-                    return None;
-                }
-
-                let language_reference_name =
-                    language::lookup(&language_code)?.reference_name.clone();
-
-                Some(Self {
-                    language_reference_name,
-                    language_code,
-                    region_code: parts.get(1).map(|code| code.to_string()),
-                })
-            }
-            _ => None,
-        }
-    }
-
     pub fn full_code(&self) -> String {
         match &self.region_code {
             Some(region_code) => format!("{}-{}", self.language_code, region_code),
@@ -60,6 +39,42 @@ impl fmt::Display for Language {
             self.language_reference_name,
             self.full_code()
         )
+    }
+}
+
+impl From<Language> for String {
+    fn from(language: Language) -> Self {
+        language.to_string()
+    }
+}
+
+impl TryFrom<&str> for Language {
+    type Error = anyhow::Error;
+
+    fn try_from(code: &str) -> Result<Self, Self::Error> {
+        let canonical_code = code.replace("-r", "_").replace('-', "_");
+        let parts = canonical_code.split('_').collect::<Vec<_>>();
+
+        match parts.len() {
+            1..=2 => {
+                let language_code = parts[0].to_string();
+                if !(2..=3).contains(&language_code.len()) {
+                    bail!("language code length is not in range 2..=3");
+                }
+
+                let language_reference_name = language::lookup(&language_code)
+                    .ok_or_else(|| anyhow!("could not look up language by code"))?
+                    .reference_name
+                    .clone();
+
+                Ok(Self {
+                    language_reference_name,
+                    language_code,
+                    region_code: parts.get(1).map(|code| code.to_string()),
+                })
+            }
+            _ => bail!("incorrect count of code parts"),
+        }
     }
 }
 
@@ -84,7 +99,7 @@ mod tests {
     #[test_case("pa-rPK", "Panjabi (`pa-PK`)"; "pa dash r PK")]
     #[test_case("qu-rEC", "Quechua (`qu-EC`)"; "qu dash r EC")]
     fn from_code_some(code: &str, result: &str) {
-        assert_str_eq!(Language::from_code(code).unwrap().to_string(), result);
+        assert_str_eq!(Language::try_from(code).unwrap().to_string(), result);
     }
 
     // Some of the values-* folders in Signal Android are not for localization.
@@ -93,14 +108,14 @@ mod tests {
     #[test_case("night")]
     #[test_case("v9")]
     fn from_code_none(code: &str) {
-        assert!(Language::from_code(code).is_none());
+        assert!(Language::try_from(code).is_err());
     }
 
     #[test_case(&["pt_PT", "pt_BR", "en_US", "eo", "en"], &["en", "en_US", "eo", "pt_BR", "pt_PT"]; "basic test")]
     fn ord(input: &[&str], output: &[&str]) {
         let map = |x: &[&str]| {
             x.iter()
-                .map(|code| Language::from_code(code).unwrap())
+                .map(|code| Language::try_from(*code).unwrap())
                 .collect::<Vec<_>>()
         };
 

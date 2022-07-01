@@ -4,7 +4,7 @@ use worker::Env;
 use worker_kv::KvStore;
 
 use crate::{
-    localization::Completeness,
+    localization::{Completeness, LocalizationChange},
     platform::Platform::{self, *},
     types::github::Tag,
 };
@@ -15,6 +15,7 @@ const STATE_KV_KEY: &str = "state";
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct State {
     pub android: PlatformState,
+    pub ios: PlatformState,
     pub desktop: PlatformState,
 }
 
@@ -24,9 +25,9 @@ pub struct PlatformState {
     pub last_post_number: Option<u64>,
 
     #[serde(default)]
-    pub localization_change_codes: Vec<String>,
+    pub localization_changes: Vec<LocalizationChange>,
     #[serde(default)]
-    pub localization_change_codes_completeness: Completeness,
+    pub localization_changes_completeness: Completeness,
 
     #[serde(default)]
     pub posted_archiving_message: bool,
@@ -64,6 +65,7 @@ impl StateController {
     pub fn platform_state(&self, platform: Platform) -> &PlatformState {
         match platform {
             Android => &self.state.android,
+            Ios => &self.state.ios,
             Desktop => &self.state.desktop,
         }
     }
@@ -75,6 +77,7 @@ impl StateController {
     ) -> anyhow::Result<()> {
         match platform {
             Android => self.state.android = state,
+            Ios => self.state.ios = state,
             Desktop => self.state.desktop = state,
         }
 

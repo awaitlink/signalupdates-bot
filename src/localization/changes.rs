@@ -2,11 +2,11 @@ use std::fmt;
 
 use worker::console_log;
 
-use super::{
-    Completeness::{self, *},
-    LocalizationChange,
-};
 use crate::{
+    localization::{
+        Completeness::{self, *},
+        LocalizationChange,
+    },
     platform::Platform,
     types::github::{Comparison, Tag},
 };
@@ -31,7 +31,9 @@ impl<'a> LocalizationChanges<'a> {
         let complete = comparison.are_files_likely_complete().unwrap();
         console_log!("complete = {}", complete);
 
-        let mut changes = platform.localization_change_vec_from_files(&comparison.files);
+        let mut changes =
+            LocalizationChange::unsorted_changes_from_files(platform, &comparison.files);
+
         changes.sort_unstable();
 
         console_log!("changes.len() = {:?}", changes.len());
@@ -57,17 +59,7 @@ impl<'a> LocalizationChanges<'a> {
     fn language_links(&self) -> String {
         self.changes
             .iter()
-            .map(|change| {
-                format!(
-                    "[{}]({})",
-                    change.language,
-                    self.platform.github_comparison_url(
-                        &self.old_tag.name,
-                        &self.new_tag.name,
-                        Some(&change.filename)
-                    )
-                )
-            })
+            .map(|change| change.string(self.platform, self.old_tag, self.new_tag))
             .collect::<Vec<_>>()
             .join("\n- ")
     }
