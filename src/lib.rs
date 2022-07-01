@@ -90,7 +90,7 @@ async fn check_platform(
 
     console_log!("all_tags = {:?}", all_tags);
 
-    let tags: Vec<(types::github::Tag, Version)> = all_tags
+    let mut tags: Vec<(types::github::Tag, Version)> = all_tags
         .iter()
         .filter_map(|tag| tag.try_into().ok().map(|version| (tag.clone(), version)))
         .filter(|(_, version)| platform.should_post_version(version))
@@ -98,10 +98,12 @@ async fn check_platform(
 
     console_log!("tags = {:?}", tags);
 
+    tags.sort_unstable_by_key(|(_, version)| version.clone());
+    console_log!("after sorting, tags = {:?}", tags);
+
     // TODO: assumes the last posted tag can be found on this GitHub API page
     let tags_to_post: Vec<(types::github::Tag, Version)> = tags
         .iter()
-        .rev()
         .skip_while(|(tag, _)| tag != &state_controller.platform_state(platform).last_posted_tag)
         .cloned()
         .collect();
