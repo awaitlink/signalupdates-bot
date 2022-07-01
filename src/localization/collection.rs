@@ -33,7 +33,7 @@ impl<'a> LocalizationChangeCollection<'a> {
 
         let usage_instructions = match mode {
             Nothing => "",
-            _ => "Note: after clicking a link, it may take ~5-10s before GitHub jumps to the corresponding file.\n\n",
+            _ => "Note: after clicking a link, it may take a few seconds before GitHub jumps to the file (try scrolling a bit if it doesn't).\n\n",
         };
 
         let none_fit_notice = "Sorry, no localization changes fit in the post character limit.";
