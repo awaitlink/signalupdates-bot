@@ -100,7 +100,7 @@ async fn check_platform(
 
     console_log!("tags = {:?}", tags);
 
-    tags.sort_unstable_by_key(|(_, version)| version.clone());
+    tags.sort_unstable_by(|(_, lhs), (_, rhs)| lhs.cmp(rhs));
     console_log!("after sorting, tags = {:?}", tags);
 
     // TODO: assumes the last posted tag can be found on this GitHub API page

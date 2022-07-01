@@ -135,6 +135,35 @@ mod tests {
         assert_eq!(version, result);
     }
 
+    #[test_case(
+      &["v1.2.3", "v1.2.5", "v1.1.3", "v1.2.4"],
+      &["v1.1.3", "v1.2.3", "v1.2.4", "v1.2.5"];
+      "three digits"
+    )]
+    #[test_case(
+      &["1.2.3.3-beta", "1.1.3.3-beta", "1.2.3.5-beta", "1.2.3.4-beta"],
+      &["1.1.3.3-beta", "1.2.3.3-beta", "1.2.3.4-beta", "1.2.3.5-beta"];
+      "four digits beta"
+    )]
+    #[test_case(
+      &["v1.2.3-beta.1", "v1.2.3-beta.3", "v1.1.3-beta.1", "v1.2.3-beta.2"],
+      &["v1.1.3-beta.1", "v1.2.3-beta.1", "v1.2.3-beta.2", "v1.2.3-beta.3"];
+      "three digits beta dot digit"
+    )]
+    fn compare_versions(input: &[&str], output: &[&str]) {
+        let map = |x: &[&str]| {
+            x.iter()
+                .map(|tag_name| Tag::new(tag_name.to_string()).try_into().unwrap())
+                .collect::<Vec<_>>()
+        };
+
+        let mut input: Vec<Version> = map(input);
+        let output = map(output);
+
+        input.sort_unstable();
+        assert_eq!(input, output);
+    }
+
     #[test]
     fn comparison_deserialization() {
         // Example from https://docs.github.com/en/rest/commits/commits#compare-two-commits
