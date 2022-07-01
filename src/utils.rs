@@ -1,16 +1,21 @@
+use std::time::Duration;
+
 use anyhow::{anyhow, bail, Context};
 use semver::Version;
 use serde::de::DeserializeOwned;
-use serde_json::Value;
+use serde_json::{json, Value};
 use sha2::{Digest, Sha256};
 use worker::{
-    console_error, console_log, console_warn, wasm_bindgen::JsValue, Env, Fetch, Headers, Method,
-    Request, RequestInit, Response, Url,
+    console_error, console_log, console_warn, wasm_bindgen::JsValue, Delay, Env, Fetch, Headers,
+    Method, Request, RequestInit, Response, Url,
 };
 
 use crate::{
     platform::Platform,
-    types::github::{Commit, CommitData, Comparison},
+    types::{
+        discourse::PostApiResponse,
+        github::{Commit, CommitData, Comparison},
+    },
 };
 
 pub const USER_AGENT: &str = "updates-bot";
@@ -73,6 +78,23 @@ pub async fn get_topic_id(
             console_error!("response = {:?}", response);
             bail!("discourse API request likely failed")
         }
+    }
+}
+
+pub async fn get_topic_id_or_override(
+    env: &Env,
+    api_key: &str,
+    platform: Platform,
+    version: &Version,
+) -> anyhow::Result<Option<u64>> {
+    match topic_id_override(env)? {
+        Some(id) => {
+            console_warn!("using topic id override: {id}");
+            Ok(Some(id))
+        }
+        None => get_topic_id(api_key, platform, version)
+            .await
+            .context("could not find topic_id"),
     }
 }
 
@@ -274,4 +296,51 @@ where
 pub fn sha256_string(input: &str) -> String {
     let result = Sha256::digest(input.as_bytes());
     base16ct::lower::encode_string(&result)
+}
+
+pub fn archiving_post_markdown(new_topic_id: u64) -> String {
+    format!(
+        "Beta testing for this release has concluded. If you find any further bugs related to this release or earlier releases, please report them on GitHub (read https://community.signalusers.org/t/27 for more information on how to do that).
+
+If you have feedback specifically related to the new beta version, please post it in the following topic: https://community.signalusers.org/t/{new_topic_id}"
+    )
+}
+
+/// Makes a post in Discourse.
+///
+/// If successful, returns the post number.
+pub async fn post_to_discourse(
+    markdown_text: &str,
+    api_key: &str,
+    topic_id: u64,
+    reply_to_post_number: Option<u64>,
+) -> anyhow::Result<u64> {
+    let url = Url::parse("https://community.signalusers.org/posts.json")
+        .context("could not parse URL")?;
+
+    let body = json!({
+        "topic_id": topic_id,
+        "reply_to_post_number": reply_to_post_number,
+        "raw": markdown_text,
+    });
+
+    let request = create_request(url, Method::Post, Some(body), Some(api_key))?;
+    let api_response: PostApiResponse = get_json_from_request(request).await?;
+
+    match api_response.post_number {
+        Some(number) => Ok(number),
+        None => {
+            console_error!("api_response = {:?}", api_response);
+            bail!("discourse API response did not include the post number, posting likely failed")
+        }
+    }
+}
+
+/// Asynchronously waits for the specified number of milliseconds.
+pub async fn delay(milliseconds: u64) {
+    console_log!("waiting {milliseconds} milliseconds");
+
+    Delay::from(Duration::from_millis(milliseconds)).await;
+
+    console_log!("done waiting {milliseconds} milliseconds");
 }

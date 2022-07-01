@@ -21,10 +21,12 @@ use localization::{
 use platform::Platform;
 use state::StateController;
 
+const POSTING_DELAY_MILLISECONDS: u64 = 2500;
+
 enum PlatformCheckOutcome {
     LatestVersionIsAlreadyPosted,
-    TopicNotFound,
-    Posted,
+    NewTopicNotFound,
+    PostedCommits,
 }
 
 use PlatformCheckOutcome::*;
@@ -63,9 +65,9 @@ async fn check_all_platforms(env: &Env) -> anyhow::Result<()> {
 
         match outcome {
             LatestVersionIsAlreadyPosted => console_log!("latest version is already posted"),
-            TopicNotFound => console_warn!("no topic found, may be not created yet"),
-            Posted => {
-                console_warn!("already posted for {platform} and currently doing only one post per invocation, done");
+            NewTopicNotFound => console_warn!("no topic found, may be not created yet"),
+            PostedCommits => {
+                console_warn!("already posted for {platform} and currently doing only one \"commits\" post per invocation, done");
                 break;
             }
         }
@@ -117,23 +119,32 @@ async fn check_platform(
 
         let discourse_api_key = utils::api_key(env)?;
 
-        let topic_id = match utils::topic_id_override(env)? {
-            Some(id) => {
-                console_warn!("using topic id override: {id}");
-                Some(id)
-            }
-            None => utils::get_topic_id(&discourse_api_key, platform, new_version)
+        let new_topic_id =
+            utils::get_topic_id_or_override(env, &discourse_api_key, platform, new_version)
                 .await
-                .context("could not find topic_id")?,
-        };
+                .context("could not find new_topic_id")?;
 
-        match topic_id {
-            Some(topic_id) => {
-                console_log!("topic_id = {topic_id}");
+        match new_topic_id {
+            Some(new_topic_id) => {
+                console_log!("new_topic_id = {new_topic_id}");
 
                 let same_release = old_version.major == new_version.major
                     && old_version.minor == new_version.minor;
                 console_log!("same_release = {}", same_release);
+
+                // Post archiving message to old topic if necessary and possible
+                post_archiving_message_if_necessary(
+                    same_release,
+                    state_controller,
+                    env,
+                    platform,
+                    &discourse_api_key,
+                    old_version,
+                    new_topic_id,
+                )
+                .await?;
+
+                // Post commits to new topic
 
                 let reply_to_post_number = if same_release {
                     state_controller.platform_state(platform).last_post_number
@@ -202,7 +213,7 @@ async fn check_platform(
                             build_localization_changes.completeness = Completeness::LikelyComplete;
 
                             console_log!(
-                                "got complete files for all \"Updated language translations\" commits, build_localization_changes.completeness = {:?}",
+                                "got complete files for all localization change commits, build_localization_changes.completeness = {:?}",
                                 build_localization_changes.completeness
                             );
                         }
@@ -287,7 +298,7 @@ async fn check_platform(
                 );
 
                 let post_number = post
-                    .post(&discourse_api_key, topic_id, reply_to_post_number)
+                    .post(&discourse_api_key, new_topic_id, reply_to_post_number)
                     .await
                     .context("could not post to Discourse")?;
 
@@ -296,26 +307,101 @@ async fn check_platform(
                 state_controller
                     .set_platform_state(
                         platform,
-                        state::PlatformState::new(
-                            new_tag.clone(),
-                            Some(post_number),
+                        state::PlatformState {
+                            last_posted_tag: new_tag.clone(),
+                            last_post_number: Some(post_number),
                             localization_change_codes,
                             localization_change_codes_completeness,
-                        ),
+                            posted_archiving_message: false,
+                        },
                     )
                     .await
-                    .context("could not set platform state")?;
+                    .context("could not set platform state after posting commits")?;
 
                 console_log!(
                     "saved platform state to KV: {:?}",
                     state_controller.platform_state(platform)
                 );
 
-                Ok(Posted)
+                Ok(PostedCommits)
             }
-            None => Ok(TopicNotFound),
+            None => Ok(NewTopicNotFound),
         }
     } else {
         Ok(LatestVersionIsAlreadyPosted)
     }
+}
+
+async fn post_archiving_message_if_necessary(
+    same_release: bool,
+    state_controller: &mut StateController,
+    env: &Env,
+    platform: Platform,
+    discourse_api_key: &str,
+    old_version: &Version,
+    new_topic_id: u64,
+) -> anyhow::Result<()> {
+    if same_release
+        || state_controller
+            .platform_state(platform)
+            .posted_archiving_message
+    {
+        console_log!("archiving message not necessary");
+        return Ok(());
+    } else {
+        console_log!("attempting to post archiving message");
+    }
+
+    let old_topic_id =
+        utils::get_topic_id_or_override(env, discourse_api_key, platform, old_version)
+            .await
+            .context("could not find old_topic_id")?;
+
+    match old_topic_id {
+        Some(old_topic_id) => {
+            console_log!("old_topic_id = {new_topic_id}");
+
+            let markdown_text = utils::archiving_post_markdown(new_topic_id);
+            console_log!("markdown_text.len() = {}", markdown_text.len());
+
+            let result = utils::post_to_discourse(
+                &markdown_text,
+                discourse_api_key,
+                old_topic_id,
+                state_controller.platform_state(platform).last_post_number,
+            )
+            .await;
+
+            match result {
+                Ok(post_number) => {
+                    console_log!("posted archiving message, post number = {}", post_number);
+
+                    let mut new_state = state_controller.platform_state(platform).clone();
+                    new_state.posted_archiving_message = true;
+
+                    state_controller
+                        .set_platform_state(platform, new_state)
+                        .await
+                        .context("could not set platform state after posting archiving message")?;
+
+                    console_log!(
+                        "saved platform state to KV: {:?}",
+                        state_controller.platform_state(platform)
+                    );
+
+                    utils::delay(POSTING_DELAY_MILLISECONDS).await;
+                }
+                Err(_) => {
+                    console_warn!("could not post archiving message to old topic, it is likely already archived; ignoring, will not post archiving message for this release");
+                }
+            }
+        }
+        None => {
+            console_warn!("old topic does not exist? ignoring, will not post archiving message for this release");
+        }
+    }
+
+    console_log!("post_archiving_message_if_necessary done");
+
+    Ok(())
 }

@@ -1,14 +1,13 @@
 use std::collections::HashMap;
 
-use anyhow::{bail, Context};
-use serde_json::json;
+use anyhow::bail;
 use strum::IntoEnumIterator;
-use worker::{console_error, console_log, console_warn, Method, Url};
+use worker::{console_log, console_warn};
 
 use crate::{
     localization::{LocalizationChangeCollection, RenderMode},
     platform::Platform,
-    types::{self, github::Tag},
+    types::github::Tag,
     utils,
 };
 
@@ -143,31 +142,12 @@ Gathered from [signalapp/Signal-{platform}]({comparison_url})
             }
         }
 
-        if post_markdown.is_none() {
-            bail!("could not make a post that fits within the allowed character count")
-        }
-
-        let body = json!({
-            "topic_id": topic_id,
-            "reply_to_post_number": reply_to_post_number,
-            "raw": post_markdown,
-        });
-
-        let url = Url::parse("https://community.signalusers.org/posts.json")
-            .context("could not parse URL")?;
-        let request = utils::create_request(url, Method::Post, Some(body), Some(api_key))?;
-
-        let api_response: types::discourse::PostApiResponse =
-            utils::get_json_from_request(request).await?;
-
-        match api_response.post_number {
-            Some(number) => Ok(number),
-            None => {
-                console_error!("api_response = {:?}", api_response);
-                bail!(
-                    "discourse API response did not include the post number, posting likely failed"
-                )
+        match &post_markdown {
+            Some(markdown_text) => {
+                utils::post_to_discourse(markdown_text, api_key, topic_id, reply_to_post_number)
+                    .await
             }
+            None => bail!("could not make a post that fits within the allowed character count"),
         }
     }
 }

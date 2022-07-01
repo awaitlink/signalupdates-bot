@@ -12,13 +12,13 @@ use crate::{
 const STATE_KV_BINDING: &str = "STATE";
 const STATE_KV_KEY: &str = "state";
 
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct State {
     pub android: PlatformState,
     pub desktop: PlatformState,
 }
 
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct PlatformState {
     pub last_posted_tag: Tag,
     pub last_post_number: Option<u64>,
@@ -27,22 +27,9 @@ pub struct PlatformState {
     pub localization_change_codes: Vec<String>,
     #[serde(default)]
     pub localization_change_codes_completeness: Completeness,
-}
 
-impl PlatformState {
-    pub fn new(
-        last_posted_tag: Tag,
-        last_post_number: Option<u64>,
-        localization_change_codes: Vec<String>,
-        localization_change_codes_completeness: Completeness,
-    ) -> Self {
-        Self {
-            last_posted_tag,
-            last_post_number,
-            localization_change_codes,
-            localization_change_codes_completeness,
-        }
-    }
+    #[serde(default)]
+    pub posted_archiving_message: bool,
 }
 
 pub struct StateController {
