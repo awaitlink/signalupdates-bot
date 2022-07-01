@@ -28,6 +28,13 @@ impl Platform {
         }
     }
 
+    pub fn should_show_commit(&self, full_message: &str) -> bool {
+        match self {
+            Android | Desktop => true,
+            Ios => !full_message.contains("Bump build to"),
+        }
+    }
+
     pub fn should_show_commit_details(&self) -> bool {
         matches!(self, Android | Desktop)
     }

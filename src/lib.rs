@@ -164,6 +164,7 @@ async fn check_platform(
                     .commits
                     .iter()
                     .map(|github_commit| post::Commit::from_github_commit(platform, github_commit))
+                    .filter(|commit| platform.should_show_commit(commit.full_message()))
                     .collect();
 
                 console_log!("commits.len() = {:?}", commits.len());

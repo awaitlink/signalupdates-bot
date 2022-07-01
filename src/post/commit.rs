@@ -50,6 +50,10 @@ impl<'a> Commit<'a> {
         self.sha
     }
 
+    pub fn full_message(&self) -> &str {
+        self.full_message
+    }
+
     pub fn reverted_commit_sha(&self) -> Option<&str> {
         lazy_static! {
             static ref REVERTS_COMMIT_REGEX: Regex =
