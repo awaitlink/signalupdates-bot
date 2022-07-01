@@ -160,14 +160,22 @@ async fn check_platform(
 
                 console_log!("comparison = {:?}", comparison);
 
-                let commits: Vec<post::Commit> = comparison
+                let unfiltered_commits: Vec<post::Commit> = comparison
                     .commits
                     .iter()
                     .map(|github_commit| post::Commit::from_github_commit(platform, github_commit))
+                    .collect();
+
+                let unfiltered_commits_len = unfiltered_commits.len();
+                console_log!("unfiltered_commits_len = {:?}", unfiltered_commits_len);
+
+                let commits: Vec<post::Commit> = unfiltered_commits
+                    .into_iter()
                     .filter(|commit| platform.should_show_commit(commit.full_message()))
                     .collect();
 
-                console_log!("commits.len() = {:?}", commits.len());
+                let commits_len = commits.len();
+                console_log!("commits_len = {:?}", commits_len);
 
                 let mut build_localization_changes =
                     LocalizationChanges::from_comparison(platform, old_tag, new_tag, &comparison);
@@ -289,6 +297,7 @@ async fn check_platform(
                     old_tag,
                     new_tag,
                     commits,
+                    unfiltered_commits_len != commits_len,
                     LocalizationChangeCollection {
                         build_changes: build_localization_changes,
                         release_changes: release_localization_changes,

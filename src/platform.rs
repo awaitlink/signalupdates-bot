@@ -31,7 +31,10 @@ impl Platform {
     pub fn should_show_commit(&self, full_message: &str) -> bool {
         match self {
             Android | Desktop => true,
-            Ios => !full_message.contains("Bump build to"),
+            Ios => {
+                !full_message.contains("Bump build to")
+                    && !full_message.contains("Feature flags for")
+            }
         }
     }
 

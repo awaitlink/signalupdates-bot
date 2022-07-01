@@ -22,6 +22,7 @@ pub struct Post<'a> {
     old_tag: &'a Tag,
     new_tag: &'a Tag,
     commits: Vec<Commit<'a>>,
+    are_commits_filtered: bool,
     localization_change_collection: LocalizationChangeCollection<'a>,
 }
 
@@ -31,6 +32,7 @@ impl<'a> Post<'a> {
         old_tag: &'a Tag,
         new_tag: &'a Tag,
         commits: Vec<Commit<'a>>,
+        are_commits_filtered: bool,
         localization_change_collection: LocalizationChangeCollection<'a>,
     ) -> Self {
         Self {
@@ -38,6 +40,7 @@ impl<'a> Post<'a> {
             old_tag,
             new_tag,
             commits,
+            are_commits_filtered,
             localization_change_collection,
         }
     }
@@ -105,10 +108,16 @@ impl<'a> Post<'a> {
 
         let localization_changes_string = self.localization_change_collection.to_string(mode);
 
+        let filtered_notice = if self.are_commits_filtered {
+            " (some commits are omitted)"
+        } else {
+            ""
+        };
+
         format!(
             "## New Version: {new_version}{availability_notice}
 [quote]
-{commits_count} new commit{commits_word_suffix} since {old_version}:
+{commits_count} new commit{commits_word_suffix} since {old_version}{filtered_notice}:
 {commits_prefix}{commits_markdown}{commits_postfix}
 ---
 Gathered from [signalapp/Signal-{platform}]({comparison_url})
@@ -165,7 +174,7 @@ mod tests {
 
     #[test_case(Android, "v1.2.3", "v1.2.4", vec![
         Commit::new(Android, "Test commit.", "abcdef")
-    ], None, "## New Version: 1.2.4
+    ], false, None, "## New Version: 1.2.4
 (Not Yet) Available via [Firebase App Distribution](https://community.signalusers.org/t/17538)
 [quote]
 1 new commit since 1.2.3:
@@ -187,7 +196,7 @@ Localization changes for the whole release are the same, as this is the first bu
     #[test_case(Android, "v1.2.3", "v1.2.4", vec![
         Commit::new(Android, "Test commit.", "abcdef"),
         Commit::new(Android, "Bump version to 1.2.4", "abc123")
-    ], None, "## New Version: 1.2.4
+    ], false, None, "## New Version: 1.2.4
 (Not Yet) Available via [Firebase App Distribution](https://community.signalusers.org/t/17538)
 [quote]
 2 new commits since 1.2.3:
@@ -209,12 +218,36 @@ Localization changes for the whole release are the same, as this is the first bu
 [/quote]
 [/details]"; "Android: two commits")]
     #[test_case(Android, "v1.2.3", "v1.2.4", vec![
+        Commit::new(Android, "Test commit.", "abcdef"),
+        Commit::new(Android, "Bump version to 1.2.4", "abc123")
+    ], true, None, "## New Version: 1.2.4
+(Not Yet) Available via [Firebase App Distribution](https://community.signalusers.org/t/17538)
+[quote]
+2 new commits since 1.2.3 (some commits are omitted):
+- Test commit. [[1]](https://github.com/signalapp/Signal-Android/commit/abcdef)
+
+- Bump version to 1.2.4 [[2]](https://github.com/signalapp/Signal-Android/commit/abc123)
+
+---
+Gathered from [signalapp/Signal-Android](https://github.com/signalapp/Signal-Android/compare/v1.2.3...v1.2.4)
+[/quote]
+[details=\"Localization changes\"]
+[quote]
+Note: after clicking a link, it may take a few seconds before GitHub jumps to the file (try scrolling a bit if it doesn't).
+
+#### 0 changes since 1.2.3:
+*No localization changes found*
+
+Localization changes for the whole release are the same, as this is the first build of the release.
+[/quote]
+[/details]"; "Android: two commits filtered")]
+    #[test_case(Android, "v1.2.3", "v1.2.4", vec![
         Commit::new(Android, "Test commit.", "abc111"),
         Commit::new(Android, "Revert \"Test commit.\".\nThis reverts commit abc111.", "abc222"),
         Commit::new(Android, "Revert \"Revert \"Test commit.\".\".\nThis reverts commit abc222.", "abc333"),
         Commit::new(Android, "Revert \"Test commit 0.\".\nThis reverts commit abc000.", "abc444"),
         Commit::new(Android, "Test commit 2.", "abc555"),
-    ], None, "## New Version: 1.2.4
+    ], false, None, "## New Version: 1.2.4
 (Not Yet) Available via [Firebase App Distribution](https://community.signalusers.org/t/17538)
 [quote]
 5 new commits since 1.2.3:
@@ -246,7 +279,7 @@ Localization changes for the whole release are the same, as this is the first bu
         .take(20)
         .chain(vec![Commit::new(Android, "Bump version to 1.2.4", "abc123")].iter().cloned())
         .collect(),
-    None, "## New Version: 1.2.4
+    false, None, "## New Version: 1.2.4
 (Not Yet) Available via [Firebase App Distribution](https://community.signalusers.org/t/17538)
 [quote]
 21 new commits since 1.2.3:
@@ -309,7 +342,7 @@ Localization changes for the whole release are the same, as this is the first bu
 [/details]"; "Android: twenty one commits")]
     #[test_case(Desktop, "v1.2.3-beta.1", "v1.2.3-beta.2", vec![
         Commit::new(Desktop, "Test commit.", "abcdef")
-    ], None, "## New Version: 1.2.3-beta.2
+    ], false, None, "## New Version: 1.2.3-beta.2
 [quote]
 1 new commit since 1.2.3-beta.1:
 - Test commit. [[1]](https://github.com/signalapp/Signal-Desktop/commit/abcdef)
@@ -329,7 +362,7 @@ Localization changes for the whole release are the same, as this is the first bu
 [/details]"; "Desktop: one commit")]
     #[test_case(Android, "v1.2.3", "v1.2.4", vec![
         Commit::new(Android, "Test commit.", "abcdef")
-    ], Some(Completeness::Complete), "## New Version: 1.2.4
+    ], false, Some(Completeness::Complete), "## New Version: 1.2.4
 (Not Yet) Available via [Firebase App Distribution](https://community.signalusers.org/t/17538)
 [quote]
 1 new commit since 1.2.3:
@@ -357,6 +390,7 @@ Note: after clicking a link, it may take a few seconds before GitHub jumps to th
         old_tag: &str,
         new_tag: &str,
         commits: Vec<Commit>,
+        are_commits_filtered: bool,
         localization_change_collection: Option<Completeness>,
         result: &str,
     ) {
@@ -405,6 +439,7 @@ Note: after clicking a link, it may take a few seconds before GitHub jumps to th
             &old_tag,
             &new_tag,
             commits,
+            are_commits_filtered,
             localization_change_collection,
         );
 
