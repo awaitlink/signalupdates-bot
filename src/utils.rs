@@ -302,7 +302,7 @@ pub fn archiving_post_markdown(new_topic_id: u64) -> String {
     format!(
         "Beta testing for this release has concluded. If you find any further bugs related to this release or earlier releases, please report them on GitHub (read https://community.signalusers.org/t/27 for more information on how to do that).
 
-If you have feedback specifically related to the new beta version, please post it in the following topic: https://community.signalusers.org/t/{new_topic_id}"
+If you have feedback specifically related to the new beta version, please post it in the following topic: https://community.signalusers.org/t/{new_topic_id}."
     )
 }
 
