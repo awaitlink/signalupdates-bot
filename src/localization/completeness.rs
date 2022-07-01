@@ -1,7 +1,8 @@
 use serde::{Deserialize, Serialize};
 
-#[derive(Serialize, Deserialize, Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
+#[derive(Serialize, Deserialize, Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Default)]
 pub enum Completeness {
+    #[default]
     Incomplete,
     LikelyComplete,
     Complete,
@@ -21,11 +22,5 @@ impl Completeness {
             ),
             Complete => String::new(),
         }
-    }
-}
-
-impl Default for Completeness {
-    fn default() -> Self {
-        Incomplete
     }
 }
