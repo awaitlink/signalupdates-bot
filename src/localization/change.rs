@@ -140,7 +140,7 @@ impl LocalizationChange {
                         )
                     })
                     .collect::<Vec<_>>()
-                    .join(", ")
+                    .join(" • ")
             ),
         }
     }
