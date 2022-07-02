@@ -128,6 +128,7 @@ Gathered from [signalapp/Signal-{platform}]({comparison_url})
 
     pub async fn post(
         &self,
+        is_dry_run: bool,
         api_key: &str,
         topic_id: u64,
         reply_to_post_number: Option<u64>,
@@ -153,8 +154,13 @@ Gathered from [signalapp/Signal-{platform}]({comparison_url})
 
         match &post_markdown {
             Some(markdown_text) => {
-                utils::post_to_discourse(markdown_text, api_key, topic_id, reply_to_post_number)
-                    .await
+                if !is_dry_run {
+                    utils::post_to_discourse(markdown_text, api_key, topic_id, reply_to_post_number)
+                        .await
+                } else {
+                    console_warn!("dry run; not posting to Discourse");
+                    Ok(reply_to_post_number.unwrap_or(0))
+                }
             }
             None => bail!("could not make a post that fits within the allowed character count"),
         }

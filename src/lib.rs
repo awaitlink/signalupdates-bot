@@ -303,7 +303,12 @@ async fn check_platform(
                 );
 
                 let post_number = post
-                    .post(&discourse_api_key, new_topic_id, reply_to_post_number)
+                    .post(
+                        utils::is_dry_run(env)?,
+                        &discourse_api_key,
+                        new_topic_id,
+                        reply_to_post_number,
+                    )
                     .await
                     .context("could not post commits to Discourse")?;
 
@@ -371,13 +376,18 @@ async fn post_archiving_message_if_necessary(
             let markdown_text = utils::archiving_post_markdown(new_topic_id);
             console_log!("markdown_text.len() = {}", markdown_text.len());
 
-            let result = utils::post_to_discourse(
-                &markdown_text,
-                discourse_api_key,
-                old_topic_id,
-                state_controller.platform_state(platform).last_post_number,
-            )
-            .await;
+            let result = if !utils::is_dry_run(env)? {
+                utils::post_to_discourse(
+                    &markdown_text,
+                    discourse_api_key,
+                    old_topic_id,
+                    state_controller.platform_state(platform).last_post_number,
+                )
+                .await
+            } else {
+                console_warn!("dry run; not posting to Discourse");
+                Ok(0)
+            };
 
             match result {
                 Ok(post_number) => {

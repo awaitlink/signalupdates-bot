@@ -49,6 +49,10 @@ pub fn topic_id_override(env: &Env) -> anyhow::Result<Option<u64>> {
     get_env_string(env, Var, "TOPIC_ID_OVERRIDE").map(|string| string.parse().ok())
 }
 
+pub fn is_dry_run(env: &Env) -> anyhow::Result<bool> {
+    get_env_string(env, Var, "DRY_RUN").map(|string| string == "true")
+}
+
 pub async fn get_topic_id(
     api_key: &str,
     platform: Platform,
