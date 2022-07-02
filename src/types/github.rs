@@ -9,31 +9,22 @@ pub struct Tag {
     pub name: String,
 }
 
-impl TryFrom<Tag> for Version {
-    type Error = anyhow::Error;
-
-    fn try_from(tag: Tag) -> Result<Self, Self::Error> {
-        (&tag).try_into()
+impl Tag {
+    pub fn exact_version_string(&self) -> String {
+        self.name.replace('v', "")
     }
-}
 
-impl TryFrom<&Tag> for Version {
-    type Error = anyhow::Error;
-
-    fn try_from(tag: &Tag) -> Result<Self, Self::Error> {
-        lenient_semver::parse(&tag.name)
+    pub fn to_version(&self) -> anyhow::Result<Version> {
+        lenient_semver::parse(&self.name)
             .map_err(|e| anyhow!(e.to_string()))
             .context("could not parse version from tag")
     }
 }
 
+#[cfg(test)]
 impl Tag {
     pub fn new(name: impl Into<String>) -> Self {
         Self { name: name.into() }
-    }
-
-    pub fn exact_version_string(&self) -> String {
-        self.name.replace('v', "")
     }
 }
 
@@ -126,11 +117,7 @@ mod tests {
     #[test_case("v1.2.3-beta.1", test_version(Some("beta.1"), None); "3 digits beta with v")]
     #[test_case("1.2.3.4-beta", test_version(Some("beta"), Some("4")); "4 digits beta without v")]
     fn version_from_tag(tag: &str, result: Version) {
-        let version: Version = Tag {
-            name: tag.to_string(),
-        }
-        .try_into()
-        .unwrap();
+        let version: Version = Tag::new(tag).to_version().unwrap();
 
         assert_eq!(version, result);
     }
@@ -153,7 +140,7 @@ mod tests {
     fn compare_versions(input: &[&str], output: &[&str]) {
         let map = |x: &[&str]| {
             x.iter()
-                .map(|tag_name| Tag::new(tag_name.to_string()).try_into().unwrap())
+                .map(|tag_name| Tag::new(tag_name.to_string()).to_version().unwrap())
                 .collect::<Vec<_>>()
         };
 

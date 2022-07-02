@@ -76,15 +76,13 @@ impl StateController {
 
             let last_posted_version_previous_release: Version = state
                 .last_posted_tag_previous_release
-                .clone()
-                .try_into()
-                .context("couldn't convert last_posted_tag_previous_release into Version")?;
+                .to_version()
+                .context("couldn't convert last_posted_tag_previous_release to a Version")?;
 
             let last_posted_version: Version = state
                 .last_posted_tag
-                .clone()
-                .try_into()
-                .context("couldn't convert last_posted_tag into Version")?;
+                .to_version()
+                .context("couldn't convert last_posted_tag to a Version")?;
 
             if last_posted_version_previous_release >= last_posted_version {
                 bail!("last_posted_version_previous_release >= last_posted_version for {platform}");

@@ -93,7 +93,7 @@ async fn check_platform(
 
     let mut tags: Vec<(types::github::Tag, Version)> = all_tags
         .iter()
-        .filter_map(|tag| tag.try_into().ok().map(|version| (tag.clone(), version)))
+        .filter_map(|tag| tag.to_version().ok().map(|version| (tag.clone(), version)))
         .filter(|(_, version)| platform.should_post_version(version))
         .collect();
 
