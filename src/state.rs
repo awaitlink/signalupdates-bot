@@ -2,7 +2,7 @@ use anyhow::{anyhow, bail, Context};
 use semver::Version;
 use serde::{Deserialize, Serialize};
 use strum::IntoEnumIterator;
-use worker::Env;
+use worker::{console_log, console_warn, Env};
 use worker_kv::KvStore;
 
 use crate::{
@@ -14,14 +14,14 @@ use crate::{
 const STATE_KV_BINDING: &str = "STATE";
 const STATE_KV_KEY: &str = "state";
 
-#[derive(Serialize, Deserialize, Debug, Clone)]
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq)]
 pub struct State {
     pub android: PlatformState,
     pub ios: PlatformState,
     pub desktop: PlatformState,
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone)]
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq)]
 pub struct PlatformState {
     pub last_posted_tag_previous_release: Tag,
     pub last_posted_tag: Tag,
@@ -60,7 +60,10 @@ impl StateController {
         match state {
             Some(state) => {
                 let controller = Self { kv_store, state };
+                controller.log_state("loaded state from KV");
                 controller.validate_state().context("invalid state")?;
+                console_log!("state appears to be valid");
+
                 Ok(controller)
             }
             None => bail!("no state in KV"),
@@ -91,10 +94,6 @@ impl StateController {
         Ok(())
     }
 
-    pub fn state(&self) -> &State {
-        &self.state
-    }
-
     pub fn platform_state(&self, platform: Platform) -> &PlatformState {
         match platform {
             Android => &self.state.android,
@@ -103,18 +102,34 @@ impl StateController {
         }
     }
 
+    fn platform_state_mut(&mut self, platform: Platform) -> &mut PlatformState {
+        match platform {
+            Android => &mut self.state.android,
+            Ios => &mut self.state.ios,
+            Desktop => &mut self.state.desktop,
+        }
+    }
+
     pub async fn set_platform_state(
         &mut self,
         platform: Platform,
         state: PlatformState,
     ) -> anyhow::Result<()> {
-        match platform {
-            Android => self.state.android = state,
-            Ios => self.state.ios = state,
-            Desktop => self.state.desktop = state,
+        let platform_state = self.platform_state_mut(platform);
+
+        if *platform_state != state {
+            *platform_state = state;
+            console_log!("changed platform_state({platform}) = {platform_state:?}");
+
+            match self.commit_changes().await {
+                Ok(_) => console_log!("saved state to KV"),
+                Err(e) => return Err(e.context("could not save state to KV")),
+            }
+        } else {
+            console_warn!("platform_state({platform}) did not change");
         }
 
-        self.commit_changes().await
+        Ok(())
     }
 
     async fn commit_changes(&mut self) -> anyhow::Result<()> {
@@ -126,5 +141,16 @@ impl StateController {
             .await
             .map_err(|e| anyhow!(e.to_string()))
             .context("could not put to KV")
+    }
+
+    fn log_state(&self, message: &str) {
+        console_log!("{message}:");
+
+        for platform in Platform::iter() {
+            console_log!(
+                "^^^^^ platform_state({platform}) = {:?}",
+                self.platform_state(platform)
+            );
+        }
     }
 }

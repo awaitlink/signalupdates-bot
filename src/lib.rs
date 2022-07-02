@@ -58,7 +58,6 @@ async fn main(env: &Env) {
 
 async fn check_all_platforms(env: &Env) -> anyhow::Result<()> {
     let mut state_controller = state::StateController::from_kv(env).await?;
-    console_log!("loaded state from KV: {:?}", state_controller.state());
 
     for platform in Platform::iter() {
         let outcome = check_platform(&mut state_controller, env, platform).await?;
@@ -330,11 +329,6 @@ async fn check_platform(
                     .await
                     .context("could not set platform state after posting commits")?;
 
-                console_log!(
-                    "saved platform state to KV: {:?}",
-                    state_controller.platform_state(platform)
-                );
-
                 Ok(PostedCommits)
             }
             None => Ok(NewTopicNotFound),
@@ -400,11 +394,6 @@ async fn post_archiving_message_if_necessary(
                         .set_platform_state(platform, new_state)
                         .await
                         .context("could not set platform state after posting archiving message")?;
-
-                    console_log!(
-                        "saved platform state to KV: {:?}",
-                        state_controller.platform_state(platform)
-                    );
 
                     utils::delay(POSTING_DELAY_MILLISECONDS).await;
                 }
