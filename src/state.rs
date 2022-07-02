@@ -1,5 +1,7 @@
-use anyhow::{anyhow, Context};
+use anyhow::{anyhow, bail, Context};
+use semver::Version;
 use serde::{Deserialize, Serialize};
+use strum::IntoEnumIterator;
 use worker::Env;
 use worker_kv::KvStore;
 
@@ -21,16 +23,19 @@ pub struct State {
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct PlatformState {
+    pub last_posted_tag_previous_release: Tag,
     pub last_posted_tag: Tag,
+
+    #[serde(default)]
     pub last_post_number: Option<u64>,
 
     #[serde(default)]
-    pub localization_changes: Vec<LocalizationChange>,
-    #[serde(default)]
-    pub localization_changes_completeness: Completeness,
+    pub posted_archiving_message: bool,
 
     #[serde(default)]
-    pub posted_archiving_message: bool,
+    pub localization_changes_completeness: Completeness,
+    #[serde(default)]
+    pub localization_changes: Vec<LocalizationChange>,
 }
 
 pub struct StateController {
@@ -53,9 +58,37 @@ impl StateController {
             .with_context(|| format!("could not get value for key {STATE_KV_KEY}"))?;
 
         match state {
-            Some(state) => Ok(Self { kv_store, state }),
-            None => Err(anyhow!("no state in KV")),
+            Some(state) => {
+                let controller = Self { kv_store, state };
+                controller.validate_state().context("invalid state")?;
+                Ok(controller)
+            }
+            None => bail!("no state in KV"),
         }
+    }
+
+    fn validate_state(&self) -> anyhow::Result<()> {
+        for platform in Platform::iter() {
+            let state = self.platform_state(platform);
+
+            let last_posted_version_previous_release: Version = state
+                .last_posted_tag_previous_release
+                .clone()
+                .try_into()
+                .context("couldn't convert last_posted_tag_previous_release into Version")?;
+
+            let last_posted_version: Version = state
+                .last_posted_tag
+                .clone()
+                .try_into()
+                .context("couldn't convert last_posted_tag into Version")?;
+
+            if last_posted_version_previous_release >= last_posted_version {
+                bail!("last_posted_version_previous_release >= last_posted_version for {platform}");
+            }
+        }
+
+        Ok(())
     }
 
     pub fn state(&self) -> &State {

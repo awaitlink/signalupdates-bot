@@ -1,6 +1,6 @@
 #![feature(array_windows)]
 
-use anyhow::{anyhow, Context};
+use anyhow::Context;
 use semver::Version;
 use strum::IntoEnumIterator;
 use worker::{
@@ -245,50 +245,44 @@ async fn check_platform(
                             .localization_changes_completeness
                     });
 
-                let release_localization_changes = if !same_release {
-                    console_log!("first build of the release, release_localization_changes = None");
-                    None
-                } else {
-                    let last_version_of_previous_release = tags
-                        .iter()
-                        .find(|(_, version)| {
-                            version.minor < new_version.minor || version.major < new_version.major
-                        })
-                        .ok_or_else(|| {
-                            anyhow!("could not determine last version of previous release")
-                        })?;
+                let (release_localization_changes, last_posted_tag_previous_release) =
+                    if !same_release {
+                        (None, old_tag)
+                    } else {
+                        let last_posted_tag_previous_release = &state_controller
+                            .platform_state(platform)
+                            .last_posted_tag_previous_release;
 
-                    console_log!(
-                        "last_version_of_previous_release = {:?}",
-                        last_version_of_previous_release
-                    );
+                        let mut changes: Vec<_> = state_controller
+                            .platform_state(platform)
+                            .localization_changes
+                            .iter()
+                            .chain(build_localization_changes.changes.iter())
+                            .cloned()
+                            .collect();
 
-                    let mut changes: Vec<_> = state_controller
-                        .platform_state(platform)
-                        .localization_changes
-                        .iter()
-                        .chain(build_localization_changes.changes.iter())
-                        .cloned()
-                        .collect();
+                        changes.sort_unstable();
+                        changes.dedup();
 
-                    changes.sort_unstable();
-                    changes.dedup();
+                        let release_localization_changes = LocalizationChanges {
+                            platform,
+                            old_tag: last_posted_tag_previous_release,
+                            new_tag,
+                            completeness: localization_changes_completeness,
+                            changes,
+                        };
 
-                    let release_localization_changes = LocalizationChanges {
-                        platform,
-                        old_tag: &last_version_of_previous_release.0,
-                        new_tag,
-                        completeness: localization_changes_completeness,
-                        changes,
+                        (
+                            Some(release_localization_changes),
+                            last_posted_tag_previous_release,
+                        )
                     };
 
-                    console_log!(
-                        "release_localization_changes = {:?}",
-                        release_localization_changes
-                    );
-
-                    Some(release_localization_changes)
-                };
+                console_log!(
+                    "last_posted_tag_previous_release = {:?}, release_localization_changes = {:?}",
+                    last_posted_tag_previous_release,
+                    release_localization_changes,
+                );
 
                 let localization_changes = release_localization_changes
                     .as_ref()
@@ -311,7 +305,7 @@ async fn check_platform(
                 let post_number = post
                     .post(&discourse_api_key, new_topic_id, reply_to_post_number)
                     .await
-                    .context("could not post to Discourse")?;
+                    .context("could not post commits to Discourse")?;
 
                 console_log!("posted post_number = {:?}", post_number);
 
@@ -319,11 +313,13 @@ async fn check_platform(
                     .set_platform_state(
                         platform,
                         state::PlatformState {
+                            last_posted_tag_previous_release: last_posted_tag_previous_release
+                                .clone(),
                             last_posted_tag: new_tag.clone(),
                             last_post_number: Some(post_number),
-                            localization_changes,
-                            localization_changes_completeness,
                             posted_archiving_message: false,
+                            localization_changes_completeness,
+                            localization_changes,
                         },
                     )
                     .await
