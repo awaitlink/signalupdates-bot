@@ -6,7 +6,7 @@ use worker::{console_log, console_warn, Env};
 use worker_kv::KvStore;
 
 use crate::{
-    localization::{Completeness, LocalizationChange},
+    localization::{Completeness, UnsortedChanges},
     platform::Platform::{self, *},
     types::github::Tag,
 };
@@ -35,7 +35,7 @@ pub struct PlatformState {
     #[serde(default)]
     pub localization_changes_completeness: Completeness,
     #[serde(default)]
-    pub localization_changes: Vec<LocalizationChange>,
+    pub localization_changes: UnsortedChanges,
 }
 
 pub struct StateController {

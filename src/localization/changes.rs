@@ -5,7 +5,7 @@ use worker::console_log;
 use crate::{
     localization::{
         Completeness::{self, *},
-        LocalizationChange,
+        LocalizationChange, UnsortedChanges,
     },
     platform::Platform,
     types::github::{Comparison, Tag},
@@ -17,7 +17,7 @@ pub struct LocalizationChanges<'a> {
     pub old_tag: &'a Tag,
     pub new_tag: &'a Tag,
     pub completeness: Completeness,
-    pub changes: Vec<LocalizationChange>,
+    pub unsorted_changes: UnsortedChanges,
 }
 
 impl<'a> LocalizationChanges<'a> {
@@ -31,10 +31,7 @@ impl<'a> LocalizationChanges<'a> {
         let complete = comparison.are_files_likely_complete().unwrap();
         console_log!("complete = {}", complete);
 
-        let mut changes =
-            LocalizationChange::unsorted_changes_from_files(platform, &comparison.files);
-
-        changes.sort_unstable();
+        let changes = LocalizationChange::unsorted_changes_from_files(platform, &comparison.files);
 
         console_log!("changes.len() = {:?}", changes.len());
 
@@ -43,8 +40,15 @@ impl<'a> LocalizationChanges<'a> {
             old_tag,
             new_tag,
             completeness: if complete { Complete } else { Incomplete },
-            changes,
+            unsorted_changes: changes,
         }
+    }
+
+    pub fn add_unsorted_changes(&mut self, unsorted_changes: &mut UnsortedChanges) {
+        self.unsorted_changes = LocalizationChange::merge_unsorted_changes(vec![
+            &mut self.unsorted_changes,
+            unsorted_changes,
+        ]);
     }
 
     pub fn full_comparison_notice(&self) -> String {
@@ -57,7 +61,7 @@ impl<'a> LocalizationChanges<'a> {
     }
 
     fn language_links(&self) -> String {
-        self.changes
+        LocalizationChange::sorted_changes(self.unsorted_changes.clone())
             .iter()
             .map(|change| change.string(self.platform, self.old_tag, self.new_tag))
             .collect::<Vec<_>>()
@@ -80,7 +84,7 @@ impl fmt::Display for LocalizationChanges<'_> {
         };
 
         let old_version = self.old_tag.exact_version_string();
-        let changes_len = self.changes.len();
+        let changes_len = self.unsorted_changes.len();
 
         let (prefix, suffix) = match changes_len {
             0..=20 => ("", ""),
@@ -177,7 +181,7 @@ For technical reasons, not all languages may be listed below. However, everythin
             old_tag: &old_tag,
             new_tag: &new_tag,
             completeness,
-            changes,
+            unsorted_changes: LocalizationChange::unsorted_changes(changes),
         };
 
         assert_str_eq!(changes.to_string(), result);

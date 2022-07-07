@@ -1,4 +1,4 @@
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 
 use lazy_static::lazy_static;
 use regex::Regex;
@@ -15,6 +15,8 @@ use crate::{
     },
     types::github::{File, Tag},
 };
+
+pub type UnsortedChanges = HashMap<Language, HashSet<StringsFileKind>>;
 
 // TODO: the '.' from StringsFileKind::path() will be interpreted as "any character", not just '.'
 
@@ -55,7 +57,10 @@ pub struct LocalizationChange {
 }
 
 impl LocalizationChange {
-    pub fn unsorted_changes_from_file_paths(platform: Platform, file_paths: &[&str]) -> Vec<Self> {
+    pub fn unsorted_changes_from_file_paths(
+        platform: Platform,
+        file_paths: &[&str],
+    ) -> UnsortedChanges {
         let pairs = file_paths.iter().filter_map(|filename| {
             StringsFileKind::applicable_iter(platform).find_map(move |kind| {
                 let regex = match platform {
@@ -85,21 +90,21 @@ impl LocalizationChange {
             })
         });
 
-        let mut map: HashMap<Language, Vec<StringsFileKind>> = HashMap::new();
+        let mut map: UnsortedChanges = HashMap::new();
 
         for (language, kind) in pairs {
-            map.entry(language).or_insert(Vec::new()).push(kind)
+            map.entry(language)
+                .or_insert_with(HashSet::new)
+                .insert(kind);
         }
 
-        map.into_iter()
-            .map(|(language, mut kinds)| {
-                kinds.sort_unstable();
-                LocalizationChange { language, kinds }
-            })
-            .collect()
+        map
     }
 
-    pub fn unsorted_changes_from_files(platform: Platform, files: &Option<Vec<File>>) -> Vec<Self> {
+    pub fn unsorted_changes_from_files(
+        platform: Platform,
+        files: &Option<Vec<File>>,
+    ) -> UnsortedChanges {
         Self::unsorted_changes_from_file_paths(
             platform,
             &files
@@ -109,6 +114,35 @@ impl LocalizationChange {
                 .map(|file| file.filename.as_str())
                 .collect::<Vec<_>>(),
         )
+    }
+
+    pub fn merge_unsorted_changes(items: Vec<&mut UnsortedChanges>) -> UnsortedChanges {
+        let mut map: UnsortedChanges = HashMap::new();
+
+        for unsorted_changes in items {
+            for (language, kinds) in unsorted_changes {
+                map.entry(language.clone())
+                    .or_insert_with(HashSet::new)
+                    .extend(kinds.iter().copied());
+            }
+        }
+
+        map
+    }
+
+    pub fn sorted_changes(unsorted_changes: UnsortedChanges) -> Vec<Self> {
+        let mut changes: Vec<_> = unsorted_changes
+            .into_iter()
+            .map(|(language, kinds)| {
+                let mut kinds: Vec<_> = kinds.into_iter().collect();
+                kinds.sort_unstable();
+                LocalizationChange { language, kinds }
+            })
+            .collect();
+
+        changes.sort_unstable();
+
+        changes
     }
 
     pub fn string(&self, platform: Platform, old_tag: &Tag, new_tag: &Tag) -> String {
@@ -186,6 +220,18 @@ impl LocalizationChange {
     pub fn kinds(&self) -> &[StringsFileKind] {
         &self.kinds
     }
+
+    pub fn unsorted_changes(sorted_changes: Vec<LocalizationChange>) -> UnsortedChanges {
+        sorted_changes
+            .into_iter()
+            .map(|change| {
+                (
+                    change.language().clone(),
+                    change.kinds().iter().copied().collect::<HashSet<_>>(),
+                )
+            })
+            .collect()
+    }
 }
 
 #[cfg(test)]
@@ -210,11 +256,13 @@ mod tests {
     #[test_case(Ios, "fastlane/metadata/en-US/release_notes.txt", "English (`en-US`)"; "iOS app store release notes: en dash US")]
     fn localization_change_language(platform: Platform, file_path: &str, result: &str) {
         assert_eq!(
-            LocalizationChange::unsorted_changes_from_file_paths(platform, &[file_path])
-                .iter()
-                .map(LocalizationChange::language)
-                .map(ToString::to_string)
-                .collect::<Vec<_>>(),
+            LocalizationChange::sorted_changes(
+                LocalizationChange::unsorted_changes_from_file_paths(platform, &[file_path])
+            )
+            .iter()
+            .map(LocalizationChange::language)
+            .map(ToString::to_string)
+            .collect::<Vec<_>>(),
             vec![result]
         );
     }
@@ -238,7 +286,9 @@ mod tests {
         languages: &[(&str, usize)],
         file_paths: &[&str],
     ) {
-        let result = LocalizationChange::unsorted_changes_from_file_paths(platform, file_paths);
+        let result = LocalizationChange::sorted_changes(
+            LocalizationChange::unsorted_changes_from_file_paths(platform, file_paths),
+        );
 
         dbg!(&result);
         assert_eq!(result.len(), languages.len());
@@ -269,7 +319,9 @@ mod tests {
     #[test_case(Ios, "Signal/translations/.tx/signal-ios.localizablestrings-30/zh_TW.Big5_translation"; "iOS: dot tx 3")]
     fn localization_change_none(platform: Platform, file_path: &str) {
         assert_eq!(
-            LocalizationChange::unsorted_changes_from_file_paths(platform, &[file_path]),
+            LocalizationChange::sorted_changes(
+                LocalizationChange::unsorted_changes_from_file_paths(platform, &[file_path])
+            ),
             vec![]
         );
     }
@@ -298,12 +350,14 @@ mod tests {
         let file_paths = localization_change.file_paths(platform);
         assert_eq!(file_paths, vec![result]);
 
-        let changes = LocalizationChange::unsorted_changes_from_file_paths(
-            platform,
-            &file_paths
-                .iter()
-                .map(|string| string.as_str())
-                .collect::<Vec<_>>(),
+        let changes = LocalizationChange::sorted_changes(
+            LocalizationChange::unsorted_changes_from_file_paths(
+                platform,
+                &file_paths
+                    .iter()
+                    .map(|string| string.as_str())
+                    .collect::<Vec<_>>(),
+            ),
         );
         assert_eq!(changes, vec![localization_change]);
     }

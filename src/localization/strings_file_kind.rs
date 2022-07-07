@@ -6,7 +6,9 @@ use strum_macros::EnumIter;
 
 use crate::platform::Platform::{self, *};
 
-#[derive(Deserialize, Serialize, Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, EnumIter)]
+#[derive(
+    Deserialize, Serialize, Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, EnumIter,
+)]
 pub enum StringsFileKind {
     Main,
     InfoPlist,

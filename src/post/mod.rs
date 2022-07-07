@@ -411,21 +411,21 @@ Note: after clicking a link, it may take a few seconds before GitHub jumps to th
                     old_tag: &old_tag,
                     new_tag: &new_tag,
                     completeness: Completeness::Complete,
-                    changes: vec![
+                    unsorted_changes: LocalizationChange::unsorted_changes(vec![
                         LocalizationChange::default_for_android(),
                         LocalizationChange::default_for_android(),
-                    ],
+                    ]),
                 },
                 release_changes: Some(LocalizationChanges {
                     platform: Android,
                     old_tag: &older_tag,
                     new_tag: &new_tag,
                     completeness,
-                    changes: vec![
+                    unsorted_changes: LocalizationChange::unsorted_changes(vec![
                         LocalizationChange::default_for_android(),
                         LocalizationChange::default_for_android(),
                         LocalizationChange::default_for_android(),
-                    ],
+                    ]),
                 }),
             },
             None => LocalizationChangeCollection {
@@ -434,7 +434,7 @@ Note: after clicking a link, it may take a few seconds before GitHub jumps to th
                     old_tag: &old_tag,
                     new_tag: &new_tag,
                     completeness: Completeness::Complete,
-                    changes: vec![],
+                    unsorted_changes: LocalizationChange::unsorted_changes(vec![]),
                 },
                 release_changes: None,
             },

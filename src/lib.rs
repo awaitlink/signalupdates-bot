@@ -210,9 +210,7 @@ async fn check_platform(
 
                             console_log!("changes = {:?}", changes);
 
-                            build_localization_changes.changes.append(&mut changes);
-                            build_localization_changes.changes.sort_unstable();
-                            build_localization_changes.changes.dedup();
+                            build_localization_changes.add_unsorted_changes(&mut changes);
 
                             let complete = with_files.are_files_likely_complete().unwrap();
                             console_log!(
@@ -252,24 +250,22 @@ async fn check_platform(
                             .platform_state(platform)
                             .last_posted_tag_previous_release;
 
-                        let mut changes: Vec<_> = state_controller
+                        let changes = state_controller
                             .platform_state(platform)
                             .localization_changes
-                            .iter()
-                            .chain(build_localization_changes.changes.iter())
-                            .cloned()
-                            .collect();
+                            .clone();
 
-                        changes.sort_unstable();
-                        changes.dedup();
-
-                        let release_localization_changes = LocalizationChanges {
+                        let mut release_localization_changes = LocalizationChanges {
                             platform,
                             old_tag: last_posted_tag_previous_release,
                             new_tag,
                             completeness: localization_changes_completeness,
-                            changes,
+                            unsorted_changes: changes,
                         };
+
+                        release_localization_changes.add_unsorted_changes(
+                            &mut build_localization_changes.unsorted_changes.clone(),
+                        );
 
                         (
                             Some(release_localization_changes),
@@ -286,7 +282,7 @@ async fn check_platform(
                 let localization_changes = release_localization_changes
                     .as_ref()
                     .unwrap_or(&build_localization_changes)
-                    .changes
+                    .unsorted_changes
                     .clone();
 
                 let post = post::Post::new(
