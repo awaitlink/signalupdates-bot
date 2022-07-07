@@ -94,7 +94,7 @@ impl fmt::Display for LocalizationChanges<'_> {
 
         write!(
             f,
-            "#### {at_least}{changes_len} changes since {old_version}:{warning}{prefix}{changes}{suffix}"
+            "#### {at_least}{changes_len} languages changed since {old_version}:{warning}{prefix}{changes}{suffix}"
         )
     }
 }
@@ -113,30 +113,30 @@ mod tests {
     #[test_case(Android, "v1.2.3", "v1.2.4", Complete, vec![
         LocalizationChange::default_for_android(),
         LocalizationChange::default_for_android()
-    ], "#### 2 changes since 1.2.3:
+    ], "#### 2 languages changed since 1.2.3:
 - [English (`en`)](https://github.com/signalapp/Signal-Android/compare/v1.2.3..v1.2.4#diff-5e01f7d37a66e4ca03deefc205d8e7008661cdd0284a05aaba1858e6b7bf9103)
-- [English (`en`)](https://github.com/signalapp/Signal-Android/compare/v1.2.3..v1.2.4#diff-5e01f7d37a66e4ca03deefc205d8e7008661cdd0284a05aaba1858e6b7bf9103)"; "Android: 2 changes, complete")]
+- [English (`en`)](https://github.com/signalapp/Signal-Android/compare/v1.2.3..v1.2.4#diff-5e01f7d37a66e4ca03deefc205d8e7008661cdd0284a05aaba1858e6b7bf9103)"; "Android: 2 languages changed, complete")]
     #[test_case(Android, "v1.1.5", "v1.2.4", Incomplete, vec![
         LocalizationChange::default_for_android(),
         LocalizationChange::default_for_android(),
         LocalizationChange::default_for_android(),
-    ], "#### At least 3 changes since 1.1.5:
+    ], "#### At least 3 languages changed since 1.1.5:
 :warning: For technical reasons, not all languages may be listed below. You can view the full comparison to 1.1.5 so far [here](https://github.com/signalapp/Signal-Android/compare/v1.1.5...v1.2.4).
 - [English (`en`)](https://github.com/signalapp/Signal-Android/compare/v1.1.5..v1.2.4#diff-5e01f7d37a66e4ca03deefc205d8e7008661cdd0284a05aaba1858e6b7bf9103)
 - [English (`en`)](https://github.com/signalapp/Signal-Android/compare/v1.1.5..v1.2.4#diff-5e01f7d37a66e4ca03deefc205d8e7008661cdd0284a05aaba1858e6b7bf9103)
-- [English (`en`)](https://github.com/signalapp/Signal-Android/compare/v1.1.5..v1.2.4#diff-5e01f7d37a66e4ca03deefc205d8e7008661cdd0284a05aaba1858e6b7bf9103)"; "Android: 3 changes, incomplete")]
+- [English (`en`)](https://github.com/signalapp/Signal-Android/compare/v1.1.5..v1.2.4#diff-5e01f7d37a66e4ca03deefc205d8e7008661cdd0284a05aaba1858e6b7bf9103)"; "Android: 3 languages changed, incomplete")]
     #[test_case(Android, "v1.1.5", "v1.2.4", LikelyComplete, vec![
         LocalizationChange::default_for_android(),
         LocalizationChange::default_for_android(),
         LocalizationChange::default_for_android(),
-    ], "#### At least 3 changes since 1.1.5:
+    ], "#### At least 3 languages changed since 1.1.5:
 For technical reasons, not all languages may be listed below. However, everything from \"Updated language translations\" and similar commits is listed, so the list is likely complete. You can view the full comparison to 1.1.5 so far [here](https://github.com/signalapp/Signal-Android/compare/v1.1.5...v1.2.4).
 - [English (`en`)](https://github.com/signalapp/Signal-Android/compare/v1.1.5..v1.2.4#diff-5e01f7d37a66e4ca03deefc205d8e7008661cdd0284a05aaba1858e6b7bf9103)
 - [English (`en`)](https://github.com/signalapp/Signal-Android/compare/v1.1.5..v1.2.4#diff-5e01f7d37a66e4ca03deefc205d8e7008661cdd0284a05aaba1858e6b7bf9103)
-- [English (`en`)](https://github.com/signalapp/Signal-Android/compare/v1.1.5..v1.2.4#diff-5e01f7d37a66e4ca03deefc205d8e7008661cdd0284a05aaba1858e6b7bf9103)"; "Android: 3 changes, likely complete")]
+- [English (`en`)](https://github.com/signalapp/Signal-Android/compare/v1.1.5..v1.2.4#diff-5e01f7d37a66e4ca03deefc205d8e7008661cdd0284a05aaba1858e6b7bf9103)"; "Android: 3 languages changed, likely complete")]
     #[test_case(Android, "v1.1.5", "v1.2.4", Incomplete, std::iter::repeat(
         LocalizationChange::default_for_android()
-    ).take(21).collect(), "#### At least 21 changes since 1.1.5:
+    ).take(21).collect(), "#### At least 21 languages changed since 1.1.5:
 :warning: For technical reasons, not all languages may be listed below. You can view the full comparison to 1.1.5 so far [here](https://github.com/signalapp/Signal-Android/compare/v1.1.5...v1.2.4).
 [details=\"Show changes\"]
 - [English (`en`)](https://github.com/signalapp/Signal-Android/compare/v1.1.5..v1.2.4#diff-5e01f7d37a66e4ca03deefc205d8e7008661cdd0284a05aaba1858e6b7bf9103)
@@ -160,7 +160,7 @@ For technical reasons, not all languages may be listed below. However, everythin
 - [English (`en`)](https://github.com/signalapp/Signal-Android/compare/v1.1.5..v1.2.4#diff-5e01f7d37a66e4ca03deefc205d8e7008661cdd0284a05aaba1858e6b7bf9103)
 - [English (`en`)](https://github.com/signalapp/Signal-Android/compare/v1.1.5..v1.2.4#diff-5e01f7d37a66e4ca03deefc205d8e7008661cdd0284a05aaba1858e6b7bf9103)
 - [English (`en`)](https://github.com/signalapp/Signal-Android/compare/v1.1.5..v1.2.4#diff-5e01f7d37a66e4ca03deefc205d8e7008661cdd0284a05aaba1858e6b7bf9103)
-[/details]"; "Android: 21 changes, incomplete")]
+[/details]"; "Android: 21 languages changed, incomplete")]
     fn to_string(
         platform: Platform,
         old_tag: &str,

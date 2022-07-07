@@ -193,7 +193,7 @@ Gathered from [signalapp/Signal-Android](https://github.com/signalapp/Signal-And
 [quote]
 Note: after clicking a link, it may take a few seconds before GitHub jumps to the file (try scrolling a bit if it doesn't).
 
-#### 0 changes since 1.2.3:
+#### 0 languages changed since 1.2.3:
 *No localization changes found*
 
 Localization changes for the whole release are the same, as this is the first build of the release.
@@ -217,7 +217,7 @@ Gathered from [signalapp/Signal-Android](https://github.com/signalapp/Signal-And
 [quote]
 Note: after clicking a link, it may take a few seconds before GitHub jumps to the file (try scrolling a bit if it doesn't).
 
-#### 0 changes since 1.2.3:
+#### 0 languages changed since 1.2.3:
 *No localization changes found*
 
 Localization changes for the whole release are the same, as this is the first build of the release.
@@ -241,7 +241,7 @@ Gathered from [signalapp/Signal-Android](https://github.com/signalapp/Signal-And
 [quote]
 Note: after clicking a link, it may take a few seconds before GitHub jumps to the file (try scrolling a bit if it doesn't).
 
-#### 0 changes since 1.2.3:
+#### 0 languages changed since 1.2.3:
 *No localization changes found*
 
 Localization changes for the whole release are the same, as this is the first build of the release.
@@ -274,7 +274,7 @@ Gathered from [signalapp/Signal-Android](https://github.com/signalapp/Signal-And
 [quote]
 Note: after clicking a link, it may take a few seconds before GitHub jumps to the file (try scrolling a bit if it doesn't).
 
-#### 0 changes since 1.2.3:
+#### 0 languages changed since 1.2.3:
 *No localization changes found*
 
 Localization changes for the whole release are the same, as this is the first build of the release.
@@ -340,7 +340,7 @@ Gathered from [signalapp/Signal-Android](https://github.com/signalapp/Signal-And
 [quote]
 Note: after clicking a link, it may take a few seconds before GitHub jumps to the file (try scrolling a bit if it doesn't).
 
-#### 0 changes since 1.2.3:
+#### 0 languages changed since 1.2.3:
 *No localization changes found*
 
 Localization changes for the whole release are the same, as this is the first build of the release.
@@ -360,7 +360,7 @@ Gathered from [signalapp/Signal-Desktop](https://github.com/signalapp/Signal-Des
 [quote]
 Note: after clicking a link, it may take a few seconds before GitHub jumps to the file (try scrolling a bit if it doesn't).
 
-#### 0 changes since 1.2.3-beta.1:
+#### 0 languages changed since 1.2.3-beta.1:
 *No localization changes found*
 
 Localization changes for the whole release are the same, as this is the first build of the release.
@@ -381,11 +381,11 @@ Gathered from [signalapp/Signal-Android](https://github.com/signalapp/Signal-And
 [quote]
 Note: after clicking a link, it may take a few seconds before GitHub jumps to the file (try scrolling a bit if it doesn't).
 
-#### 2 changes since 1.2.3:
+#### 2 languages changed since 1.2.3:
 - [English (`en`)](https://github.com/signalapp/Signal-Android/compare/v1.2.3..v1.2.4#diff-5e01f7d37a66e4ca03deefc205d8e7008661cdd0284a05aaba1858e6b7bf9103)
 - [English (`en`)](https://github.com/signalapp/Signal-Android/compare/v1.2.3..v1.2.4#diff-5e01f7d37a66e4ca03deefc205d8e7008661cdd0284a05aaba1858e6b7bf9103)
 
-#### 3 changes since 1.1.5:
+#### 3 languages changed since 1.1.5:
 - [English (`en`)](https://github.com/signalapp/Signal-Android/compare/v1.1.5..v1.2.4#diff-5e01f7d37a66e4ca03deefc205d8e7008661cdd0284a05aaba1858e6b7bf9103)
 - [English (`en`)](https://github.com/signalapp/Signal-Android/compare/v1.1.5..v1.2.4#diff-5e01f7d37a66e4ca03deefc205d8e7008661cdd0284a05aaba1858e6b7bf9103)
 - [English (`en`)](https://github.com/signalapp/Signal-Android/compare/v1.1.5..v1.2.4#diff-5e01f7d37a66e4ca03deefc205d8e7008661cdd0284a05aaba1858e6b7bf9103)
