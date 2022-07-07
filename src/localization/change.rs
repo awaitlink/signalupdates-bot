@@ -182,6 +182,10 @@ impl LocalizationChange {
     pub fn language(&self) -> &Language {
         &self.language
     }
+
+    pub fn kinds(&self) -> &[StringsFileKind] {
+        &self.kinds
+    }
 }
 
 #[cfg(test)]
@@ -213,6 +217,49 @@ mod tests {
                 .collect::<Vec<_>>(),
             vec![result]
         );
+    }
+
+    #[test_case(Ios, &[("en", 5)], &[
+        "Signal/translations/en.lproj/Localizable.strings",
+        "Signal/translations/en.lproj/InfoPlist.strings",
+        "fastlane/metadata/en/description.txt",
+        "Signal/translations/en.lproj/PluralAware.stringsdict",
+        "fastlane/metadata/en/release_notes.txt",
+    ]; "iOS all en")]
+    #[test_case(Ios, &[("en", 3), ("en-US", 2)], &[
+        "Signal/translations/en.lproj/InfoPlist.strings",
+        "fastlane/metadata/en-US/description.txt",
+        "Signal/translations/en.lproj/Localizable.strings",
+        "fastlane/metadata/en-US/release_notes.txt",
+        "Signal/translations/en.lproj/PluralAware.stringsdict",
+    ]; "iOS en and en dash US")]
+    fn localization_change_multiple_languages_multiple_kinds(
+        platform: Platform,
+        languages: &[(&str, usize)],
+        file_paths: &[&str],
+    ) {
+        let result = LocalizationChange::unsorted_changes_from_file_paths(platform, file_paths);
+
+        dbg!(&result);
+        assert_eq!(result.len(), languages.len());
+
+        let mut total_kinds_count = 0;
+
+        for (language, kinds_count) in languages {
+            total_kinds_count += kinds_count;
+
+            assert_eq!(
+                &result
+                    .iter()
+                    .find(|change| &change.language().full_code() == language)
+                    .unwrap()
+                    .kinds()
+                    .len(),
+                kinds_count
+            );
+        }
+
+        assert_eq!(total_kinds_count, file_paths.len(), "invalid test");
     }
 
     #[test_case(Android, "app/src/main/res/values-land/strings.xml"; "Android: land")]
