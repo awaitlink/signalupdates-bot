@@ -206,10 +206,10 @@ impl LocalizationChange {
 
 #[cfg(test)]
 impl LocalizationChange {
-    pub fn default_for_android() -> LocalizationChange {
+    pub fn test_change(language_code: &str, kinds: Vec<StringsFileKind>) -> LocalizationChange {
         LocalizationChange {
-            language: Language::default(),
-            kinds: vec![Main],
+            language: Language::try_from(language_code).unwrap(),
+            kinds,
         }
     }
 

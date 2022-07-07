@@ -174,7 +174,7 @@ mod tests {
 
     use super::*;
     use crate::{
-        localization::{Completeness, LocalizationChange, LocalizationChanges},
+        localization::{Completeness, LocalizationChange, LocalizationChanges, StringsFileKind::*},
         platform::Platform::{self, *},
     };
 
@@ -383,12 +383,12 @@ Note: after clicking a link, it may take a few seconds before GitHub jumps to th
 
 #### 2 languages changed since 1.2.3:
 - [English (`en`)](https://github.com/signalapp/Signal-Android/compare/v1.2.3..v1.2.4#diff-5e01f7d37a66e4ca03deefc205d8e7008661cdd0284a05aaba1858e6b7bf9103)
-- [English (`en`)](https://github.com/signalapp/Signal-Android/compare/v1.2.3..v1.2.4#diff-5e01f7d37a66e4ca03deefc205d8e7008661cdd0284a05aaba1858e6b7bf9103)
+- [English (`en-US`)](https://github.com/signalapp/Signal-Android/compare/v1.2.3..v1.2.4#diff-33a220e7f3b2e559ebec12cbf273da0c135bfade5a547e41e2bb5a66d75a01d2)
 
 #### 3 languages changed since 1.1.5:
 - [English (`en`)](https://github.com/signalapp/Signal-Android/compare/v1.1.5..v1.2.4#diff-5e01f7d37a66e4ca03deefc205d8e7008661cdd0284a05aaba1858e6b7bf9103)
-- [English (`en`)](https://github.com/signalapp/Signal-Android/compare/v1.1.5..v1.2.4#diff-5e01f7d37a66e4ca03deefc205d8e7008661cdd0284a05aaba1858e6b7bf9103)
-- [English (`en`)](https://github.com/signalapp/Signal-Android/compare/v1.1.5..v1.2.4#diff-5e01f7d37a66e4ca03deefc205d8e7008661cdd0284a05aaba1858e6b7bf9103)
+- [English (`en-CA`)](https://github.com/signalapp/Signal-Android/compare/v1.1.5..v1.2.4#diff-11b72e6873b6a42a2a1b92999e4225d7ff2921e323baa5e7b31fdc49471d9724)
+- [English (`en-US`)](https://github.com/signalapp/Signal-Android/compare/v1.1.5..v1.2.4#diff-33a220e7f3b2e559ebec12cbf273da0c135bfade5a547e41e2bb5a66d75a01d2)
 [/quote]
 [/details]"; "Android: one commit with localization changes")]
     fn post_markdown(
@@ -412,8 +412,8 @@ Note: after clicking a link, it may take a few seconds before GitHub jumps to th
                     new_tag: &new_tag,
                     completeness: Completeness::Complete,
                     unsorted_changes: LocalizationChange::unsorted_changes(vec![
-                        LocalizationChange::default_for_android(),
-                        LocalizationChange::default_for_android(),
+                        LocalizationChange::test_change("en", vec![Main]),
+                        LocalizationChange::test_change("en-US", vec![Main]),
                     ]),
                 },
                 release_changes: Some(LocalizationChanges {
@@ -422,9 +422,9 @@ Note: after clicking a link, it may take a few seconds before GitHub jumps to th
                     new_tag: &new_tag,
                     completeness,
                     unsorted_changes: LocalizationChange::unsorted_changes(vec![
-                        LocalizationChange::default_for_android(),
-                        LocalizationChange::default_for_android(),
-                        LocalizationChange::default_for_android(),
+                        LocalizationChange::test_change("en", vec![Main]),
+                        LocalizationChange::test_change("en-US", vec![Main]),
+                        LocalizationChange::test_change("en-CA", vec![Main]),
                     ]),
                 }),
             },
