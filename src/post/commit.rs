@@ -44,6 +44,8 @@ impl<'a> Commit<'a> {
             || lowercase.contains("translation")
             || lowercase.contains("string")
             || lowercase.contains("release note")
+            || lowercase.contains("i18n")
+            || lowercase.contains("l10n")
     }
 
     pub fn sha(&self) -> &str {
@@ -127,6 +129,7 @@ mod tests {
     #[test_case(true, "Updated language translations.")]
     #[test_case(true, "Update strings")]
     #[test_case(true, "Updates strings")]
+    #[test_case(true, "Updates i18n strings")]
     #[test_case(true, "Update translations")]
     #[test_case(true, "Update release notes")]
     #[test_case(true, "Update release notes & App Store descriptions")]
