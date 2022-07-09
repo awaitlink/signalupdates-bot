@@ -290,7 +290,7 @@ async fn check_platform(
                     old_tag,
                     new_tag,
                     commits,
-                    unfiltered_commits_len != commits_len,
+                    unfiltered_commits_len,
                     LocalizationChangeCollection {
                         build_changes: build_localization_changes,
                         release_changes: release_localization_changes,
