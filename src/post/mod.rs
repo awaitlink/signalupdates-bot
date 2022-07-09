@@ -35,6 +35,8 @@ impl<'a> Post<'a> {
         unfiltered_commits_len: usize,
         localization_change_collection: LocalizationChangeCollection<'a>,
     ) -> Self {
+        assert!(commits.len() <= unfiltered_commits_len);
+
         Self {
             platform,
             old_tag,
