@@ -21,7 +21,7 @@ pub struct LocalizationChanges<'a> {
 }
 
 impl<'a> LocalizationChanges<'a> {
-    /// Note: assumes `comparison.files` is not `None` and doesn't contain duplicates.
+    /// Note: assumes `comparison.files` is not `None`.
     pub fn from_comparison(
         platform: Platform,
         old_tag: &'a Tag,
