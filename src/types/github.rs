@@ -86,6 +86,12 @@ pub struct File {
 }
 
 #[cfg(test)]
+#[derive(Deserialize, Debug, Clone, PartialEq, Eq)]
+pub struct ContentsEntry {
+    pub path: String,
+}
+
+#[cfg(test)]
 mod tests {
     use pretty_assertions::assert_eq;
     use test_case::test_case;

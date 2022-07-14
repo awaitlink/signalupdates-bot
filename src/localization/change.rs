@@ -241,6 +241,90 @@ mod tests {
 
     use super::*;
 
+    #[ignore = "online and doesn't actually test"]
+    #[test]
+    fn online_localization_change_all() {
+        use crate::{
+            platform::Platform::{self, *},
+            types::github,
+        };
+
+        #[allow(clippy::type_complexity)]
+        let platforms: [(Platform, &[(&str, &[&str])]); 3] = [
+            (Android, &[("app/src/main/res", &["strings.xml"])]),
+            (
+                Ios,
+                &[
+                    (
+                        "Signal/translations",
+                        &[
+                            "Localizable.strings",
+                            "InfoPlist.strings",
+                            "PluralAware.stringsdict",
+                        ],
+                    ),
+                    (
+                        "fastlane/metadata",
+                        &["description.txt", "release_notes.txt"],
+                    ),
+                ],
+            ),
+            (Desktop, &[("_locales", &["messages.json"])]),
+        ];
+
+        let client = reqwest::blocking::Client::builder()
+            .user_agent(crate::utils::USER_AGENT)
+            .build()
+            .expect("client should be built successfully");
+
+        for (platform, pairs) in platforms {
+            for (path, filenames) in pairs {
+                let url = format!(
+                    "https://api.github.com/repos/signalapp/Signal-{platform}/contents/{path}"
+                );
+
+                let entries: Vec<github::ContentsEntry> = client
+                    .get(url)
+                    .send()
+                    .expect("request should succeed")
+                    .json()
+                    .expect("json should be successfully deserialized");
+
+                let file_paths: Vec<_> = entries
+                    .into_iter()
+                    .map(|entry| entry.path)
+                    .flat_map(|path| {
+                        filenames
+                            .iter()
+                            .map(move |filename| format!("{path}/{filename}"))
+                    })
+                    .collect();
+
+                let file_paths: Vec<_> = file_paths
+                    .iter()
+                    .map(|full_path| full_path.as_str())
+                    .collect();
+
+                let changes = LocalizationChange::unsorted_changes_from_file_paths(
+                    platform,
+                    file_paths.as_slice(),
+                );
+
+                let sorted = LocalizationChange::sorted_changes(changes);
+
+                println!(
+                    "{platform} ({path}): {:#?}",
+                    sorted
+                        .iter()
+                        .map(|change| change.language.to_string())
+                        .collect::<Vec<_>>()
+                );
+            }
+        }
+
+        panic!("testing");
+    }
+
     #[test_case(Android, "app/src/main/res/values/strings.xml", "English (`en`)"; "Android: en")]
     #[test_case(Android, "app/src/main/res/values-kab/strings.xml", "Kabyle (`kab`)"; "Android: kab")]
     #[test_case(Android, "app/src/main/res/values-pa-rPK/strings.xml", "Panjabi (`pa-PK`)"; "Android: pa dash r PK")]
