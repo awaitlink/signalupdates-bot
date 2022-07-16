@@ -36,14 +36,14 @@ impl<'a> LocalizationChangeCollection<'a> {
             _ => "Note: after clicking a link, it may take a few seconds before GitHub jumps to the file (try scrolling a bit if it doesn't).\n\n",
         };
 
-        let none_fit_notice = "Sorry, no localization changes fit in the post character limit.";
-        let same_notice = "Localization changes for the whole release are the same, as this is the first build of the release.";
+        let none_fit_notice = "No localization changes fit in character limit.";
+        let same_notice = "Localization changes for the release are the same, as this is the first build of the release.";
 
         let notice = match (mode, &self.release_changes) {
             (Full, Some(_)) => String::from(""),
             (Full | WithoutRelease, None) => format!("\n\n{}", same_notice),
             (WithoutRelease, Some(release_changes)) => format!(
-                "\n\nSorry, localization changes for the whole release did not fit in the post character limit. {}",
+                "\n\nLocalization changes for the release didn't fit in character limit. {}",
                 release_changes.full_comparison_notice()
             ),
             (Nothing, Some(release_changes)) => format!(
@@ -57,7 +57,7 @@ impl<'a> LocalizationChangeCollection<'a> {
                 none_fit_notice,
                 self.build_changes.full_comparison_notice(),
                 same_notice
-            )
+            ),
         };
 
         format!(

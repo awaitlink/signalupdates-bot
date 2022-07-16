@@ -200,7 +200,7 @@ Note: after clicking a link, it may take a few seconds before GitHub jumps to th
 #### 0 languages changed since 1.2.3:
 *No localization changes found*
 
-Localization changes for the whole release are the same, as this is the first build of the release.
+Localization changes for the release are the same, as this is the first build of the release.
 [/quote]
 [/details]"; "Android: one commit")]
     #[test_case(Android, "v1.2.3", "v1.2.4", vec![
@@ -224,7 +224,7 @@ Note: after clicking a link, it may take a few seconds before GitHub jumps to th
 #### 0 languages changed since 1.2.3:
 *No localization changes found*
 
-Localization changes for the whole release are the same, as this is the first build of the release.
+Localization changes for the release are the same, as this is the first build of the release.
 [/quote]
 [/details]"; "Android: two commits")]
     #[test_case(Android, "v1.2.3", "v1.2.4", vec![
@@ -248,7 +248,7 @@ Note: after clicking a link, it may take a few seconds before GitHub jumps to th
 #### 0 languages changed since 1.2.3:
 *No localization changes found*
 
-Localization changes for the whole release are the same, as this is the first build of the release.
+Localization changes for the release are the same, as this is the first build of the release.
 [/quote]
 [/details]"; "Android: two commits, one omitted")]
     #[test_case(Android, "v1.2.3", "v1.2.4", vec![
@@ -272,7 +272,7 @@ Note: after clicking a link, it may take a few seconds before GitHub jumps to th
 #### 0 languages changed since 1.2.3:
 *No localization changes found*
 
-Localization changes for the whole release are the same, as this is the first build of the release.
+Localization changes for the release are the same, as this is the first build of the release.
 [/quote]
 [/details]"; "Android: two commits, two omitted")]
     #[test_case(Android, "v1.2.3", "v1.2.4", vec![
@@ -305,7 +305,7 @@ Note: after clicking a link, it may take a few seconds before GitHub jumps to th
 #### 0 languages changed since 1.2.3:
 *No localization changes found*
 
-Localization changes for the whole release are the same, as this is the first build of the release.
+Localization changes for the release are the same, as this is the first build of the release.
 [/quote]
 [/details]"; "Android: five commits with reverts")]
     #[test_case(Android, "v1.2.3", "v1.2.4",
@@ -371,7 +371,7 @@ Note: after clicking a link, it may take a few seconds before GitHub jumps to th
 #### 0 languages changed since 1.2.3:
 *No localization changes found*
 
-Localization changes for the whole release are the same, as this is the first build of the release.
+Localization changes for the release are the same, as this is the first build of the release.
 [/quote]
 [/details]"; "Android: twenty one commits")]
     #[test_case(Desktop, "v1.2.3-beta.1", "v1.2.3-beta.2", vec![
@@ -391,7 +391,7 @@ Note: after clicking a link, it may take a few seconds before GitHub jumps to th
 #### 0 languages changed since 1.2.3-beta.1:
 *No localization changes found*
 
-Localization changes for the whole release are the same, as this is the first build of the release.
+Localization changes for the release are the same, as this is the first build of the release.
 [/quote]
 [/details]"; "Desktop: one commit")]
     #[test_case(Android, "v1.2.3", "v1.2.4", vec![
