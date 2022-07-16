@@ -7,7 +7,7 @@ use crate::utils;
 
 pub const ANDROID_DEFAULT_STRINGS_FILENAME: &str = "app/src/main/res/values/strings.xml";
 
-#[derive(Debug, Clone, Copy, EnumIter, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, EnumIter, PartialEq, Eq, Hash)]
 pub enum Platform {
     Android,
     Ios,

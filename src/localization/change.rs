@@ -244,33 +244,24 @@ mod tests {
     #[ignore = "online and doesn't actually test"]
     #[test]
     fn online_localization_change_all() {
-        use crate::{
-            platform::Platform::{self, *},
-            types::github,
-        };
+        use strum::IntoEnumIterator;
+
+        use crate::{platform::Platform, types::github};
 
         #[allow(clippy::type_complexity)]
-        let platforms: [(Platform, &[(&str, &[&str])]); 3] = [
-            (Android, &[("app/src/main/res", &["strings.xml"])]),
-            (
-                Ios,
-                &[
-                    (
-                        "Signal/translations",
-                        &[
-                            "Localizable.strings",
-                            "InfoPlist.strings",
-                            "PluralAware.stringsdict",
-                        ],
-                    ),
-                    (
-                        "fastlane/metadata",
-                        &["description.txt", "release_notes.txt"],
-                    ),
-                ],
-            ),
-            (Desktop, &[("_locales", &["messages.json"])]),
-        ];
+        let platforms: HashMap<Platform, HashMap<&str, Vec<&str>>> = Platform::iter()
+            .map(|platform| {
+                let mut map = HashMap::new();
+
+                for kind in StringsFileKind::applicable_iter(platform) {
+                    map.entry(kind.path_base(platform))
+                        .or_insert_with(Vec::new)
+                        .push(kind.path_file_name(platform));
+                }
+
+                (platform, map)
+            })
+            .collect();
 
         let client = reqwest::blocking::Client::builder()
             .user_agent(crate::utils::USER_AGENT)
