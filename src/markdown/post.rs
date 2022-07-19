@@ -4,13 +4,13 @@ use anyhow::bail;
 use strum::IntoEnumIterator;
 use worker::{console_log, console_warn};
 
+use super::{Commit, CommitStatus};
 use crate::{
-    localization::{LocalizationChangeCollection, RenderMode},
+    localization::{LocalizationChangeCollection, LocalizationChangeRenderMode},
     platform::Platform,
     types::github::Tag,
     utils,
 };
-use super::{Commit, CommitStatus};
 
 #[derive(Debug)]
 pub struct Post<'a> {
@@ -87,7 +87,7 @@ impl<'a> Post<'a> {
             .join("\n")
     }
 
-    fn markdown_text(&self, commits_markdown: &str, mode: RenderMode) -> String {
+    fn markdown_text(&self, commits_markdown: &str, mode: LocalizationChangeRenderMode) -> String {
         let old_version = &self.old_tag.exact_version_string();
         let new_version = &self.new_tag.exact_version_string();
 
@@ -137,7 +137,7 @@ Gathered from [signalapp/Signal-{platform}]({comparison_url})
 
         let mut post_markdown: Option<String> = None;
 
-        for mode in RenderMode::iter() {
+        for mode in LocalizationChangeRenderMode::iter() {
             console_log!("trying localization change collection render mode = {mode:?}");
 
             let text = self.markdown_text(&commits_markdown, mode);
@@ -474,7 +474,7 @@ Note: after clicking a link, it may take a few seconds before GitHub jumps to th
         );
 
         assert_str_eq!(
-            post.markdown_text(&post.commits_markdown(), RenderMode::Full),
+            post.markdown_text(&post.commits_markdown(), LocalizationChangeRenderMode::Full),
             result
         );
     }

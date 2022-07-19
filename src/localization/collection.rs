@@ -1,15 +1,7 @@
-use strum_macros::EnumIter;
-
-use super::LocalizationChanges;
-
-#[derive(Debug, EnumIter, Clone, Copy)]
-pub enum RenderMode {
-    Full,
-    WithoutRelease,
-    Nothing,
-}
-
-use RenderMode::*;
+use super::{
+    LocalizationChangeRenderMode::{self, *},
+    LocalizationChanges,
+};
 
 #[derive(Debug)]
 pub struct LocalizationChangeCollection<'a> {
@@ -18,7 +10,7 @@ pub struct LocalizationChangeCollection<'a> {
 }
 
 impl<'a> LocalizationChangeCollection<'a> {
-    pub fn to_string(&self, mode: RenderMode) -> String {
+    pub fn to_string(&self, mode: LocalizationChangeRenderMode) -> String {
         let changes = match (mode, &self.release_changes) {
             (Full, Some(changes)) => vec![&self.build_changes, changes],
             (Full, None) | (WithoutRelease, _) => {
