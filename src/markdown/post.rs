@@ -10,11 +10,7 @@ use crate::{
     types::github::Tag,
     utils,
 };
-
-mod commit;
-
-pub use commit::Commit;
-use commit::CommitStatus;
+use super::{Commit, CommitStatus};
 
 #[derive(Debug)]
 pub struct Post<'a> {

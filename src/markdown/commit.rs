@@ -3,19 +3,8 @@ use std::borrow::Cow;
 use lazy_static::lazy_static;
 use regex::Regex;
 
+use super::CommitStatus::{self, *};
 use crate::{platform::Platform, types::github};
-
-pub enum CommitStatus {
-    Both {
-        reverts: usize,
-        is_reverted_by: usize,
-    },
-    IsRevertedBy(usize),
-    Reverts(usize),
-    Normal,
-}
-
-use CommitStatus::*;
 
 #[derive(Debug, Clone)]
 pub struct Commit<'a> {

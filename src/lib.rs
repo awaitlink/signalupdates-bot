@@ -8,9 +8,9 @@ use worker::{
 };
 
 mod localization;
+mod markdown;
 mod panic_hook;
 mod platform;
-mod post;
 mod state;
 mod types;
 mod utils;
@@ -163,16 +163,18 @@ async fn check_platform(
 
                 console_log!("comparison = {:?}", comparison);
 
-                let unfiltered_commits: Vec<post::Commit> = comparison
+                let unfiltered_commits: Vec<markdown::Commit> = comparison
                     .commits
                     .iter()
-                    .map(|github_commit| post::Commit::from_github_commit(platform, github_commit))
+                    .map(|github_commit| {
+                        markdown::Commit::from_github_commit(platform, github_commit)
+                    })
                     .collect();
 
                 let unfiltered_commits_len = unfiltered_commits.len();
                 console_log!("unfiltered_commits_len = {:?}", unfiltered_commits_len);
 
-                let commits: Vec<post::Commit> = unfiltered_commits
+                let commits: Vec<markdown::Commit> = unfiltered_commits
                     .into_iter()
                     .filter(|commit| platform.should_show_commit(commit.full_message()))
                     .collect();
@@ -285,7 +287,7 @@ async fn check_platform(
                     .unsorted_changes
                     .clone();
 
-                let post = post::Post::new(
+                let post = markdown::Post::new(
                     platform,
                     old_tag,
                     new_tag,
