@@ -67,7 +67,8 @@ impl<'a> Commit<'a> {
             .full_message
             .split('\n')
             .filter(|line| {
-                !line.contains("Co-Authored-By") && !line.contains("This reverts commit")
+                let lowercase = line.to_lowercase();
+                !lowercase.contains("co-authored-by") && !lowercase.contains("this reverts commit")
             })
             .map(|line| MENTION_REGEX.replace_all(line, "`@$1`"))
             .collect();
@@ -152,6 +153,11 @@ mod tests {
         Android, "Test commit.\nCo-Authored-By: user", "abcdef", Normal,
         "- Test commit. [[2]](https://github.com/signalapp/Signal-Android/commit/abcdef)\n";
         "Android: Co-Authored-By is removed"
+    )]
+    #[test_case(
+        Android, "Test commit.\nCo-authored-by: user", "abcdef", Normal,
+        "- Test commit. [[2]](https://github.com/signalapp/Signal-Android/commit/abcdef)\n";
+        "Android: Co-Authored-By in any case is removed"
     )]
     #[test_case(
         Android, "Revert \"Test commit\".\nThis reverts commit fedcba.", "abcdef", Reverts(1),
