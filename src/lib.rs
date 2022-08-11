@@ -60,7 +60,7 @@ async fn main(env: &Env) {
     }
 }
 
-async fn check_all_platforms(env: &Env) -> anyhow::Result<()> {
+fn platforms_order() -> anyhow::Result<Vec<Platform>> {
     let now = DateTime::from(utils::now());
     console_log!(
         "now = {} (nanos: {})",
@@ -69,16 +69,27 @@ async fn check_all_platforms(env: &Env) -> anyhow::Result<()> {
     );
 
     let platforms = Platform::iter().collect::<Vec<_>>();
+
     let index = (now.minute() / 10)
         .try_into()
         .context("should be able to convert to usize")?;
+
     let platforms = permute::permutations_of(&platforms)
         .nth(index)
-        .context("there should be >= 6 permutations")?;
+        .context("there should be >= 6 permutations")?
+        .copied()
+        .collect::<Vec<_>>();
 
+    console_log!("platforms = {platforms:?}");
+
+    Ok(platforms)
+}
+
+async fn check_all_platforms(env: &Env) -> anyhow::Result<()> {
+    let platforms = platforms_order()?;
     let mut state_controller = state::StateController::from_kv(env).await?;
 
-    for &platform in platforms {
+    for platform in platforms {
         let outcome = check_platform(&mut state_controller, env, platform).await?;
 
         match outcome {
