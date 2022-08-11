@@ -1,6 +1,7 @@
 #![feature(array_windows)]
 
 use anyhow::Context;
+use chrono::prelude::*;
 use semver::Version;
 use strum::IntoEnumIterator;
 use worker::{
@@ -59,9 +60,24 @@ async fn main(env: &Env) {
 }
 
 async fn check_all_platforms(env: &Env) -> anyhow::Result<()> {
+    let now = DateTime::from(utils::now());
+    console_log!(
+        "now = {} (nanos: {})",
+        now.to_rfc3339(),
+        now.timestamp_nanos()
+    );
+
+    let platforms = Platform::iter().collect::<Vec<_>>();
+    let index = (now.minute() / 10)
+        .try_into()
+        .context("should be able to convert to usize")?;
+    let platforms = permute::permutations_of(&platforms)
+        .nth(index)
+        .context("there should be >= 6 permutations")?;
+
     let mut state_controller = state::StateController::from_kv(env).await?;
 
-    for platform in Platform::iter() {
+    for &platform in platforms {
         let outcome = check_platform(&mut state_controller, env, platform).await?;
 
         match outcome {

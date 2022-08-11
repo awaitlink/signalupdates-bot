@@ -1,4 +1,4 @@
-use std::time::Duration;
+use std::time::{Duration, SystemTime};
 
 use anyhow::{anyhow, bail, Context};
 use semver::Version;
@@ -381,4 +381,8 @@ pub async fn delay(milliseconds: u64) {
     Delay::from(Duration::from_millis(milliseconds)).await;
 
     console_log!("done waiting {milliseconds} milliseconds");
+}
+
+pub fn now() -> SystemTime {
+    SystemTime::UNIX_EPOCH + Duration::from_millis(worker::Date::now().as_millis())
 }
