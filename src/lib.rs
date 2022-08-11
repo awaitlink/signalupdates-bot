@@ -62,11 +62,7 @@ async fn main(env: &Env) {
 
 fn platforms_order() -> anyhow::Result<Vec<Platform>> {
     let now = DateTime::from(utils::now());
-    console_log!(
-        "now = {} (nanos: {})",
-        now.to_rfc3339(),
-        now.timestamp_nanos()
-    );
+    console_log!("now = {} (seconds: {})", now.to_rfc3339(), now.timestamp());
 
     let platforms = Platform::iter().collect::<Vec<_>>();
 
