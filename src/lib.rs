@@ -8,20 +8,21 @@ use worker::{
     console_error, console_log, console_warn, event, Env, ScheduleContext, ScheduledEvent,
 };
 
+mod discourse;
+mod github;
 mod localization;
 mod markdown;
 mod panic_hook;
 mod platform;
 mod state;
-mod types;
 mod utils;
 
+use discourse::PostingOutcome;
 use localization::{
     Completeness, LocalizationChange, LocalizationChangeCollection, LocalizationChanges,
 };
 use platform::Platform;
 use state::{PendingState, StateController};
-use utils::PostingOutcome;
 
 const POSTING_DELAY_MILLISECONDS: u64 = 3000;
 
@@ -118,7 +119,7 @@ async fn check_platform(
             "post id = {post_id} is waiting for approval, checking if there is a post number"
         );
 
-        if let Some(number) = utils::get_post_number(*post_id).await? {
+        if let Some(number) = discourse::get_post_number(*post_id).await? {
             console_log!("post number = {number}, approval confirmed");
 
             let mut new_state = platform_state.clone();
@@ -137,14 +138,13 @@ async fn check_platform(
         console_log!("no post waiting for approval, continuing main logic");
     }
 
-    let all_tags: Vec<types::github::Tag> =
-        utils::get_json_from_url(&platform.github_api_tags_url())
-            .await
-            .context("could not fetch tags from GitHub")?;
+    let all_tags: Vec<github::Tag> = utils::get_json_from_url(&platform.github_api_tags_url())
+        .await
+        .context("could not fetch tags from GitHub")?;
 
     console_log!("all_tags = {:?}", all_tags);
 
-    let mut tags: Vec<(types::github::Tag, Version)> = all_tags
+    let mut tags: Vec<(github::Tag, Version)> = all_tags
         .iter()
         .filter_map(|tag| tag.to_version().ok().map(|version| (tag.clone(), version)))
         .filter(|(_, version)| platform.should_post_version(version))
@@ -156,7 +156,7 @@ async fn check_platform(
     console_log!("after sorting, tags = {:?}", tags);
 
     // TODO: assumes the last posted tag can be found on this GitHub API page
-    let tags_to_post: Vec<(types::github::Tag, Version)> = tags
+    let tags_to_post: Vec<(github::Tag, Version)> = tags
         .iter()
         .skip_while(|(tag, _)| tag != &state_controller.platform_state(platform).last_posted_tag)
         .cloned()
@@ -176,7 +176,7 @@ async fn check_platform(
         let discourse_api_key = utils::api_key(env)?;
 
         let new_topic_id =
-            utils::get_topic_id_or_override(env, &discourse_api_key, platform, new_version)
+            discourse::get_topic_id_or_override(env, &discourse_api_key, platform, new_version)
                 .await
                 .context("could not find new_topic_id")?;
 
@@ -209,10 +209,9 @@ async fn check_platform(
                 };
                 console_log!("reply_to_post_number = {:?}", reply_to_post_number);
 
-                let comparison =
-                    utils::get_github_comparison(platform, &old_tag.name, &new_tag.name)
-                        .await
-                        .context("could not get build comparison from GitHub")?;
+                let comparison = github::get_comparison(platform, &old_tag.name, &new_tag.name)
+                    .await
+                    .context("could not get build comparison from GitHub")?;
 
                 console_log!("comparison = {:?}", comparison);
 
@@ -253,8 +252,7 @@ async fn check_platform(
                         let mut all_complete = true;
 
                         for commit in localization_change_commits {
-                            let with_files =
-                                utils::get_github_commit(platform, commit.sha()).await?;
+                            let with_files = github::get_commit(platform, commit.sha()).await?;
 
                             console_log!("with_files = {:?}", with_files);
 
@@ -428,7 +426,7 @@ async fn post_archiving_message_if_necessary(
     }
 
     let old_topic_id =
-        utils::get_topic_id_or_override(env, discourse_api_key, platform, old_version)
+        discourse::get_topic_id_or_override(env, discourse_api_key, platform, old_version)
             .await
             .context("could not find old_topic_id")?;
 
@@ -436,11 +434,11 @@ async fn post_archiving_message_if_necessary(
         Some(old_topic_id) => {
             console_log!("old_topic_id = {old_topic_id}");
 
-            let markdown_text = utils::archiving_post_markdown(new_topic_id);
+            let markdown_text = discourse::archiving_post_markdown(new_topic_id);
             console_log!("markdown_text.len() = {}", markdown_text.len());
 
             let result = if !utils::is_dry_run(env)? {
-                utils::post_to_discourse(
+                discourse::post(
                     &markdown_text,
                     discourse_api_key,
                     old_topic_id,

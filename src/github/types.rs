@@ -1,8 +1,7 @@
 use anyhow::{anyhow, Context};
 use semver::Version;
 use serde::Serialize;
-
-use super::*;
+use serde_derive::Deserialize;
 
 #[derive(Deserialize, Serialize, Debug, Clone, PartialEq, Eq)]
 pub struct Tag {
@@ -160,7 +159,7 @@ mod tests {
     #[test]
     fn comparison_deserialization() {
         // Example from https://docs.github.com/en/rest/commits/commits#compare-two-commits
-        let input = include_str!("github_comparison_example.json");
+        let input = include_str!("comparison_example.json");
 
         assert_eq!(
             serde_json::from_str::<Comparison>(input).unwrap(),

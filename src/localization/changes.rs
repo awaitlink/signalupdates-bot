@@ -3,12 +3,12 @@ use std::fmt;
 use worker::console_log;
 
 use crate::{
+    github::{Comparison, Tag},
     localization::{
         Completeness::{self, *},
         LocalizationChange, UnsortedChanges,
     },
     platform::Platform,
-    types::github::{Comparison, Tag},
 };
 
 #[derive(Debug, Clone, PartialEq, Eq)]

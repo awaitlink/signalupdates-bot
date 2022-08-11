@@ -6,10 +6,10 @@ use worker::{console_log, console_warn};
 
 use super::{Commit, CommitStatus};
 use crate::{
+    discourse::{self, PostingOutcome},
+    github::Tag,
     localization::{LocalizationChangeCollection, LocalizationChangeRenderMode},
     platform::Platform,
-    types::github::Tag,
-    utils::{self, PostingOutcome},
 };
 
 #[derive(Debug)]
@@ -155,8 +155,7 @@ Gathered from [signalapp/Signal-{platform}]({comparison_url})
         match &post_markdown {
             Some(markdown_text) => {
                 if !is_dry_run {
-                    utils::post_to_discourse(markdown_text, api_key, topic_id, reply_to_post_number)
-                        .await
+                    discourse::post(markdown_text, api_key, topic_id, reply_to_post_number).await
                 } else {
                     console_warn!("dry run; not posting to Discourse");
                     Ok(PostingOutcome::Posted {

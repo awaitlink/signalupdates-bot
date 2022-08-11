@@ -5,6 +5,7 @@ use regex::Regex;
 use serde::{Deserialize, Serialize};
 
 use crate::{
+    github::{File, Tag},
     localization::{
         Language,
         StringsFileKind::{self, *},
@@ -13,7 +14,6 @@ use crate::{
         Platform::{self, *},
         ANDROID_DEFAULT_STRINGS_FILENAME,
     },
-    types::github::{File, Tag},
 };
 
 pub type UnsortedChanges = HashMap<Language, HashSet<StringsFileKind>>;
@@ -246,7 +246,7 @@ mod tests {
     fn online_localization_change_all() {
         use strum::IntoEnumIterator;
 
-        use crate::{platform::Platform, types::github};
+        use crate::{github, platform::Platform};
 
         #[allow(clippy::type_complexity)]
         let platforms: HashMap<Platform, HashMap<&str, Vec<&str>>> = Platform::iter()

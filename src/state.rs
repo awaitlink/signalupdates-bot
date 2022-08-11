@@ -8,9 +8,9 @@ use worker::{console_log, console_warn, Env};
 use worker_kv::KvStore;
 
 use crate::{
+    github::Tag,
     localization::{Completeness, UnsortedChanges},
     platform::Platform,
-    types::github::Tag,
 };
 
 const STATE_KV_BINDING: &str = "STATE";

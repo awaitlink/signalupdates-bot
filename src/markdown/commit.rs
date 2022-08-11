@@ -4,7 +4,7 @@ use lazy_static::lazy_static;
 use regex::Regex;
 
 use super::CommitStatus::{self, *};
-use crate::{platform::Platform, types::github};
+use crate::{github, platform::Platform};
 
 #[derive(Debug, Clone)]
 pub struct Commit<'a> {

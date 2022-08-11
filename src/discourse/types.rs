@@ -1,8 +1,7 @@
 use std::collections::HashMap;
 
+use serde_derive::Deserialize;
 use serde_json::Value;
-
-use super::*;
 
 #[derive(Deserialize, Debug)]
 pub struct PostApiResponse {
