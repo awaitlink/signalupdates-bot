@@ -77,6 +77,10 @@ impl Platform {
             self.to_string().to_ascii_lowercase(), version.major, version.minor
         )
     }
+
+    pub fn state_key(&self) -> String {
+        self.to_string().to_lowercase()
+    }
 }
 
 impl fmt::Display for Platform {

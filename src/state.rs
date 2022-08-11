@@ -1,3 +1,5 @@
+use std::collections::HashMap;
+
 use anyhow::{anyhow, bail, Context};
 use semver::Version;
 use serde::{Deserialize, Serialize};
@@ -7,19 +9,14 @@ use worker_kv::KvStore;
 
 use crate::{
     localization::{Completeness, UnsortedChanges},
-    platform::Platform::{self, *},
+    platform::Platform,
     types::github::Tag,
 };
 
 const STATE_KV_BINDING: &str = "STATE";
 const STATE_KV_KEY: &str = "state";
 
-#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq)]
-pub struct State {
-    pub android: PlatformState,
-    pub ios: PlatformState,
-    pub desktop: PlatformState,
-}
+pub type State = HashMap<String, PlatformState>;
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq)]
 pub struct PlatformState {
@@ -129,19 +126,15 @@ impl StateController {
     }
 
     pub fn platform_state(&self, platform: Platform) -> &PlatformState {
-        match platform {
-            Android => &self.state.android,
-            Ios => &self.state.ios,
-            Desktop => &self.state.desktop,
-        }
+        self.state
+            .get(platform.state_key().as_str())
+            .expect("state to be available for all platforms")
     }
 
     fn platform_state_mut(&mut self, platform: Platform) -> &mut PlatformState {
-        match platform {
-            Android => &mut self.state.android,
-            Ios => &mut self.state.ios,
-            Desktop => &mut self.state.desktop,
-        }
+        self.state
+            .get_mut(platform.state_key().as_str())
+            .expect("state to be available for all platforms")
     }
 
     pub async fn set_platform_state(
