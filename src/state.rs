@@ -36,6 +36,52 @@ pub struct PlatformState {
     pub localization_changes_completeness: Completeness,
     #[serde(default)]
     pub localization_changes: UnsortedChanges,
+
+    #[serde(default)]
+    pub pending_state: Option<Box<PendingState>>,
+}
+
+impl PlatformState {
+    fn validate(&self) -> anyhow::Result<(Version, Version)> {
+        let last_posted_version_previous_release: Version = self
+            .last_posted_tag_previous_release
+            .to_version()
+            .context("couldn't convert last_posted_tag_previous_release to a Version")?;
+
+        let last_posted_version: Version = self
+            .last_posted_tag
+            .to_version()
+            .context("couldn't convert last_posted_tag to a Version")?;
+
+        if last_posted_version_previous_release >= last_posted_version {
+            bail!("last_posted_version_previous_release >= last_posted_version");
+        }
+
+        if let Some(PendingState { platform_state, .. }) = self.pending_state.as_deref() {
+            let (pending_last_posted_version_previous_release, pending_last_posted_version) =
+                platform_state.validate().context("invalid pending state")?;
+
+            if platform_state.last_post_number.is_some() {
+                bail!("pending state unexpectedly has post number");
+            }
+
+            if pending_last_posted_version_previous_release < last_posted_version_previous_release {
+                bail!("pending_last_posted_version_previous_release < last_posted_version_previous_release");
+            }
+
+            if pending_last_posted_version <= last_posted_version {
+                bail!("pending_last_posted_version <= last_posted_version");
+            }
+        }
+
+        Ok((last_posted_version_previous_release, last_posted_version))
+    }
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq)]
+pub struct PendingState {
+    pub post_id: u64,
+    pub platform_state: PlatformState,
 }
 
 pub struct StateController {
@@ -72,21 +118,11 @@ impl StateController {
 
     fn validate_state(&self) -> anyhow::Result<()> {
         for platform in Platform::iter() {
-            let state = self.platform_state(platform);
+            console_log!("validating state for {platform:?}");
 
-            let last_posted_version_previous_release: Version = state
-                .last_posted_tag_previous_release
-                .to_version()
-                .context("couldn't convert last_posted_tag_previous_release to a Version")?;
-
-            let last_posted_version: Version = state
-                .last_posted_tag
-                .to_version()
-                .context("couldn't convert last_posted_tag to a Version")?;
-
-            if last_posted_version_previous_release >= last_posted_version {
-                bail!("last_posted_version_previous_release >= last_posted_version for {platform}");
-            }
+            self.platform_state(platform)
+                .validate()
+                .context("invalid platform state")?;
         }
 
         Ok(())
@@ -116,6 +152,8 @@ impl StateController {
         let platform_state = self.platform_state_mut(platform);
 
         if *platform_state != state {
+            state.validate().context("tried to set invalid state")?;
+
             *platform_state = state;
             console_log!("changed platform_state({platform}) = {platform_state:?}");
 

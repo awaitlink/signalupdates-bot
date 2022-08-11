@@ -8,18 +8,13 @@ use super::*;
 pub struct PostApiResponse {
     pub post_number: Option<u64>,
 
-    #[serde(flatten)]
-    pub other_fields: HashMap<String, Value>,
+    pub action: Option<String>,
+    pub pending_post: Option<Post>,
 }
 
 #[derive(Deserialize, Debug)]
 pub struct TopicResponse {
-    pub post_stream: Option<PostStream>,
-
-    pub error_type: Option<String>,
-
-    #[serde(flatten)]
-    pub other_fields: HashMap<String, Value>,
+    pub post_stream: PostStream,
 }
 
 #[derive(Deserialize, Debug)]
@@ -29,5 +24,16 @@ pub struct PostStream {
 
 #[derive(Deserialize, Debug)]
 pub struct Post {
+    pub id: u64,
+
     pub topic_id: u64,
+    pub post_number: u64,
+}
+
+#[derive(Deserialize, Debug)]
+pub struct Error {
+    pub error_type: String,
+
+    #[serde(flatten)]
+    pub other_fields: HashMap<String, Value>,
 }

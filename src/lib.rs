@@ -19,11 +19,13 @@ use localization::{
     Completeness, LocalizationChange, LocalizationChangeCollection, LocalizationChanges,
 };
 use platform::Platform;
-use state::StateController;
+use state::{PendingState, StateController};
+use utils::PostingOutcome;
 
 const POSTING_DELAY_MILLISECONDS: u64 = 3000;
 
 enum PlatformCheckOutcome {
+    WaitingForApproval,
     LatestVersionIsAlreadyPosted,
     NewTopicNotFound,
     PostedCommits,
@@ -63,10 +65,13 @@ async fn check_all_platforms(env: &Env) -> anyhow::Result<()> {
         let outcome = check_platform(&mut state_controller, env, platform).await?;
 
         match outcome {
-            LatestVersionIsAlreadyPosted => console_log!("latest version is already posted"),
-            NewTopicNotFound => console_warn!("no topic found, may be not created yet"),
+            WaitingForApproval => console_warn!("outcome: waiting for post approval"),
+            LatestVersionIsAlreadyPosted => {
+                console_log!("outcome: latest version is already posted")
+            }
+            NewTopicNotFound => console_warn!("outcome: no topic found, may be not created yet"),
             PostedCommits => {
-                console_warn!("already posted for {platform} and currently doing only one \"commits\" post per invocation, done");
+                console_warn!("outcome: already posted for {platform} and currently doing only one \"commits\" post per invocation, done");
                 break;
             }
         }
@@ -83,6 +88,38 @@ async fn check_platform(
     platform: Platform,
 ) -> anyhow::Result<PlatformCheckOutcome> {
     console_log!("checking platform = {platform}");
+
+    // Check if a pending post exists and has been approved
+    if let Some(PendingState {
+        post_id,
+        platform_state,
+    }) = state_controller
+        .platform_state(platform)
+        .pending_state
+        .as_deref()
+    {
+        console_log!(
+            "post id = {post_id} is waiting for approval, checking if there is a post number"
+        );
+
+        if let Some(number) = utils::get_post_number(*post_id).await? {
+            console_log!("post number = {number}, approval confirmed");
+
+            let mut new_state = platform_state.clone();
+            new_state.last_post_number = Some(number);
+
+            state_controller
+                .set_platform_state(platform, new_state)
+                .await
+                .context("could not set platform state after confirming post approval")?;
+
+            console_log!("continuing main logic");
+        } else {
+            return Ok(WaitingForApproval);
+        }
+    } else {
+        console_log!("no post waiting for approval, continuing main logic");
+    }
 
     let all_tags: Vec<types::github::Tag> =
         utils::get_json_from_url(&platform.github_api_tags_url())
@@ -299,7 +336,7 @@ async fn check_platform(
                     },
                 );
 
-                let post_number = post
+                let outcome = post
                     .post(
                         utils::is_dry_run(env)?,
                         &discourse_api_key,
@@ -309,21 +346,39 @@ async fn check_platform(
                     .await
                     .context("could not post commits to Discourse")?;
 
-                console_log!("posted post_number = {:?}", post_number);
+                console_log!("posting outcome = {outcome:?}");
+
+                let final_state = {
+                    let mut new_state = state::PlatformState {
+                        last_posted_tag_previous_release: last_posted_tag_previous_release.clone(),
+                        last_posted_tag: new_tag.clone(),
+                        last_post_number: None,
+                        posted_archiving_message: false,
+                        localization_changes_completeness,
+                        localization_changes,
+                        pending_state: None,
+                    };
+
+                    match outcome {
+                        PostingOutcome::Posted { number } => {
+                            new_state.last_post_number = Some(number);
+                            new_state
+                        }
+                        PostingOutcome::Enqueued { id } => {
+                            let mut final_state = state_controller.platform_state(platform).clone();
+
+                            final_state.pending_state = Some(Box::new(PendingState {
+                                post_id: id,
+                                platform_state: new_state,
+                            }));
+
+                            final_state
+                        }
+                    }
+                };
 
                 state_controller
-                    .set_platform_state(
-                        platform,
-                        state::PlatformState {
-                            last_posted_tag_previous_release: last_posted_tag_previous_release
-                                .clone(),
-                            last_posted_tag: new_tag.clone(),
-                            last_post_number: Some(post_number),
-                            posted_archiving_message: false,
-                            localization_changes_completeness,
-                            localization_changes,
-                        },
-                    )
+                    .set_platform_state(platform, final_state)
                     .await
                     .context("could not set platform state after posting commits")?;
 
@@ -378,12 +433,12 @@ async fn post_archiving_message_if_necessary(
                 .await
             } else {
                 console_warn!("dry run; not posting to Discourse");
-                Ok(0)
+                Ok(PostingOutcome::Posted { number: 0 })
             };
 
             match result {
-                Ok(post_number) => {
-                    console_log!("posted archiving message, post number = {}", post_number);
+                Ok(outcome) => {
+                    console_log!("posted archiving message, outcome = {outcome:?}");
 
                     let mut new_state = state_controller.platform_state(platform).clone();
                     new_state.posted_archiving_message = true;

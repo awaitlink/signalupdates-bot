@@ -9,7 +9,7 @@ use crate::{
     localization::{LocalizationChangeCollection, LocalizationChangeRenderMode},
     platform::Platform,
     types::github::Tag,
-    utils,
+    utils::{self, PostingOutcome},
 };
 
 #[derive(Debug)]
@@ -132,7 +132,7 @@ Gathered from [signalapp/Signal-{platform}]({comparison_url})
         api_key: &str,
         topic_id: u64,
         reply_to_post_number: Option<u64>,
-    ) -> anyhow::Result<u64> {
+    ) -> anyhow::Result<PostingOutcome> {
         let commits_markdown = self.commits_markdown();
 
         let mut post_markdown: Option<String> = None;
@@ -159,7 +159,9 @@ Gathered from [signalapp/Signal-{platform}]({comparison_url})
                         .await
                 } else {
                     console_warn!("dry run; not posting to Discourse");
-                    Ok(reply_to_post_number.unwrap_or(0))
+                    Ok(PostingOutcome::Posted {
+                        number: reply_to_post_number.unwrap_or(0),
+                    })
                 }
             }
             None => bail!("could not make a post that fits within the allowed character count"),

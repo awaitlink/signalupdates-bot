@@ -13,12 +13,15 @@ use worker::{
 use crate::{
     platform::Platform,
     types::{
+        self,
         discourse::PostApiResponse,
         github::{Commit, CommitData, Comparison},
     },
 };
 
 pub const USER_AGENT: &str = "updates-bot";
+
+pub const DISCOURSE_ERROR_TYPE_NOT_FOUND: &str = "not_found";
 
 #[derive(Debug)]
 enum StringBindingKind {
@@ -64,22 +67,23 @@ pub async fn get_topic_id(
         Url::parse(&platform.discourse_topic_slug_url(version)).context("could not parse URL")?;
 
     let request = create_request(url, Method::Get, None, Some(api_key))?;
-    let response: crate::types::discourse::TopicResponse = get_json_from_request(request).await?;
+    let response: Result<types::discourse::TopicResponse, types::discourse::Error> =
+        get_json_from_request(request).await?;
 
-    match (&response.post_stream, &response.error_type) {
-        (Some(post_stream), _) => match post_stream.posts.first() {
+    match &response {
+        Ok(response) => match response.post_stream.posts.first() {
             Some(post) => Ok(Some(post.topic_id)),
             None => {
                 console_error!("response = {:?}", response);
                 bail!("no posts in topic")
             }
         },
-        (None, Some(error_type)) if error_type == "not_found" => {
+        Err(error) if error.error_type == DISCOURSE_ERROR_TYPE_NOT_FOUND => {
             console_warn!("topic not found, response = {:?}", response);
             Ok(None)
         }
-        (None, _) => {
-            console_error!("response = {:?}", response);
+        Err(error) => {
+            console_error!("unexpected error = {:?}", error);
             bail!("discourse API request likely failed")
         }
     }
@@ -310,15 +314,18 @@ If you have feedback specifically related to the new beta version, please post i
     )
 }
 
-/// Makes a post in Discourse.
-///
-/// If successful, returns the post number.
+#[derive(Debug)]
+pub enum PostingOutcome {
+    Posted { number: u64 },
+    Enqueued { id: u64 },
+}
+
 pub async fn post_to_discourse(
     markdown_text: &str,
     api_key: &str,
     topic_id: u64,
     reply_to_post_number: Option<u64>,
-) -> anyhow::Result<u64> {
+) -> anyhow::Result<PostingOutcome> {
     let url = Url::parse("https://community.signalusers.org/posts.json")
         .context("could not parse URL")?;
 
@@ -332,12 +339,39 @@ pub async fn post_to_discourse(
     let api_response: PostApiResponse = get_json_from_request(request).await?;
 
     match api_response.post_number {
-        Some(number) => Ok(number),
+        Some(number) => Ok(PostingOutcome::Posted { number }),
         None => {
+            match (&api_response.action, &api_response.pending_post) {
+                (Some(action), Some(pending_post)) if action == "enqueued" => {
+                    return Ok(PostingOutcome::Enqueued {
+                        id: pending_post.id,
+                    })
+                }
+                _ => {}
+            }
+
             console_error!("api_response = {:?}", api_response);
-            bail!("discourse API response did not include the post number, posting likely failed")
+            bail!("discourse API response did not include the post identifiers, posting likely failed")
         }
     }
+}
+
+pub async fn get_post_number(post_id: u64) -> anyhow::Result<Option<u64>> {
+    let url = Url::parse(&format!(
+        "https://community.signalusers.org/posts/{post_id}.json"
+    ))
+    .context("could not parse URL")?;
+
+    // Without API key, in case the post is returned for the author even while it's enqueued
+    let request = create_request(url, Method::Get, None, None)?;
+    let post: Result<types::discourse::Post, types::discourse::Error> =
+        get_json_from_request(request).await?;
+
+    Ok(match post {
+        Ok(post) => Some(post.post_number),
+        Err(error) if error.error_type == DISCOURSE_ERROR_TYPE_NOT_FOUND => None,
+        Err(error) => bail!("unexpected error when getting post: {error:?}"),
+    })
 }
 
 /// Asynchronously waits for the specified number of milliseconds.
