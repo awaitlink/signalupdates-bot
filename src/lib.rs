@@ -3,7 +3,6 @@
 use anyhow::Context;
 use chrono::prelude::*;
 use semver::Version;
-use strum::IntoEnumIterator;
 use worker::{
     console_error, console_log, console_warn, event, Env, ScheduleContext, ScheduledEvent,
 };
@@ -60,29 +59,13 @@ async fn main(env: &Env) {
     }
 }
 
-fn platforms_order() -> anyhow::Result<Vec<Platform>> {
+async fn check_all_platforms(env: &Env) -> anyhow::Result<()> {
     let now = DateTime::from(utils::now());
     console_log!("now = {} (seconds: {})", now.to_rfc3339(), now.timestamp());
 
-    let platforms = Platform::iter().collect::<Vec<_>>();
-
-    let index = (now.minute() / 10)
-        .try_into()
-        .context("should be able to convert to usize")?;
-
-    let platforms = permute::permutations_of(&platforms)
-        .nth(index)
-        .context("there should be >= 6 permutations")?
-        .copied()
-        .collect::<Vec<_>>();
-
+    let platforms = utils::platforms_order(now.time())?;
     console_log!("platforms = {platforms:?}");
 
-    Ok(platforms)
-}
-
-async fn check_all_platforms(env: &Env) -> anyhow::Result<()> {
-    let platforms = platforms_order()?;
     let mut state_controller = state::StateController::from_kv(env).await?;
 
     for platform in platforms {
