@@ -100,7 +100,7 @@ async fn check_all_platforms(env: &Env) -> anyhow::Result<()> {
             }
         }
 
-        console_log!("----------------------------------------------------------------------");
+        utils::log_separator();
     }
 
     Ok(())

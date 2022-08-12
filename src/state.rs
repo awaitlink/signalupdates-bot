@@ -180,6 +180,8 @@ impl StateController {
                 "^^^^^ platform_state({platform}) = {:?}",
                 self.platform_state(platform)
             );
+
+            crate::utils::log_separator();
         }
     }
 }

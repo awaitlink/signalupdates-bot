@@ -128,3 +128,7 @@ pub async fn delay(milliseconds: u64) {
 pub fn now() -> SystemTime {
     SystemTime::UNIX_EPOCH + Duration::from_millis(worker::Date::now().as_millis())
 }
+
+pub fn log_separator() {
+    console_log!("----------------------------------------------------------------------");
+}
