@@ -1,27 +1,30 @@
-use std::collections::HashMap;
-
 use serde_derive::Deserialize;
-use serde_json::Value;
 
-#[derive(Deserialize, Debug)]
-pub struct PostApiResponse {
-    pub post_number: Option<u64>,
-
-    pub action: Option<String>,
-    pub pending_post: Option<Post>,
+#[derive(Deserialize, Debug, PartialEq, Eq)]
+#[serde(untagged)]
+pub enum ApiResponse<T> {
+    Ok(T),
+    Err(Error),
 }
 
-#[derive(Deserialize, Debug)]
-pub struct TopicResponse {
+#[derive(Deserialize, Debug, PartialEq, Eq)]
+#[serde(tag = "error_type")]
+pub enum Error {
+    #[serde(rename = "not_found")]
+    NotFound,
+}
+
+#[derive(Deserialize, Debug, PartialEq, Eq)]
+pub struct Topic {
     pub post_stream: PostStream,
 }
 
-#[derive(Deserialize, Debug)]
+#[derive(Deserialize, Debug, PartialEq, Eq)]
 pub struct PostStream {
     pub posts: Vec<Post>,
 }
 
-#[derive(Deserialize, Debug)]
+#[derive(Deserialize, Debug, PartialEq, Eq)]
 pub struct Post {
     pub id: u64,
 
@@ -29,10 +32,77 @@ pub struct Post {
     pub post_number: u64,
 }
 
-#[derive(Deserialize, Debug)]
-pub struct Error {
-    pub error_type: String,
+#[derive(Deserialize, Debug, PartialEq, Eq)]
+#[serde(untagged)]
+pub enum CreatePostResponse {
+    Posted(Post),
+    Action(PostAction),
+}
 
-    #[serde(flatten)]
-    pub other_fields: HashMap<String, Value>,
+#[derive(Deserialize, Debug, PartialEq, Eq)]
+#[serde(tag = "action")]
+pub enum PostAction {
+    #[serde(rename = "enqueued")]
+    Enqueued { pending_post: PendingPost },
+}
+
+#[derive(Deserialize, Debug, PartialEq, Eq)]
+pub struct PendingPost {
+    pub id: u64,
+}
+
+#[cfg(test)]
+mod tests {
+    use pretty_assertions::assert_eq;
+    use serde_json::json;
+
+    use super::*;
+
+    #[test]
+    fn api_response_error_deserialization() {
+        let input = json! {{
+            "errors": ["The requested URL or resource could not be found."],
+            "error_type": "not_found"
+        }};
+
+        assert_eq!(
+            serde_json::from_str::<ApiResponse<CreatePostResponse>>(&input.to_string()).unwrap(),
+            ApiResponse::Err(Error::NotFound)
+        );
+    }
+
+    #[test]
+    fn api_response_ok_post_deserialization() {
+        let input = json! {{
+            "id": 0,
+            "topic_id": 0,
+            "post_number": 0,
+        }};
+
+        assert_eq!(
+            serde_json::from_str::<ApiResponse<CreatePostResponse>>(&input.to_string()).unwrap(),
+            ApiResponse::Ok(CreatePostResponse::Posted(Post {
+                id: 0,
+                topic_id: 0,
+                post_number: 0,
+            }))
+        );
+    }
+
+    #[test]
+    fn api_response_ok_action_deserialization() {
+        let input = json! {{
+            "action": "enqueued",
+            "pending_post": {
+                "id": 0,
+            },
+        }};
+
+        assert_eq!(
+            serde_json::from_str::<ApiResponse<CreatePostResponse>>(&input.to_string()).unwrap(),
+            ApiResponse::Ok(CreatePostResponse::Action(PostAction::Enqueued {
+                pending_post: PendingPost { id: 0 }
+            }))
+        );
+    }
 }

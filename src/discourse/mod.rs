@@ -8,8 +8,6 @@ use crate::{platform::Platform, utils};
 mod types;
 pub use types::*;
 
-pub const ERROR_TYPE_NOT_FOUND: &str = "not_found";
-
 pub async fn get_topic_id(
     api_key: &str,
     platform: Platform,
@@ -21,23 +19,19 @@ pub async fn get_topic_id(
         Url::parse(&platform.discourse_topic_slug_url(version)).context("could not parse URL")?;
 
     let request = utils::create_request(url, Method::Get, None, Some(api_key))?;
-    let response: Result<TopicResponse, Error> = utils::get_json_from_request(request).await?;
+    let response: ApiResponse<Topic> = utils::get_json_from_request(request).await?;
 
     match &response {
-        Ok(response) => match response.post_stream.posts.first() {
+        ApiResponse::Ok(response) => match response.post_stream.posts.first() {
             Some(post) => Ok(Some(post.topic_id)),
             None => {
                 console_error!("response = {:?}", response);
                 bail!("no posts in topic")
             }
         },
-        Err(error) if error.error_type == ERROR_TYPE_NOT_FOUND => {
-            console_warn!("topic not found, response = {:?}", response);
+        ApiResponse::Err(Error::NotFound) => {
+            console_warn!("topic not found");
             Ok(None)
-        }
-        Err(error) => {
-            console_error!("unexpected error = {:?}", error);
-            bail!("discourse API request likely failed")
         }
     }
 }
@@ -89,23 +83,19 @@ pub async fn post(
     });
 
     let request = utils::create_request(url, Method::Post, Some(body), Some(api_key))?;
-    let api_response: PostApiResponse = utils::get_json_from_request(request).await?;
+    let api_response: ApiResponse<CreatePostResponse> =
+        utils::get_json_from_request(request).await?;
 
-    match api_response.post_number {
-        Some(number) => Ok(PostingOutcome::Posted { number }),
-        None => {
-            match (&api_response.action, &api_response.pending_post) {
-                (Some(action), Some(pending_post)) if action == "enqueued" => {
-                    return Ok(PostingOutcome::Enqueued {
-                        id: pending_post.id,
-                    })
-                }
-                _ => {}
-            }
-
-            console_error!("api_response = {:?}", api_response);
-            bail!("discourse API response did not include the post identifiers, posting likely failed")
+    match api_response {
+        ApiResponse::Ok(CreatePostResponse::Posted(post)) => Ok(PostingOutcome::Posted {
+            number: post.post_number,
+        }),
+        ApiResponse::Ok(CreatePostResponse::Action(PostAction::Enqueued { pending_post })) => {
+            Ok(PostingOutcome::Enqueued {
+                id: pending_post.id,
+            })
         }
+        ApiResponse::Err(error) => bail!("error = {error:?}"),
     }
 }
 
@@ -117,11 +107,13 @@ pub async fn get_post_number(post_id: u64) -> anyhow::Result<Option<u64>> {
 
     // Without API key, in case the post is returned for the author even while it's enqueued
     let request = utils::create_request(url, Method::Get, None, None)?;
-    let post: Result<Post, Error> = utils::get_json_from_request(request).await?;
+    let post: ApiResponse<Post> = utils::get_json_from_request(request).await?;
 
     Ok(match post {
-        Ok(post) => Some(post.post_number),
-        Err(error) if error.error_type == ERROR_TYPE_NOT_FOUND => None,
-        Err(error) => bail!("unexpected error when getting post: {error:?}"),
+        ApiResponse::Ok(post) => Some(post.post_number),
+        ApiResponse::Err(Error::NotFound) => {
+            console_warn!("post not found");
+            None
+        }
     })
 }
