@@ -33,6 +33,7 @@ pub async fn get_topic_id(
             console_warn!("topic not found");
             Ok(None)
         }
+        ApiResponse::Unknown(value) => bail!("unexpected response = {value:?}"),
     }
 }
 
@@ -96,6 +97,7 @@ pub async fn post(
             })
         }
         ApiResponse::Err(error) => bail!("error = {error:?}"),
+        ApiResponse::Unknown(value) => bail!("unexpected response = {value:?}"),
     }
 }
 
@@ -115,5 +117,6 @@ pub async fn get_post_number(post_id: u64) -> anyhow::Result<Option<u64>> {
             console_warn!("post not found");
             None
         }
+        ApiResponse::Unknown(value) => bail!("unexpected response = {value:?}"),
     })
 }

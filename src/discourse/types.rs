@@ -1,10 +1,12 @@
 use serde_derive::Deserialize;
+use serde_json::Value;
 
 #[derive(Deserialize, Debug, PartialEq, Eq)]
 #[serde(untagged)]
 pub enum ApiResponse<T> {
     Ok(T),
     Err(Error),
+    Unknown(Value),
 }
 
 #[derive(Deserialize, Debug, PartialEq, Eq)]
@@ -57,6 +59,29 @@ mod tests {
     use serde_json::json;
 
     use super::*;
+
+    #[test]
+    fn api_response_unknown_error_deserialization() {
+        let input = json! {{
+            "errors": ["Something went wrong."],
+            "error_type": "oops"
+        }};
+
+        assert_eq!(
+            serde_json::from_str::<ApiResponse<CreatePostResponse>>(&input.to_string()).unwrap(),
+            ApiResponse::Unknown(Value::Object({
+                let mut map = serde_json::Map::new();
+
+                map.insert(
+                    "errors".to_string(),
+                    Value::Array(vec![Value::String("Something went wrong.".to_string())]),
+                );
+                map.insert("error_type".to_string(), Value::String("oops".to_string()));
+
+                map
+            }))
+        );
+    }
 
     #[test]
     fn api_response_error_deserialization() {
