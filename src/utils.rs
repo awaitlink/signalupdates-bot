@@ -1,14 +1,17 @@
-use std::time::{Duration, SystemTime};
+use std::{
+    fmt,
+    sync::mpsc,
+    time::{Duration, SystemTime},
+};
 
 use anyhow::{anyhow, Context};
 use chrono::prelude::*;
+use log::*;
 use serde::de::DeserializeOwned;
-use serde_json::Value;
 use sha2::{Digest, Sha256};
 use strum::IntoEnumIterator;
 use worker::{
-    console_log, wasm_bindgen::JsValue, Delay, Env, Fetch, Headers, Method, Request, RequestInit,
-    Response, Url,
+    wasm_bindgen::JsValue, Delay, Env, Fetch, Headers, Method, Request, RequestInit, Response, Url,
 };
 
 pub const USER_AGENT: &str = "updates-bot";
@@ -36,8 +39,12 @@ fn get_env_string(env: &Env, kind: StringBindingKind, name: &str) -> anyhow::Res
         .ok_or_else(|| anyhow!("couldn't get value of string binding"))
 }
 
-pub fn api_key(env: &Env) -> anyhow::Result<String> {
+pub fn discourse_api_key(env: &Env) -> anyhow::Result<String> {
     get_env_string(env, Secret, "DISCOURSE_API_KEY")
+}
+
+pub fn discord_webhook_url(env: &Env) -> anyhow::Result<String> {
+    get_env_string(env, Secret, "DISCORD_WEBHOOK_URL")
 }
 
 pub fn topic_id_override(env: &Env) -> anyhow::Result<Option<u64>> {
@@ -50,7 +57,14 @@ pub fn is_dry_run(env: &Env) -> anyhow::Result<bool> {
 
 pub async fn get_json_from_url<T: DeserializeOwned>(url: &str) -> anyhow::Result<T> {
     let url = Url::parse(url).context("could not parse URL")?;
-    let request = create_request(url, Method::Get, None, None)?;
+    let request = create_request(
+        url,
+        Method::Get,
+        ContentType::ApplicationJson,
+        ContentType::ApplicationJson,
+        None,
+        None,
+    )?;
     json_from_configuration(Fetch::Request(request)).await
 }
 
@@ -71,7 +85,7 @@ pub async fn fetch(configuration: Fetch) -> anyhow::Result<Response> {
         .context("could not fetch");
 
     if let Ok(response) = &result {
-        console_log!("response.status_code() = {}", response.status_code());
+        debug!("response.status_code() = {}", response.status_code());
     }
 
     result
@@ -85,13 +99,34 @@ pub async fn json_from_response<T: DeserializeOwned>(response: &mut Response) ->
         .context("could not get JSON")
 }
 
+pub enum ContentType {
+    ApplicationJson,
+    MultipartFormData(String),
+}
+
+impl fmt::Display for ContentType {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(
+            f,
+            "{}",
+            match self {
+                ContentType::ApplicationJson => String::from("application/json"),
+                ContentType::MultipartFormData(boundary) =>
+                    format!(r#"multipart/form-data; boundary="{boundary}""#),
+            }
+        )
+    }
+}
+
 pub fn create_request(
     url: Url,
     method: Method,
-    body: Option<Value>,
+    content_type: ContentType,
+    accept: ContentType,
+    body: Option<String>,
     discourse_api_key: Option<&str>,
 ) -> anyhow::Result<Request> {
-    console_log!("constructing request for url {url}");
+    debug!("constructing request for url {url}");
 
     let mut headers = Headers::new();
 
@@ -99,15 +134,17 @@ pub fn create_request(
         headers.set("User-Api-Key", api_key).unwrap();
     }
 
-    headers.set("Content-Type", "application/json").unwrap();
-    headers.set("Accept", "application/json").unwrap();
+    headers
+        .set("Content-Type", &content_type.to_string())
+        .unwrap();
+    headers.set("Accept", &accept.to_string()).unwrap();
     headers.set("User-Agent", USER_AGENT).unwrap();
 
     let mut request_init = RequestInit::new();
     request_init.with_method(method).with_headers(headers);
 
     if let Some(body) = body {
-        request_init.with_body(Some(JsValue::from_str(&body.to_string())));
+        request_init.with_body(Some(JsValue::from_str(&body)));
     }
 
     Request::new_with_init(url.as_ref(), &request_init)
@@ -122,11 +159,11 @@ pub fn sha256_string(input: &str) -> String {
 
 /// Asynchronously waits for the specified number of milliseconds.
 pub async fn delay(milliseconds: u64) {
-    console_log!("waiting {milliseconds} milliseconds");
+    debug!("waiting {milliseconds} milliseconds");
 
     Delay::from(Duration::from_millis(milliseconds)).await;
 
-    console_log!("done waiting {milliseconds} milliseconds");
+    debug!("done waiting {milliseconds} milliseconds");
 }
 
 pub fn now() -> SystemTime {
@@ -150,7 +187,60 @@ pub fn platforms_order(time: NaiveTime) -> anyhow::Result<Vec<Platform>> {
 }
 
 pub fn log_separator() {
-    console_log!("----------------------------------------------------------------------");
+    debug!("----------------------------------------------------------------------");
+}
+
+pub fn initialize_logger(env: &Env) -> mpsc::Receiver<String> {
+    let to_redact = [
+        (
+            "[redacted: Discourse API key]",
+            discourse_api_key(env).expect("should able to get Discourse API key"),
+        ),
+        (
+            "[redacted: Discord webhook URL]",
+            discord_webhook_url(env).expect("should able to get Discord webhook URL"),
+        ),
+    ];
+
+    let (tx, rx) = mpsc::channel();
+
+    let dispatch = fern::Dispatch::new()
+        .format(move |out, message, record| {
+            out.finish(format_args!(
+                "[{}][{}] {}",
+                record.level(),
+                record.target(),
+                {
+                    let mut message = message.to_string();
+                    for (name, string) in to_redact.iter() {
+                        message = message.replace(string, name);
+                    }
+                    message
+                },
+            ))
+        })
+        .chain(tx);
+
+    #[cfg(target_family = "wasm")]
+    let dispatch = dispatch.chain(fern::Output::call(console_log::log));
+
+    #[cfg(not(target_family = "wasm"))]
+    let dispatch = dispatch.chain(fern::Output::stderr("\n"));
+
+    dispatch
+        .apply()
+        .expect("should be able to initialize logger");
+
+    rx
+}
+
+pub fn recv_log(rx: mpsc::Receiver<String>) -> String {
+    let mut log = Vec::new();
+    while let Ok(message) = rx.try_recv() {
+        log.push(message);
+    }
+
+    log.join("")
 }
 
 #[cfg(test)]

@@ -1,10 +1,11 @@
 use std::collections::HashMap;
 
 use anyhow::{anyhow, bail, Context};
+use log::*;
 use semver::Version;
 use serde::{Deserialize, Serialize};
 use strum::IntoEnumIterator;
-use worker::{console_log, console_warn, Env};
+use worker::Env;
 use worker_kv::KvStore;
 
 use crate::{
@@ -105,7 +106,7 @@ impl StateController {
                 let controller = Self { kv_store, state };
                 controller.log_state("loaded state from KV");
                 controller.validate_state().context("invalid state")?;
-                console_log!("state appears to be valid");
+                debug!("state appears to be valid");
 
                 Ok(controller)
             }
@@ -115,7 +116,7 @@ impl StateController {
 
     fn validate_state(&self) -> anyhow::Result<()> {
         for platform in Platform::iter() {
-            console_log!("validating state for {platform:?}");
+            debug!("validating state for {platform:?}");
 
             self.platform_state(platform)
                 .validate()
@@ -148,14 +149,14 @@ impl StateController {
             state.validate().context("tried to set invalid state")?;
 
             *platform_state = state;
-            console_log!("changed platform_state({platform}) = {platform_state:?}");
+            debug!("changed platform_state({platform}) = {platform_state:?}");
 
             match self.commit_changes().await {
-                Ok(_) => console_log!("saved state to KV"),
+                Ok(_) => debug!("saved state to KV"),
                 Err(e) => return Err(e.context("could not save state to KV")),
             }
         } else {
-            console_warn!("platform_state({platform}) did not change");
+            warn!("platform_state({platform}) did not change");
         }
 
         Ok(())
@@ -173,10 +174,10 @@ impl StateController {
     }
 
     fn log_state(&self, message: &str) {
-        console_log!("{message}:");
+        debug!("{message}:");
 
         for platform in Platform::iter() {
-            console_log!(
+            debug!(
                 "^^^^^ platform_state({platform}) = {:?}",
                 self.platform_state(platform)
             );

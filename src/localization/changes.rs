@@ -1,6 +1,6 @@
 use std::fmt;
 
-use worker::console_log;
+use log::*;
 
 use crate::{
     github::{Comparison, Tag},
@@ -29,11 +29,11 @@ impl<'a> LocalizationChanges<'a> {
         comparison: &'a Comparison,
     ) -> LocalizationChanges<'a> {
         let complete = comparison.are_files_likely_complete().unwrap();
-        console_log!("complete = {}", complete);
+        debug!("complete = {}", complete);
 
         let changes = LocalizationChange::unsorted_changes_from_files(platform, &comparison.files);
 
-        console_log!("changes.len() = {:?}", changes.len());
+        debug!("changes.len() = {:?}", changes.len());
 
         Self {
             platform,

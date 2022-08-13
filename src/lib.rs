@@ -2,11 +2,11 @@
 
 use anyhow::Context;
 use chrono::prelude::*;
+use log::*;
 use semver::Version;
-use worker::{
-    console_error, console_log, console_warn, event, Env, ScheduleContext, ScheduledEvent,
-};
+use worker::{event, Env, ScheduleContext, ScheduledEvent};
 
+mod discord;
 mod discourse;
 mod github;
 mod localization;
@@ -53,18 +53,34 @@ pub async fn scheduled(_event: ScheduledEvent, env: Env, _ctx: ScheduleContext) 
 async fn main(env: &Env) {
     panic_hook::set_panic_hook();
 
+    let rx = utils::initialize_logger(env);
+
     match check_all_platforms(env).await {
-        Err(e) => console_error!("{e:?}"),
-        Ok(_) => console_log!("finished successfully"),
+        Err(e) => {
+            error!("{e:?}");
+
+            let log = utils::recv_log(rx);
+
+            match discord::send_error_message(env, &log).await {
+                Ok(_) => debug!("sent error message to Discord"),
+                Err(error) => {
+                    warn!(
+                        "{:?}",
+                        error.context("could not send error message to Discord")
+                    )
+                }
+            };
+        }
+        Ok(_) => debug!("finished successfully"),
     }
 }
 
 async fn check_all_platforms(env: &Env) -> anyhow::Result<()> {
     let now = DateTime::from(utils::now());
-    console_log!("now = {} (seconds: {})", now.to_rfc3339(), now.timestamp());
+    debug!("now = {} (seconds: {})", now.to_rfc3339(), now.timestamp());
 
     let platforms = utils::platforms_order(now.time())?;
-    console_log!("platforms = {platforms:?}");
+    debug!("platforms = {platforms:?}");
 
     let mut state_controller = state::StateController::from_kv(env).await?;
 
@@ -72,13 +88,13 @@ async fn check_all_platforms(env: &Env) -> anyhow::Result<()> {
         let outcome = check_platform(&mut state_controller, env, platform).await?;
 
         match outcome {
-            WaitingForApproval => console_warn!("outcome: waiting for post approval"),
+            WaitingForApproval => warn!("outcome: waiting for post approval"),
             LatestVersionIsAlreadyPosted => {
-                console_log!("outcome: latest version is already posted")
+                debug!("outcome: latest version is already posted")
             }
-            NewTopicNotFound => console_warn!("outcome: no topic found, may be not created yet"),
+            NewTopicNotFound => warn!("outcome: no topic found, may be not created yet"),
             PostedCommits => {
-                console_warn!("outcome: already posted for {platform} and currently doing only one \"commits\" post per invocation, done");
+                warn!("outcome: already posted for {platform} and currently doing only one \"commits\" post per invocation, done");
                 break;
             }
         }
@@ -94,7 +110,7 @@ async fn check_platform(
     env: &Env,
     platform: Platform,
 ) -> anyhow::Result<PlatformCheckOutcome> {
-    console_log!("checking platform = {platform}");
+    debug!("checking platform = {platform}");
 
     // Check if a pending post exists and has been approved
     if let Some(PendingState {
@@ -105,12 +121,10 @@ async fn check_platform(
         .pending_state
         .as_deref()
     {
-        console_log!(
-            "post id = {post_id} is waiting for approval, checking if there is a post number"
-        );
+        debug!("post id = {post_id} is waiting for approval, checking if there is a post number");
 
         if let Some(number) = discourse::get_post_number(*post_id).await? {
-            console_log!("post number = {number}, approval confirmed");
+            debug!("post number = {number}, approval confirmed");
 
             let mut new_state = platform_state.clone();
             new_state.last_post_number = Some(number);
@@ -120,19 +134,19 @@ async fn check_platform(
                 .await
                 .context("could not set platform state after confirming post approval")?;
 
-            console_log!("continuing main logic");
+            debug!("continuing main logic");
         } else {
             return Ok(WaitingForApproval);
         }
     } else {
-        console_log!("no post waiting for approval, continuing main logic");
+        debug!("no post waiting for approval, continuing main logic");
     }
 
     let all_tags: Vec<github::Tag> = utils::get_json_from_url(&platform.github_api_tags_url())
         .await
         .context("could not fetch tags from GitHub")?;
 
-    console_log!("all_tags = {:?}", all_tags);
+    debug!("all_tags = {:?}", all_tags);
 
     let mut tags: Vec<(github::Tag, Version)> = all_tags
         .iter()
@@ -140,10 +154,10 @@ async fn check_platform(
         .filter(|(_, version)| platform.should_post_version(version))
         .collect();
 
-    console_log!("tags = {:?}", tags);
+    debug!("tags = {:?}", tags);
 
     tags.sort_unstable_by(|(_, lhs), (_, rhs)| lhs.cmp(rhs));
-    console_log!("after sorting, tags = {:?}", tags);
+    debug!("after sorting, tags = {:?}", tags);
 
     // TODO: assumes the last posted tag can be found on this GitHub API page
     let tags_to_post: Vec<(github::Tag, Version)> = tags
@@ -152,18 +166,17 @@ async fn check_platform(
         .cloned()
         .collect();
 
-    console_log!("tags_to_post = {:?}", tags_to_post);
+    debug!("tags_to_post = {:?}", tags_to_post);
 
     if let Some([(old_tag, old_version), (new_tag, new_version)]) =
         tags_to_post.array_windows().next()
     {
-        console_log!(
+        debug!(
             "looking at [old_tag: {:?}, new_tag: {:?}]",
-            old_tag,
-            new_tag
+            old_tag, new_tag
         );
 
-        let discourse_api_key = utils::api_key(env)?;
+        let discourse_api_key = utils::discourse_api_key(env)?;
 
         let new_topic_id =
             discourse::get_topic_id_or_override(env, &discourse_api_key, platform, new_version)
@@ -172,11 +185,11 @@ async fn check_platform(
 
         match new_topic_id {
             Some(new_topic_id) => {
-                console_log!("new_topic_id = {new_topic_id}");
+                debug!("new_topic_id = {new_topic_id}");
 
                 let same_release = old_version.major == new_version.major
                     && old_version.minor == new_version.minor;
-                console_log!("same_release = {}", same_release);
+                debug!("same_release = {}", same_release);
 
                 // Post archiving message to old topic if necessary and possible
                 post_archiving_message_if_necessary(
@@ -197,13 +210,13 @@ async fn check_platform(
                 } else {
                     None
                 };
-                console_log!("reply_to_post_number = {:?}", reply_to_post_number);
+                debug!("reply_to_post_number = {:?}", reply_to_post_number);
 
                 let comparison = github::get_comparison(platform, &old_tag.name, &new_tag.name)
                     .await
                     .context("could not get build comparison from GitHub")?;
 
-                console_log!("comparison = {:?}", comparison);
+                debug!("comparison = {:?}", comparison);
 
                 let unfiltered_commits: Vec<markdown::Commit> = comparison
                     .commits
@@ -214,7 +227,7 @@ async fn check_platform(
                     .collect();
 
                 let unfiltered_commits_len = unfiltered_commits.len();
-                console_log!("unfiltered_commits_len = {:?}", unfiltered_commits_len);
+                debug!("unfiltered_commits_len = {:?}", unfiltered_commits_len);
 
                 let commits: Vec<markdown::Commit> = unfiltered_commits
                     .into_iter()
@@ -222,7 +235,7 @@ async fn check_platform(
                     .collect();
 
                 let commits_len = commits.len();
-                console_log!("commits_len = {:?}", commits_len);
+                debug!("commits_len = {:?}", commits_len);
 
                 let mut build_localization_changes =
                     LocalizationChanges::from_comparison(platform, old_tag, new_tag, &comparison);
@@ -233,7 +246,7 @@ async fn check_platform(
                         .filter(|commit| commit.is_likely_localization_change())
                         .collect();
 
-                    console_log!(
+                    debug!(
                         "localization_change_commits = {:?}",
                         localization_change_commits
                     );
@@ -244,19 +257,19 @@ async fn check_platform(
                         for commit in localization_change_commits {
                             let with_files = github::get_commit(platform, commit.sha()).await?;
 
-                            console_log!("with_files = {:?}", with_files);
+                            debug!("with_files = {:?}", with_files);
 
                             let mut changes = LocalizationChange::unsorted_changes_from_files(
                                 platform,
                                 &with_files.files,
                             );
 
-                            console_log!("changes = {:?}", changes);
+                            debug!("changes = {:?}", changes);
 
                             build_localization_changes.add_unsorted_changes(&mut changes);
 
                             let complete = with_files.are_files_likely_complete().unwrap();
-                            console_log!(
+                            debug!(
                                 "for commit.sha = {} files.complete = {complete}",
                                 commit.sha()
                             );
@@ -267,7 +280,7 @@ async fn check_platform(
                         if all_complete {
                             build_localization_changes.completeness = Completeness::LikelyComplete;
 
-                            console_log!(
+                            debug!(
                                 "got complete files for all localization change commits, build_localization_changes.completeness = {:?}",
                                 build_localization_changes.completeness
                             );
@@ -316,10 +329,9 @@ async fn check_platform(
                         )
                     };
 
-                console_log!(
+                debug!(
                     "last_posted_tag_previous_release = {:?}, release_localization_changes = {:?}",
-                    last_posted_tag_previous_release,
-                    release_localization_changes,
+                    last_posted_tag_previous_release, release_localization_changes,
                 );
 
                 let localization_changes = release_localization_changes
@@ -350,7 +362,7 @@ async fn check_platform(
                     .await
                     .context("could not post commits to Discourse")?;
 
-                console_log!("posting outcome = {outcome:?}");
+                debug!("posting outcome = {outcome:?}");
 
                 let final_state = {
                     let mut new_state = state::PlatformState {
@@ -409,10 +421,10 @@ async fn post_archiving_message_if_necessary(
             .platform_state(platform)
             .posted_archiving_message
     {
-        console_log!("archiving message not necessary");
+        debug!("archiving message not necessary");
         return Ok(());
     } else {
-        console_log!("attempting to post archiving message");
+        debug!("attempting to post archiving message");
     }
 
     let old_topic_id =
@@ -422,10 +434,10 @@ async fn post_archiving_message_if_necessary(
 
     match old_topic_id {
         Some(old_topic_id) => {
-            console_log!("old_topic_id = {old_topic_id}");
+            debug!("old_topic_id = {old_topic_id}");
 
             let markdown_text = discourse::archiving_post_markdown(new_topic_id);
-            console_log!("markdown_text.len() = {}", markdown_text.len());
+            debug!("markdown_text.len() = {}", markdown_text.len());
 
             let result = if !utils::is_dry_run(env)? {
                 discourse::post(
@@ -436,13 +448,13 @@ async fn post_archiving_message_if_necessary(
                 )
                 .await
             } else {
-                console_warn!("dry run; not posting to Discourse");
+                warn!("dry run; not posting to Discourse");
                 Ok(PostingOutcome::Posted { number: 0 })
             };
 
             match result {
                 Ok(outcome) => {
-                    console_log!("posted archiving message, outcome = {outcome:?}");
+                    debug!("posted archiving message, outcome = {outcome:?}");
 
                     let mut new_state = state_controller.platform_state(platform).clone();
                     new_state.posted_archiving_message = true;
@@ -455,16 +467,16 @@ async fn post_archiving_message_if_necessary(
                     utils::delay(POSTING_DELAY_MILLISECONDS).await;
                 }
                 Err(_) => {
-                    console_warn!("could not post archiving message to old topic, it is likely already archived; ignoring, will not post archiving message for this release");
+                    warn!("could not post archiving message to old topic, it is likely already archived; ignoring, will not post archiving message for this release");
                 }
             }
         }
         None => {
-            console_warn!("old topic does not exist? ignoring, will not post archiving message for this release");
+            warn!("old topic does not exist? ignoring, will not post archiving message for this release");
         }
     }
 
-    console_log!("post_archiving_message_if_necessary done");
+    debug!("post_archiving_message_if_necessary done");
 
     Ok(())
 }

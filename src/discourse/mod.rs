@@ -1,9 +1,13 @@
 use anyhow::{bail, Context};
+use log::*;
 use semver::Version;
 use serde_json::json;
-use worker::{console_error, console_log, console_warn, Env, Method, Url};
+use worker::{Env, Method, Url};
 
-use crate::{platform::Platform, utils};
+use crate::{
+    platform::Platform,
+    utils::{self, ContentType},
+};
 
 mod types;
 pub use types::*;
@@ -13,24 +17,31 @@ pub async fn get_topic_id(
     platform: Platform,
     version: &Version,
 ) -> anyhow::Result<Option<u64>> {
-    console_log!("getting topic id for version {version}");
+    debug!("getting topic id for version {version}");
 
     let url =
         Url::parse(&platform.discourse_topic_slug_url(version)).context("could not parse URL")?;
 
-    let request = utils::create_request(url, Method::Get, None, Some(api_key))?;
+    let request = utils::create_request(
+        url,
+        Method::Get,
+        ContentType::ApplicationJson,
+        ContentType::ApplicationJson,
+        None,
+        Some(api_key),
+    )?;
     let response: ApiResponse<Topic> = utils::get_json_from_request(request).await?;
 
     match &response {
         ApiResponse::Ok(response) => match response.post_stream.posts.first() {
             Some(post) => Ok(Some(post.topic_id)),
             None => {
-                console_error!("response = {:?}", response);
+                warn!("response = {:?}", response);
                 bail!("no posts in topic")
             }
         },
         ApiResponse::Err(Error::NotFound) => {
-            console_warn!("topic not found");
+            warn!("topic not found");
             Ok(None)
         }
         ApiResponse::Unknown(value) => bail!("unexpected response = {value:?}"),
@@ -45,7 +56,7 @@ pub async fn get_topic_id_or_override(
 ) -> anyhow::Result<Option<u64>> {
     match utils::topic_id_override(env)? {
         Some(id) => {
-            console_warn!("using topic id override: {id}");
+            warn!("using topic id override: {id}");
             Ok(Some(id))
         }
         None => get_topic_id(api_key, platform, version)
@@ -83,7 +94,14 @@ pub async fn post(
         "raw": markdown_text,
     });
 
-    let request = utils::create_request(url, Method::Post, Some(body), Some(api_key))?;
+    let request = utils::create_request(
+        url,
+        Method::Post,
+        ContentType::ApplicationJson,
+        ContentType::ApplicationJson,
+        Some(body.to_string()),
+        Some(api_key),
+    )?;
     let api_response: ApiResponse<CreatePostResponse> =
         utils::get_json_from_request(request).await?;
 
@@ -108,13 +126,20 @@ pub async fn get_post_number(post_id: u64) -> anyhow::Result<Option<u64>> {
     .context("could not parse URL")?;
 
     // Without API key, in case the post is returned for the author even while it's enqueued
-    let request = utils::create_request(url, Method::Get, None, None)?;
+    let request = utils::create_request(
+        url,
+        Method::Get,
+        ContentType::ApplicationJson,
+        ContentType::ApplicationJson,
+        None,
+        None,
+    )?;
     let post: ApiResponse<Post> = utils::get_json_from_request(request).await?;
 
     Ok(match post {
         ApiResponse::Ok(post) => Some(post.post_number),
         ApiResponse::Err(Error::NotFound) => {
-            console_warn!("post not found");
+            warn!("post not found");
             None
         }
         ApiResponse::Unknown(value) => bail!("unexpected response = {value:?}"),
