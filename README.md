@@ -25,24 +25,24 @@ To run this bot, do the following:
     ---|---
     `account_id` | Available in the [Cloudflare dashboard](https://dash.cloudflare.com/?to=/:account/workers/overview).
     `id` for `STATE` binding in `kv_namespaces` | Create a KV namespace [in the dashboard](https://dash.cloudflare.com/?to=/:account/workers/kv/namespaces), then copy its ID. If you'll be deploying the `staging` variant as well, it is recommended to create a separate KV namespace for it.
-    `TOPIC_ID_OVERRIDE` | If you would like all of the bot's posts to go to a single topic, set this variable to the topic's ID, for example `12345`. Otherwise, you can leave it empty.
-    `DRY_RUN` | If you would like the bot to skip actually posting to Discourse, but otherwise do everything else including modifying the state (with dummy post numbers), set this to `true`. Otherwise, you can leave it empty.
+    `TOPIC_ID_OVERRIDE` | If you'd like all of the bot's posts to go to a single topic, set this variable to the topic's ID, for example `12345`. Otherwise, leave it empty.
+    `DRY_RUN` | If you'd like the bot to skip actually posting to Discourse, but otherwise do everything else, including modifying the state (with dummy post numbers), set this to `true`. Otherwise, leave it empty.
 
 1. In the KV namespace(s) you created, manually create a key-value pair with the key `state` and a value like:
 
     ```json
     {
         "android": {
-            "last_posted_tag_previous_release": { "name":"v1.2.3" },
-            "last_posted_tag": { "name":"v1.3.0" }
+            "last_posted_tag_previous_release": { "name": "v1.2.3" },
+            "last_posted_tag": { "name": "v1.3.0" }
         },
         "ios": {
-            "last_posted_tag_previous_release": { "name":"1.2.0.4-beta" },
-            "last_posted_tag": { "name":"1.3.0.4-beta" }
+            "last_posted_tag_previous_release": { "name": "1.2.0.4-beta" },
+            "last_posted_tag": { "name": "1.3.0.4-beta" }
         },
         "desktop": {
-            "last_posted_tag_previous_release": { "name":"v1.2.0-beta.1" },
-            "last_posted_tag": { "name":"v1.3.0-beta.1" }
+            "last_posted_tag_previous_release": { "name": "v1.2.0-beta.1" },
+            "last_posted_tag": { "name": "v1.3.0-beta.1" }
         }
     }
     ```
