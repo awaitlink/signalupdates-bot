@@ -284,11 +284,11 @@ Localization changes for the release are the same, as this is the first build of
 5 new commits since 1.2.3:
 - <del>Test commit. [[1]](https://github.com/signalapp/Signal-Android/commit/abc111)</del> (reverted by [2])
 
-- <del>Revert \"Test commit.\". [[2]](https://github.com/signalapp/Signal-Android/commit/abc222)</del> (reverts [1], reverted by [3])
+- <del>Revert &quot;Test commit.&quot;. [[2]](https://github.com/signalapp/Signal-Android/commit/abc222)</del> (reverts [1], reverted by [3])
 
-- <ins>Revert \"Revert \"Test commit.\".\". [[3]](https://github.com/signalapp/Signal-Android/commit/abc333)</ins> (reverts [2])
+- <ins>Revert &quot;Revert &quot;Test commit.&quot;.&quot;. [[3]](https://github.com/signalapp/Signal-Android/commit/abc333)</ins> (reverts [2])
 
-- Revert \"Test commit 0.\". [[4]](https://github.com/signalapp/Signal-Android/commit/abc444)
+- Revert &quot;Test commit 0.&quot;. [[4]](https://github.com/signalapp/Signal-Android/commit/abc444)
 
 - Test commit 2. [[5]](https://github.com/signalapp/Signal-Android/commit/abc555)
 

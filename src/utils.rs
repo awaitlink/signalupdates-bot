@@ -243,11 +243,16 @@ pub fn recv_log(rx: mpsc::Receiver<String>) -> String {
     log.join("")
 }
 
+pub fn escape_html(string: &str) -> String {
+    askama_escape::escape(string, askama_escape::Html).to_string()
+}
+
 #[cfg(test)]
 mod tests {
     use std::collections::HashSet;
 
     use pretty_assertions::assert_eq;
+    use test_case::test_case;
 
     use super::*;
 
@@ -260,5 +265,14 @@ mod tests {
         }
 
         assert_eq!(set.len(), 6);
+    }
+
+    #[test_case(
+        "Test commit & message <HtmlTag/>'s \"continuation\"",
+        "Test commit &amp; message &lt;HtmlTag/&gt;&#x27;s &quot;continuation&quot;";
+        "basic"
+    )]
+    fn escape_html_ok(input: &str, output: &str) {
+        assert_eq!(escape_html(input), output);
     }
 }

@@ -27,6 +27,12 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "08f9b8508dccb7687a1d6c4ce66b2b0ecef467c94667de27d8d7fe1f8d2a9cdc"
 
 [[package]]
+name = "askama_escape"
+version = "0.10.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "619743e34b5ba4e9703bba34deac3427c72507c7159f5fd030aea8cac0cfe341"
+
+[[package]]
 name = "async-trait"
 version = "0.1.56"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1128,6 +1134,7 @@ name = "signalupdates-bot"
 version = "0.1.0"
 dependencies = [
  "anyhow",
+ "askama_escape",
  "base16ct",
  "cfg-if",
  "chrono",

@@ -1,10 +1,8 @@
-use std::borrow::Cow;
-
 use lazy_static::lazy_static;
 use regex::Regex;
 
 use super::CommitStatus::{self, *};
-use crate::{github, platform::Platform};
+use crate::{github, platform::Platform, utils};
 
 #[derive(Debug, Clone)]
 pub struct Commit<'a> {
@@ -63,7 +61,7 @@ impl<'a> Commit<'a> {
             static ref MENTION_REGEX: Regex = Regex::new(r"@([a-zA-Z0-9_-]+)").unwrap();
         }
 
-        let message_lines: Vec<Cow<str>> = self
+        let message_lines: Vec<_> = self
             .full_message
             .split('\n')
             .filter(|line| {
@@ -71,6 +69,7 @@ impl<'a> Commit<'a> {
                 !lowercase.contains("co-authored-by") && !lowercase.contains("this reverts commit")
             })
             .map(|line| MENTION_REGEX.replace_all(line, "`@$1`"))
+            .map(|line| utils::escape_html(&line))
             .collect();
 
         let message = match message_lines.get(0) {
@@ -161,7 +160,7 @@ mod tests {
     )]
     #[test_case(
         Android, "Revert \"Test commit\".\nThis reverts commit fedcba.", "abcdef", Reverts(1),
-        "- <ins>Revert \"Test commit\". [[2]](https://github.com/signalapp/Signal-Android/commit/abcdef)</ins> (reverts [1])\n";
+        "- <ins>Revert &quot;Test commit&quot;. [[2]](https://github.com/signalapp/Signal-Android/commit/abcdef)</ins> (reverts [1])\n";
         "Android: reverts commit"
     )]
     #[test_case(
@@ -183,6 +182,11 @@ mod tests {
         Desktop, "Test commit. Test @mention!\nTest@mention2.", "abcdef", Normal,
         "- Test commit. Test `@mention`! [[2]](https://github.com/signalapp/Signal-Desktop/commit/abcdef)\n\n    Test`@mention2`.";
         "Desktop: two lines with mention"
+    )]
+    #[test_case(
+        Desktop, "Test commit. Test <HtmlTag/>!\n<AnotherTag>Test!</AnotherTag>.", "abcdef", Normal,
+        "- Test commit. Test &lt;HtmlTag/&gt;! [[2]](https://github.com/signalapp/Signal-Desktop/commit/abcdef)\n\n    &lt;AnotherTag&gt;Test!&lt;/AnotherTag&gt;.";
+        "Desktop: two lines with HTML"
     )]
     #[test_case(
         Ios, "Test commit. Continuation.\nContinuation 2.\nContinuation 3.", "abcdef", Normal,
