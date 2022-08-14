@@ -205,6 +205,7 @@ pub fn initialize_logger(env: &Env) -> mpsc::Receiver<String> {
     let (tx, rx) = mpsc::channel();
 
     let dispatch = fern::Dispatch::new()
+        .level_for("locale_codes", log::LevelFilter::Info)
         .format(move |out, message, record| {
             out.finish(format_args!(
                 "[{}][{}] {}",
