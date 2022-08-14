@@ -56,19 +56,23 @@ async fn main(env: &Env) {
     let rx = utils::initialize_logger(env);
 
     match check_all_platforms(env).await {
-        Err(e) => {
-            error!("{e:?}");
+        Err(error) => {
+            error!("{error:?}");
 
-            let log = utils::recv_log(rx);
+            let (message, log) = match utils::recv_log(rx) {
+                Some(log) => ("Error occurred. Log:", log),
+                None => (
+                    "Error occurred, but the log could not be captured. Error:",
+                    format!("{error:?}"),
+                ),
+            };
 
-            match discord::send_error_message(env, &log).await {
+            match discord::send_error_message(env, message, &log)
+                .await
+                .context("could not send error message to Discord")
+            {
                 Ok(_) => debug!("sent error message to Discord"),
-                Err(error) => {
-                    warn!(
-                        "{:?}",
-                        error.context("could not send error message to Discord")
-                    )
-                }
+                Err(error) => warn!("{error:?}"),
             };
         }
         Ok(_) => debug!("finished successfully"),
