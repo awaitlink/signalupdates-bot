@@ -228,27 +228,20 @@ pub fn initialize_logger(env: &Env) -> mpsc::Receiver<String> {
     #[cfg(not(target_family = "wasm"))]
     let dispatch = dispatch.chain(fern::Output::stderr("\n"));
 
-    // It seems a logger from a previous run of the worker may stay.
-    // Hence, if initialization fails, logging might still work, although the mpsc channel may be empty.
-    match dispatch.apply() {
-        Ok(_) => debug!("initialized logger"),
-        Err(error) => warn!("could not initialize logger: {error:?}"),
-    }
+    dispatch
+        .apply()
+        .expect("should be able to initialize logger");
 
     rx
 }
 
-pub fn recv_log(rx: mpsc::Receiver<String>) -> Option<String> {
+pub fn recv_log(rx: mpsc::Receiver<String>) -> String {
     let mut log = Vec::new();
     while let Ok(message) = rx.try_recv() {
         log.push(message);
     }
 
-    if log.is_empty() {
-        None
-    } else {
-        Some(log.join(""))
-    }
+    log.join("")
 }
 
 pub fn escape_html(string: &str) -> String {

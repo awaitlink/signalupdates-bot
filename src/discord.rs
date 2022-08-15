@@ -5,17 +5,18 @@ use worker::{Env, Method, Url};
 
 use crate::utils::{self, ContentType};
 
-pub async fn send_error_message(env: &Env, message: &str, log: &str) -> anyhow::Result<()> {
+pub async fn send_error_message(env: &Env, log: &str) -> anyhow::Result<()> {
     let url = utils::discord_webhook_url(env).context("could not get Discord webhook URL")?;
     let url = Url::parse(&url).context("could not parse url")?;
 
     let boundary = "721640C74F194C8C9F795C59A371A868";
+    let error_message = "Error occurred:";
 
     let body = vec![
         format!("--{boundary}"),
         String::from(r#"Content-Disposition: form-data; name="content""#),
         String::from(""),
-        String::from(message),
+        String::from(error_message),
         format!("--{boundary}"),
         String::from(r#"Content-Disposition: form-data; name="files[0]"; filename="log.txt""#),
         String::from(r#"Content-Type: text/plain"#),
