@@ -1,10 +1,10 @@
 use std::collections::HashMap;
 
 use anyhow::{anyhow, bail, Context};
-use log::*;
 use semver::Version;
 use serde::{Deserialize, Serialize};
 use strum::IntoEnumIterator;
+use tracing::{debug, warn};
 use worker::Env;
 use worker_kv::KvStore;
 
@@ -182,7 +182,7 @@ impl StateController {
                 self.platform_state(platform)
             );
 
-            crate::utils::log_separator();
+            crate::logging::separator();
         }
     }
 }

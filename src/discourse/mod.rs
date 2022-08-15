@@ -1,7 +1,7 @@
 use anyhow::{bail, Context};
-use log::*;
 use semver::Version;
 use serde_json::json;
+use tracing::{debug, warn};
 use worker::{Env, Method, Url};
 
 use crate::{

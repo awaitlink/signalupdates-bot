@@ -31,10 +31,13 @@ base16ct = { version = "0.1", features = ["alloc"] }
 parse_link_header = "0.3"
 chrono = { version = "0.4", default-features = false, features = ["std"] }
 permute = "0.2"
-log = "0.4"
-fern = "0.6"
-console_log = "0.2"
 askama_escape = "0.10"
+tracing = { version = "0.1", features = [
+    "max_level_trace",
+    "release_max_level_trace",
+] }
+tracing-subscriber = "0.3"
+tracing-wasm = "0.2"
 
 [dev-dependencies]
 test-case = "2.1"

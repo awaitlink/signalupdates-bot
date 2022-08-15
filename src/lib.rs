@@ -2,14 +2,15 @@
 
 use anyhow::Context;
 use chrono::prelude::*;
-use log::*;
 use semver::Version;
+use tracing::{debug, error, warn};
 use worker::{event, Env, ScheduleContext, ScheduledEvent};
 
 mod discord;
 mod discourse;
 mod github;
 mod localization;
+mod logging;
 mod markdown;
 mod panic_hook;
 mod platform;
@@ -53,22 +54,21 @@ pub async fn scheduled(_event: ScheduledEvent, env: Env, _ctx: ScheduleContext) 
 async fn main(env: &Env) {
     panic_hook::set_panic_hook();
 
-    let rx = utils::initialize_logger(env);
+    let (rx, subscriber) = logging::configure();
+    let _guard = tracing::subscriber::set_default(subscriber);
 
     match check_all_platforms(env).await {
         Err(error) => {
             error!("{error:?}");
 
-            let log = utils::recv_log(rx);
+            let log = logging::recv_log(rx);
 
-            match discord::send_error_message(env, &log).await {
+            match discord::send_error_message(env, &log)
+                .await
+                .context("could not send error message to Discord")
+            {
                 Ok(_) => debug!("sent error message to Discord"),
-                Err(error) => {
-                    warn!(
-                        "{:?}",
-                        error.context("could not send error message to Discord")
-                    )
-                }
+                Err(error) => warn!("{:?}", error),
             };
         }
         Ok(_) => debug!("finished successfully"),
@@ -99,7 +99,7 @@ async fn check_all_platforms(env: &Env) -> anyhow::Result<()> {
             }
         }
 
-        utils::log_separator();
+        logging::separator();
     }
 
     Ok(())

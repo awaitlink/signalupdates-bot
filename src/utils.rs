@@ -1,15 +1,14 @@
 use std::{
     fmt,
-    sync::mpsc,
     time::{Duration, SystemTime},
 };
 
 use anyhow::{anyhow, Context};
 use chrono::prelude::*;
-use log::*;
 use serde::de::DeserializeOwned;
 use sha2::{Digest, Sha256};
 use strum::IntoEnumIterator;
+use tracing::debug;
 use worker::{
     wasm_bindgen::JsValue, Delay, Env, Fetch, Headers, Method, Request, RequestInit, Response, Url,
 };
@@ -126,7 +125,7 @@ pub fn create_request(
     body: Option<String>,
     discourse_api_key: Option<&str>,
 ) -> anyhow::Result<Request> {
-    debug!("constructing request for url {url}");
+    debug!(url.domain = url.domain(), ?method, "creating request");
 
     let mut headers = Headers::new();
 
@@ -184,64 +183,6 @@ pub fn platforms_order(time: NaiveTime) -> anyhow::Result<Vec<Platform>> {
         .collect::<Vec<_>>();
 
     Ok(platforms)
-}
-
-pub fn log_separator() {
-    debug!("----------------------------------------------------------------------");
-}
-
-pub fn initialize_logger(env: &Env) -> mpsc::Receiver<String> {
-    let to_redact = [
-        (
-            "[redacted: Discourse API key]",
-            discourse_api_key(env).expect("should able to get Discourse API key"),
-        ),
-        (
-            "[redacted: Discord webhook URL]",
-            discord_webhook_url(env).expect("should able to get Discord webhook URL"),
-        ),
-    ];
-
-    let (tx, rx) = mpsc::channel();
-
-    let dispatch = fern::Dispatch::new()
-        .level_for("locale_codes", log::LevelFilter::Info)
-        .format(move |out, message, record| {
-            out.finish(format_args!(
-                "[{}][{}] {}",
-                record.level(),
-                record.target(),
-                {
-                    let mut message = message.to_string();
-                    for (name, string) in to_redact.iter() {
-                        message = message.replace(string, name);
-                    }
-                    message
-                },
-            ))
-        })
-        .chain(tx);
-
-    #[cfg(target_family = "wasm")]
-    let dispatch = dispatch.chain(fern::Output::call(console_log::log));
-
-    #[cfg(not(target_family = "wasm"))]
-    let dispatch = dispatch.chain(fern::Output::stderr("\n"));
-
-    dispatch
-        .apply()
-        .expect("should be able to initialize logger");
-
-    rx
-}
-
-pub fn recv_log(rx: mpsc::Receiver<String>) -> String {
-    let mut log = Vec::new();
-    while let Ok(message) = rx.try_recv() {
-        log.push(message);
-    }
-
-    log.join("")
 }
 
 pub fn escape_html(string: &str) -> String {

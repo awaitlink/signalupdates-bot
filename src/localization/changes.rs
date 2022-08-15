@@ -1,6 +1,6 @@
 use std::fmt;
 
-use log::*;
+use tracing::debug;
 
 use crate::{
     github::{Comparison, Tag},

@@ -1,8 +1,8 @@
 use std::collections::HashMap;
 
 use anyhow::bail;
-use log::*;
 use strum::IntoEnumIterator;
+use tracing::{debug, warn};
 
 use super::{Commit, CommitStatus};
 use crate::{

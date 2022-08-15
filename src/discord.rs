@@ -1,6 +1,6 @@
 use anyhow::Context;
-use log::*;
 use serde_json::Value;
+use tracing::debug;
 use worker::{Env, Method, Url};
 
 use crate::utils::{self, ContentType};

@@ -1,6 +1,6 @@
 use anyhow::{bail, Context};
-use log::*;
 use serde::de::DeserializeOwned;
+use tracing::{debug, warn};
 use worker::{Fetch, Method, Url};
 
 use crate::{
