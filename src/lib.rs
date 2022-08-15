@@ -56,8 +56,8 @@ async fn main(env: &Env) {
     let rx = utils::initialize_logger(env);
 
     match check_all_platforms(env).await {
-        Err(e) => {
-            error!("{e:?}");
+        Err(error) => {
+            error!("{error:?}");
 
             let log = utils::recv_log(rx);
 
