@@ -264,7 +264,7 @@ mod tests {
             .collect();
 
         let client = reqwest::blocking::Client::builder()
-            .user_agent(crate::utils::USER_AGENT)
+            .user_agent(crate::network::USER_AGENT)
             .build()
             .expect("client should be built successfully");
 

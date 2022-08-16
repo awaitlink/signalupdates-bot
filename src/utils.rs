@@ -1,19 +1,13 @@
-use std::{
-    fmt,
-    time::{Duration, SystemTime},
-};
+use std::time::{Duration, SystemTime};
 
 use anyhow::{anyhow, Context};
 use chrono::prelude::*;
-use serde::de::DeserializeOwned;
 use sha2::{Digest, Sha256};
 use strum::IntoEnumIterator;
 use tracing::debug;
-use worker::{
-    wasm_bindgen::JsValue, Delay, Env, Fetch, Headers, Method, Request, RequestInit, Response, Url,
-};
+use worker::{wasm_bindgen::JsValue, Delay, Env};
 
-pub const USER_AGENT: &str = "updates-bot";
+use crate::platform::Platform;
 
 #[derive(Debug)]
 enum StringBindingKind {
@@ -22,8 +16,6 @@ enum StringBindingKind {
 }
 
 use StringBindingKind::*;
-
-use crate::platform::Platform;
 
 fn get_env_string(env: &Env, kind: StringBindingKind, name: &str) -> anyhow::Result<String> {
     let string_binding = match kind {
@@ -52,103 +44,6 @@ pub fn topic_id_override(env: &Env) -> anyhow::Result<Option<u64>> {
 
 pub fn is_dry_run(env: &Env) -> anyhow::Result<bool> {
     get_env_string(env, Var, "DRY_RUN").map(|string| string == "true")
-}
-
-pub async fn get_json_from_url<T: DeserializeOwned>(url: &str) -> anyhow::Result<T> {
-    let url = Url::parse(url).context("could not parse URL")?;
-    let request = create_request(
-        url,
-        Method::Get,
-        ContentType::ApplicationJson,
-        ContentType::ApplicationJson,
-        None,
-        None,
-    )?;
-    json_from_configuration(Fetch::Request(request)).await
-}
-
-pub async fn get_json_from_request<T: DeserializeOwned>(request: Request) -> anyhow::Result<T> {
-    json_from_configuration(Fetch::Request(request)).await
-}
-
-async fn json_from_configuration<T: DeserializeOwned>(configuration: Fetch) -> anyhow::Result<T> {
-    let mut response = fetch(configuration).await?;
-    json_from_response(&mut response).await
-}
-
-pub async fn fetch(configuration: Fetch) -> anyhow::Result<Response> {
-    let result = configuration
-        .send()
-        .await
-        .map_err(|e| anyhow!(e.to_string()))
-        .context("could not fetch");
-
-    if let Ok(response) = &result {
-        debug!("response.status_code() = {}", response.status_code());
-    }
-
-    result
-}
-
-pub async fn json_from_response<T: DeserializeOwned>(response: &mut Response) -> anyhow::Result<T> {
-    response
-        .json()
-        .await
-        .map_err(|e| anyhow!(e.to_string()))
-        .context("could not get JSON")
-}
-
-pub enum ContentType {
-    ApplicationJson,
-    MultipartFormData(String),
-}
-
-impl fmt::Display for ContentType {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(
-            f,
-            "{}",
-            match self {
-                ContentType::ApplicationJson => String::from("application/json"),
-                ContentType::MultipartFormData(boundary) =>
-                    format!(r#"multipart/form-data; boundary="{boundary}""#),
-            }
-        )
-    }
-}
-
-pub fn create_request(
-    url: Url,
-    method: Method,
-    content_type: ContentType,
-    accept: ContentType,
-    body: Option<String>,
-    discourse_api_key: Option<&str>,
-) -> anyhow::Result<Request> {
-    debug!(url.domain = url.domain(), ?method, "creating request");
-
-    let mut headers = Headers::new();
-
-    if let Some(api_key) = discourse_api_key {
-        headers.set("User-Api-Key", api_key).unwrap();
-    }
-
-    headers
-        .set("Content-Type", &content_type.to_string())
-        .unwrap();
-    headers.set("Accept", &accept.to_string()).unwrap();
-    headers.set("User-Agent", USER_AGENT).unwrap();
-
-    let mut request_init = RequestInit::new();
-    request_init.with_method(method).with_headers(headers);
-
-    if let Some(body) = body {
-        request_init.with_body(Some(JsValue::from_str(&body)));
-    }
-
-    Request::new_with_init(url.as_ref(), &request_init)
-        .map_err(|e| anyhow!(e.to_string()))
-        .context("could not create request")
 }
 
 pub fn sha256_string(input: &str) -> String {

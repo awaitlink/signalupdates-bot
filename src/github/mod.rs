@@ -4,8 +4,8 @@ use tracing::{debug, warn};
 use worker::{Fetch, Method, Url};
 
 use crate::{
+    network::{self, ContentType},
     platform::Platform,
-    utils::{self, ContentType},
 };
 
 mod types;
@@ -99,7 +99,7 @@ where
         debug!("getting page = {page}, url = {url_string}");
 
         let url = Url::parse(&url_string).context("could not parse URL")?;
-        let request = utils::create_request(
+        let request = network::create_request(
             url,
             Method::Get,
             ContentType::ApplicationJson,
@@ -108,11 +108,11 @@ where
             None,
         )?;
 
-        let mut response = utils::fetch(Fetch::Request(request))
+        let mut response = network::fetch(Fetch::Request(request))
             .await
             .context("could not fetch from GitHub")?;
 
-        let mut part: T = utils::json_from_response(&mut response)
+        let mut part: T = network::json_from_response(&mut response)
             .await
             .context("could not get JSON for part")?;
 

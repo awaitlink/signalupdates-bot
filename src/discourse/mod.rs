@@ -5,8 +5,9 @@ use tracing::{debug, warn};
 use worker::{Env, Method, Url};
 
 use crate::{
+    network::{self, ContentType},
     platform::Platform,
-    utils::{self, ContentType},
+    utils,
 };
 
 mod types;
@@ -22,7 +23,7 @@ pub async fn get_topic_id(
     let url =
         Url::parse(&platform.discourse_topic_slug_url(version)).context("could not parse URL")?;
 
-    let request = utils::create_request(
+    let request = network::create_request(
         url,
         Method::Get,
         ContentType::ApplicationJson,
@@ -30,7 +31,7 @@ pub async fn get_topic_id(
         None,
         Some(api_key),
     )?;
-    let response: ApiResponse<Topic> = utils::get_json_from_request(request).await?;
+    let response: ApiResponse<Topic> = network::get_json_from_request(request).await?;
 
     match &response {
         ApiResponse::Ok(response) => match response.post_stream.posts.first() {
@@ -94,7 +95,7 @@ pub async fn post(
         "raw": markdown_text,
     });
 
-    let request = utils::create_request(
+    let request = network::create_request(
         url,
         Method::Post,
         ContentType::ApplicationJson,
@@ -103,7 +104,7 @@ pub async fn post(
         Some(api_key),
     )?;
     let api_response: ApiResponse<CreatePostResponse> =
-        utils::get_json_from_request(request).await?;
+        network::get_json_from_request(request).await?;
 
     match api_response {
         ApiResponse::Ok(CreatePostResponse::Posted(post)) => Ok(PostingOutcome::Posted {
@@ -126,7 +127,7 @@ pub async fn get_post_number(post_id: u64) -> anyhow::Result<Option<u64>> {
     .context("could not parse URL")?;
 
     // Without API key, in case the post is returned for the author even while it's enqueued
-    let request = utils::create_request(
+    let request = network::create_request(
         url,
         Method::Get,
         ContentType::ApplicationJson,
@@ -134,7 +135,7 @@ pub async fn get_post_number(post_id: u64) -> anyhow::Result<Option<u64>> {
         None,
         None,
     )?;
-    let post: ApiResponse<Post> = utils::get_json_from_request(request).await?;
+    let post: ApiResponse<Post> = network::get_json_from_request(request).await?;
 
     Ok(match post {
         ApiResponse::Ok(post) => Some(post.post_number),

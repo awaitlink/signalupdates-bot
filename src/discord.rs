@@ -3,7 +3,10 @@ use serde_json::Value;
 use tracing::debug;
 use worker::{Env, Method, Url};
 
-use crate::utils::{self, ContentType};
+use crate::{
+    network::{self, ContentType},
+    utils,
+};
 
 pub async fn send_error_message(env: &Env, log: &str) -> anyhow::Result<()> {
     let url = utils::discord_webhook_url(env).context("could not get Discord webhook URL")?;
@@ -26,7 +29,7 @@ pub async fn send_error_message(env: &Env, log: &str) -> anyhow::Result<()> {
     ]
     .join("\r\n");
 
-    let request = utils::create_request(
+    let request = network::create_request(
         url,
         Method::Post,
         ContentType::MultipartFormData(boundary.to_string()),
@@ -36,7 +39,7 @@ pub async fn send_error_message(env: &Env, log: &str) -> anyhow::Result<()> {
     )
     .context("could not create request to Discord")?;
 
-    let response: Value = utils::get_json_from_request(request)
+    let response: Value = network::get_json_from_request(request)
         .await
         .context("could not send request to Discord")?;
 

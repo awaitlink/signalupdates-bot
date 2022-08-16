@@ -12,6 +12,7 @@ mod github;
 mod localization;
 mod logging;
 mod markdown;
+mod network;
 mod panic_hook;
 mod platform;
 mod state;
@@ -142,7 +143,7 @@ async fn check_platform(
         debug!("no post waiting for approval, continuing main logic");
     }
 
-    let all_tags: Vec<github::Tag> = utils::get_json_from_url(&platform.github_api_tags_url())
+    let all_tags: Vec<github::Tag> = network::get_json_from_url(&platform.github_api_tags_url())
         .await
         .context("could not fetch tags from GitHub")?;
 
