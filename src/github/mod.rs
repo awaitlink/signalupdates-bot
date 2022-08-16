@@ -16,7 +16,8 @@ pub async fn get_comparison(
     new_tag: &str,
 ) -> anyhow::Result<Comparison> {
     tracing::debug!(
-        "getting comparison between {old_tag} and {new_tag} for {platform} from GitHub"
+        old_tag, new_tag, %platform,
+        "getting comparison between old_tag and new_tag for platform from GitHub"
     );
 
     let initial_url = platform.github_api_comparison_url(old_tag, new_tag);
@@ -51,7 +52,7 @@ pub async fn get_comparison(
 }
 
 pub async fn get_commit(platform: Platform, sha: &str) -> anyhow::Result<Commit> {
-    tracing::debug!("getting commit {sha} for {platform} from GitHub");
+    tracing::debug!(commit.sha = sha, %platform, "getting commit for platform from GitHub");
 
     let initial_url = platform.github_api_commit_url(sha);
 
@@ -87,7 +88,7 @@ where
     T: DeserializeOwned,
     F: Fn(&mut T, &mut T),
 {
-    tracing::debug!("getting paginated response from GitHub");
+    tracing::trace!("getting paginated response from GitHub");
 
     let mut page = 1;
     let per_page = 100;
@@ -97,7 +98,7 @@ where
     let mut result: T = initial_result;
 
     loop {
-        tracing::debug!("getting page = {page}, url = {url_string}");
+        tracing::trace!(page, url = url_string, "getting page");
 
         let url = Url::parse(&url_string).context("could not parse URL")?;
         let request = network::create_request(

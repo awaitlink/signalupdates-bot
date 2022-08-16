@@ -17,7 +17,7 @@ pub async fn get_topic_id(
     platform: Platform,
     version: &Version,
 ) -> anyhow::Result<Option<u64>> {
-    tracing::debug!("getting topic id for version {version}");
+    tracing::debug!(?version, "getting topic id for version");
 
     let url =
         Url::parse(&platform.discourse_topic_slug_url(version)).context("could not parse URL")?;
@@ -36,7 +36,7 @@ pub async fn get_topic_id(
         ApiResponse::Ok(response) => match response.post_stream.posts.first() {
             Some(post) => Ok(Some(post.topic_id)),
             None => {
-                tracing::warn!("response = {:?}", response);
+                tracing::warn!(?response);
                 bail!("no posts in topic")
             }
         },
@@ -56,7 +56,7 @@ pub async fn get_topic_id_or_override(
 ) -> anyhow::Result<Option<u64>> {
     match env.topic_id_override()? {
         Some(id) => {
-            tracing::warn!("using topic id override: {id}");
+            tracing::warn!(id, "using topic id override");
             Ok(Some(id))
         }
         None => get_topic_id(api_key, platform, version)

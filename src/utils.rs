@@ -15,11 +15,9 @@ pub fn sha256_string(input: &str) -> String {
 
 /// Asynchronously waits for the specified number of milliseconds.
 pub async fn delay(milliseconds: u64) {
-    tracing::debug!("waiting {milliseconds} milliseconds");
-
+    tracing::trace!(milliseconds, "waiting");
     Delay::from(Duration::from_millis(milliseconds)).await;
-
-    tracing::debug!("done waiting {milliseconds} milliseconds");
+    tracing::trace!(milliseconds, "done waiting");
 }
 
 pub fn now() -> SystemTime {

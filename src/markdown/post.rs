@@ -137,10 +137,10 @@ Gathered from [signalapp/Signal-{platform}]({comparison_url})
         let mut post_markdown: Option<String> = None;
 
         for mode in LocalizationChangeRenderMode::iter() {
-            tracing::debug!("trying localization change collection render mode = {mode:?}");
+            tracing::debug!(?mode, "trying localization change collection render mode");
 
             let text = self.markdown_text(&commits_markdown, mode);
-            tracing::debug!("text.len() = {}", text.len());
+            tracing::debug!(text.len = text.len());
 
             if text.len() > 32_000 {
                 tracing::warn!("text is likely too long to post");

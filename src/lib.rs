@@ -63,7 +63,7 @@ async fn main(env: &Env) {
 
     match check_all_platforms(env).await {
         Err(error) => {
-            tracing::error!("{error:?}");
+            tracing::error!(?error);
 
             let log = logger.collect_log();
 
@@ -71,11 +71,11 @@ async fn main(env: &Env) {
                 .await
                 .context("could not send error message to Discord")
             {
-                Ok(_) => tracing::debug!("sent error message to Discord"),
-                Err(error) => tracing::warn!("{:?}", error),
+                Ok(_) => tracing::info!("sent error message to Discord"),
+                Err(error) => tracing::warn!(?error),
             };
         }
-        Ok(_) => tracing::debug!("finished successfully"),
+        Ok(_) => tracing::info!("finished successfully"),
     }
 }
 
@@ -84,7 +84,7 @@ async fn check_all_platforms(env: &Env) -> anyhow::Result<()> {
     tracing::debug!("now = {} (seconds: {})", now.to_rfc3339(), now.timestamp());
 
     let platforms = utils::platforms_order(now.time())?;
-    tracing::debug!("platforms = {platforms:?}");
+    tracing::debug!(?platforms);
 
     let mut state_controller = state::StateController::from_kv(env).await?;
 
@@ -94,11 +94,11 @@ async fn check_all_platforms(env: &Env) -> anyhow::Result<()> {
         match outcome {
             WaitingForApproval => tracing::warn!("outcome: waiting for post approval"),
             LatestVersionIsAlreadyPosted => {
-                tracing::debug!("outcome: latest version is already posted")
+                tracing::info!("outcome: latest version is already posted")
             }
             NewTopicNotFound => tracing::warn!("outcome: no topic found, may be not created yet"),
             PostedCommits => {
-                tracing::warn!("outcome: already posted for {platform} and currently doing only one \"commits\" post per invocation, done");
+                tracing::warn!(%platform, "outcome: already posted for platform and currently doing only one \"commits\" post per invocation, done");
                 break;
             }
         }
@@ -114,7 +114,7 @@ async fn check_platform(
     env: &Env,
     platform: Platform,
 ) -> anyhow::Result<PlatformCheckOutcome> {
-    tracing::debug!("checking platform = {platform}");
+    tracing::debug!(%platform, "checking platform");
 
     // Check if a pending post exists and has been approved
     if let Some(PendingState {
@@ -126,11 +126,12 @@ async fn check_platform(
         .as_deref()
     {
         tracing::debug!(
-            "post id = {post_id} is waiting for approval, checking if there is a post number"
+            post.id = post_id,
+            "post is waiting for approval, checking if there is a post number"
         );
 
         if let Some(number) = discourse::get_post_number(*post_id).await? {
-            tracing::debug!("post number = {number}, approval confirmed");
+            tracing::info!(post.number = number, "approval confirmed");
 
             let mut new_state = platform_state.clone();
             new_state.last_post_number = Some(number);
@@ -140,19 +141,19 @@ async fn check_platform(
                 .await
                 .context("could not set platform state after confirming post approval")?;
 
-            tracing::debug!("continuing main logic");
+            tracing::trace!("continuing main logic");
         } else {
             return Ok(WaitingForApproval);
         }
     } else {
-        tracing::debug!("no post waiting for approval, continuing main logic");
+        tracing::trace!("no post waiting for approval, continuing main logic");
     }
 
     let all_tags: Vec<github::Tag> = network::get_json_from_url(&platform.github_api_tags_url())
         .await
         .context("could not fetch tags from GitHub")?;
 
-    tracing::debug!("all_tags = {:?}", all_tags);
+    tracing::trace!(?all_tags);
 
     let mut tags: Vec<(github::Tag, Version)> = all_tags
         .iter()
@@ -160,10 +161,10 @@ async fn check_platform(
         .filter(|(_, version)| platform.should_post_version(version))
         .collect();
 
-    tracing::debug!("tags = {:?}", tags);
+    tracing::trace!(?tags);
 
     tags.sort_unstable_by(|(_, lhs), (_, rhs)| lhs.cmp(rhs));
-    tracing::debug!("after sorting, tags = {:?}", tags);
+    tracing::trace!(?tags, "after sorting");
 
     // TODO: assumes the last posted tag can be found on this GitHub API page
     let tags_to_post: Vec<(github::Tag, Version)> = tags
@@ -172,16 +173,12 @@ async fn check_platform(
         .cloned()
         .collect();
 
-    tracing::debug!("tags_to_post = {:?}", tags_to_post);
+    tracing::debug!(?tags_to_post);
 
     if let Some([(old_tag, old_version), (new_tag, new_version)]) =
         tags_to_post.array_windows().next()
     {
-        tracing::debug!(
-            "looking at [old_tag: {:?}, new_tag: {:?}]",
-            old_tag,
-            new_tag
-        );
+        tracing::debug!(?old_tag, ?new_tag, "looking at [old_tag, new_tag]");
 
         let discourse_api_key = env.discourse_api_key()?;
 
@@ -192,11 +189,11 @@ async fn check_platform(
 
         match new_topic_id {
             Some(new_topic_id) => {
-                tracing::debug!("new_topic_id = {new_topic_id}");
+                tracing::debug!(new_topic_id);
 
                 let same_release = old_version.major == new_version.major
                     && old_version.minor == new_version.minor;
-                tracing::debug!("same_release = {}", same_release);
+                tracing::debug!(same_release);
 
                 // Post archiving message to old topic if necessary and possible
                 post_archiving_message_if_necessary(
@@ -217,13 +214,13 @@ async fn check_platform(
                 } else {
                     None
                 };
-                tracing::debug!("reply_to_post_number = {:?}", reply_to_post_number);
+                tracing::debug!(reply_to_post_number);
 
                 let comparison = github::get_comparison(platform, &old_tag.name, &new_tag.name)
                     .await
                     .context("could not get build comparison from GitHub")?;
 
-                tracing::debug!("comparison = {:?}", comparison);
+                tracing::trace!(?comparison);
 
                 let unfiltered_commits: Vec<markdown::Commit> = comparison
                     .commits
@@ -234,7 +231,7 @@ async fn check_platform(
                     .collect();
 
                 let unfiltered_commits_len = unfiltered_commits.len();
-                tracing::debug!("unfiltered_commits_len = {:?}", unfiltered_commits_len);
+                tracing::trace!(unfiltered_commits.len = unfiltered_commits_len);
 
                 let commits: Vec<markdown::Commit> = unfiltered_commits
                     .into_iter()
@@ -242,7 +239,7 @@ async fn check_platform(
                     .collect();
 
                 let commits_len = commits.len();
-                tracing::debug!("commits_len = {:?}", commits_len);
+                tracing::trace!(commits.len = commits_len);
 
                 let mut build_localization_changes =
                     LocalizationChanges::from_comparison(platform, old_tag, new_tag, &comparison);
@@ -253,10 +250,7 @@ async fn check_platform(
                         .filter(|commit| commit.is_likely_localization_change())
                         .collect();
 
-                    tracing::debug!(
-                        "localization_change_commits = {:?}",
-                        localization_change_commits
-                    );
+                    tracing::trace!(?localization_change_commits);
 
                     if !localization_change_commits.is_empty() {
                         let mut all_complete = true;
@@ -264,22 +258,19 @@ async fn check_platform(
                         for commit in localization_change_commits {
                             let with_files = github::get_commit(platform, commit.sha()).await?;
 
-                            tracing::debug!("with_files = {:?}", with_files);
+                            tracing::trace!(?with_files);
 
                             let mut changes = LocalizationChange::unsorted_changes_from_files(
                                 platform,
                                 &with_files.files,
                             );
 
-                            tracing::debug!("changes = {:?}", changes);
+                            tracing::trace!(?changes);
 
                             build_localization_changes.add_unsorted_changes(&mut changes);
 
                             let complete = with_files.are_files_likely_complete().unwrap();
-                            tracing::debug!(
-                                "for commit.sha = {} files.complete = {complete}",
-                                commit.sha()
-                            );
+                            tracing::trace!(commit.sha = commit.sha(), files.complete = complete);
 
                             all_complete &= complete;
                         }
@@ -288,8 +279,8 @@ async fn check_platform(
                             build_localization_changes.completeness = Completeness::LikelyComplete;
 
                             tracing::debug!(
-                                "got complete files for all localization change commits, build_localization_changes.completeness = {:?}",
-                                build_localization_changes.completeness
+                                ?build_localization_changes.completeness,
+                                "got complete files for all localization change commits"
                             );
                         }
                     }
@@ -337,9 +328,8 @@ async fn check_platform(
                     };
 
                 tracing::debug!(
-                    "last_posted_tag_previous_release = {:?}, release_localization_changes = {:?}",
-                    last_posted_tag_previous_release,
-                    release_localization_changes,
+                    ?last_posted_tag_previous_release,
+                    ?release_localization_changes,
                 );
 
                 let localization_changes = release_localization_changes
@@ -370,7 +360,7 @@ async fn check_platform(
                     .await
                     .context("could not post commits to Discourse")?;
 
-                tracing::debug!("posting outcome = {outcome:?}");
+                tracing::info!(?outcome, "posted to Discourse");
 
                 let final_state = {
                     let mut new_state = state::PlatformState {
@@ -415,6 +405,7 @@ async fn check_platform(
     }
 }
 
+#[tracing::instrument(skip(state_controller, env, discourse_api_key))]
 async fn post_archiving_message_if_necessary(
     same_release: bool,
     state_controller: &mut StateController,
@@ -429,10 +420,10 @@ async fn post_archiving_message_if_necessary(
             .platform_state(platform)
             .posted_archiving_message
     {
-        tracing::debug!("archiving message not necessary");
+        tracing::trace!("archiving message not necessary");
         return Ok(());
     } else {
-        tracing::debug!("attempting to post archiving message");
+        tracing::trace!("attempting to post archiving message");
     }
 
     let old_topic_id =
@@ -442,10 +433,10 @@ async fn post_archiving_message_if_necessary(
 
     match old_topic_id {
         Some(old_topic_id) => {
-            tracing::debug!("old_topic_id = {old_topic_id}");
+            tracing::debug!(old_topic_id);
 
             let markdown_text = discourse::archiving_post_markdown(new_topic_id);
-            tracing::debug!("markdown_text.len() = {}", markdown_text.len());
+            tracing::debug!(markdown_text.len = markdown_text.len());
 
             let result = if !env.is_dry_run()? {
                 discourse::post(
@@ -462,7 +453,7 @@ async fn post_archiving_message_if_necessary(
 
             match result {
                 Ok(outcome) => {
-                    tracing::debug!("posted archiving message, outcome = {outcome:?}");
+                    tracing::info!(?outcome, "posted archiving message");
 
                     let mut new_state = state_controller.platform_state(platform).clone();
                     new_state.posted_archiving_message = true;
@@ -483,8 +474,6 @@ async fn post_archiving_message_if_necessary(
             tracing::warn!("old topic does not exist? ignoring, will not post archiving message for this release");
         }
     }
-
-    tracing::debug!("post_archiving_message_if_necessary done");
 
     Ok(())
 }

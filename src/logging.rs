@@ -71,7 +71,7 @@ impl Logger {
     }
 
     pub fn collect_log(&self) -> String {
-        tracing::debug!("collecting log");
+        tracing::trace!("collecting log");
 
         let mut log = Vec::new();
         while let Ok(mut message) = self.rx.try_recv() {

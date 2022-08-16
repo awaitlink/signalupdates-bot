@@ -36,7 +36,7 @@ pub async fn fetch(configuration: Fetch) -> anyhow::Result<Response> {
         .context("could not fetch");
 
     if let Ok(response) = &result {
-        tracing::debug!("response.status_code() = {}", response.status_code());
+        tracing::info!(response.status_code = response.status_code());
     }
 
     result

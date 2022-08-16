@@ -45,7 +45,7 @@ pub async fn send_error_message(env: &Env, log: &str) -> anyhow::Result<()> {
         .await
         .context("could not send request to Discord")?;
 
-    tracing::debug!("response from Discord: {:?}", response);
+    tracing::debug!(?response, "got response from Discord");
 
     Ok(())
 }

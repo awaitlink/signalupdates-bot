@@ -105,7 +105,7 @@ impl StateController {
                 let controller = Self { kv_store, state };
                 controller.log_state("loaded state from KV");
                 controller.validate_state().context("invalid state")?;
-                tracing::debug!("state appears to be valid");
+                tracing::trace!("state appears to be valid");
 
                 Ok(controller)
             }
@@ -115,7 +115,7 @@ impl StateController {
 
     fn validate_state(&self) -> anyhow::Result<()> {
         for platform in Platform::iter() {
-            tracing::debug!("validating state for {platform:?}");
+            tracing::trace!(%platform, "validating platform state");
 
             self.platform_state(platform)
                 .validate()
@@ -148,14 +148,14 @@ impl StateController {
             state.validate().context("tried to set invalid state")?;
 
             *platform_state = state;
-            tracing::debug!("changed platform_state({platform}) = {platform_state:?}");
+            tracing::debug!(%platform, ?platform_state, "changed platform state");
 
             match self.commit_changes().await {
                 Ok(_) => tracing::debug!("saved state to KV"),
                 Err(e) => return Err(e.context("could not save state to KV")),
             }
         } else {
-            tracing::warn!("platform_state({platform}) did not change");
+            tracing::warn!(%platform, "platform state did not change");
         }
 
         Ok(())
@@ -176,11 +176,7 @@ impl StateController {
         tracing::debug!("{message}:");
 
         for platform in Platform::iter() {
-            tracing::debug!(
-                "^^^^^ platform_state({platform}) = {:?}",
-                self.platform_state(platform)
-            );
-
+            tracing::debug!(%platform, state = ?self.platform_state(platform));
             crate::logging::separator();
         }
     }

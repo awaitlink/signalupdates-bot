@@ -27,11 +27,10 @@ impl<'a> LocalizationChanges<'a> {
         comparison: &'a Comparison,
     ) -> LocalizationChanges<'a> {
         let complete = comparison.are_files_likely_complete().unwrap();
-        tracing::debug!("complete = {}", complete);
+        tracing::debug!(complete);
 
         let changes = LocalizationChange::unsorted_changes_from_files(platform, &comparison.files);
-
-        tracing::debug!("changes.len() = {:?}", changes.len());
+        tracing::debug!(changes.len = changes.len());
 
         Self {
             platform,
