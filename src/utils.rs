@@ -1,50 +1,13 @@
 use std::time::{Duration, SystemTime};
 
-use anyhow::{anyhow, Context};
+use anyhow::Context;
 use chrono::prelude::*;
 use sha2::{Digest, Sha256};
 use strum::IntoEnumIterator;
 use tracing::debug;
-use worker::{wasm_bindgen::JsValue, Delay, Env};
+use worker::Delay;
 
 use crate::platform::Platform;
-
-#[derive(Debug)]
-enum StringBindingKind {
-    Secret,
-    Var,
-}
-
-use StringBindingKind::*;
-
-fn get_env_string(env: &Env, kind: StringBindingKind, name: &str) -> anyhow::Result<String> {
-    let string_binding = match kind {
-        Secret => env.secret(name),
-        Var => env.var(name),
-    }
-    .map_err(|e| anyhow!(e.to_string()))
-    .with_context(|| anyhow!("couldn't get string binding kind = {kind:?}, name = {name}"))?;
-
-    JsValue::from(string_binding)
-        .as_string()
-        .ok_or_else(|| anyhow!("couldn't get value of string binding"))
-}
-
-pub fn discourse_api_key(env: &Env) -> anyhow::Result<String> {
-    get_env_string(env, Secret, "DISCOURSE_API_KEY")
-}
-
-pub fn discord_webhook_url(env: &Env) -> anyhow::Result<String> {
-    get_env_string(env, Secret, "DISCORD_WEBHOOK_URL")
-}
-
-pub fn topic_id_override(env: &Env) -> anyhow::Result<Option<u64>> {
-    get_env_string(env, Var, "TOPIC_ID_OVERRIDE").map(|string| string.parse().ok())
-}
-
-pub fn is_dry_run(env: &Env) -> anyhow::Result<bool> {
-    get_env_string(env, Var, "DRY_RUN").map(|string| string == "true")
-}
 
 pub fn sha256_string(input: &str) -> String {
     let result = Sha256::digest(input.as_bytes());

@@ -5,9 +5,9 @@ use tracing::{debug, warn};
 use worker::{Env, Method, Url};
 
 use crate::{
+    env::EnvExt,
     network::{self, ContentType},
     platform::Platform,
-    utils,
 };
 
 mod types;
@@ -55,7 +55,7 @@ pub async fn get_topic_id_or_override(
     platform: Platform,
     version: &Version,
 ) -> anyhow::Result<Option<u64>> {
-    match utils::topic_id_override(env)? {
+    match env.topic_id_override()? {
         Some(id) => {
             warn!("using topic id override: {id}");
             Ok(Some(id))

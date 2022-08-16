@@ -1,13 +1,8 @@
 #![feature(array_windows)]
 
-use anyhow::Context;
-use chrono::prelude::*;
-use semver::Version;
-use tracing::{debug, error, warn};
-use worker::{event, Env, ScheduleContext, ScheduledEvent};
-
 mod discord;
 mod discourse;
+mod env;
 mod github;
 mod localization;
 mod logging;
@@ -18,12 +13,21 @@ mod platform;
 mod state;
 mod utils;
 
-use discourse::PostingOutcome;
-use localization::{
-    Completeness, LocalizationChange, LocalizationChangeCollection, LocalizationChanges,
+use anyhow::Context;
+use chrono::prelude::*;
+use semver::Version;
+use tracing::{debug, error, warn};
+use worker::{event, Env, ScheduleContext, ScheduledEvent};
+
+use crate::{
+    discourse::PostingOutcome,
+    env::EnvExt,
+    localization::{
+        Completeness, LocalizationChange, LocalizationChangeCollection, LocalizationChanges,
+    },
+    platform::Platform,
+    state::{PendingState, StateController},
 };
-use platform::Platform;
-use state::{PendingState, StateController};
 
 const POSTING_DELAY_MILLISECONDS: u64 = 3000;
 
@@ -177,7 +181,7 @@ async fn check_platform(
             old_tag, new_tag
         );
 
-        let discourse_api_key = utils::discourse_api_key(env)?;
+        let discourse_api_key = env.discourse_api_key()?;
 
         let new_topic_id =
             discourse::get_topic_id_or_override(env, &discourse_api_key, platform, new_version)
@@ -355,7 +359,7 @@ async fn check_platform(
 
                 let outcome = post
                     .post(
-                        utils::is_dry_run(env)?,
+                        env.is_dry_run()?,
                         &discourse_api_key,
                         new_topic_id,
                         reply_to_post_number,
@@ -440,7 +444,7 @@ async fn post_archiving_message_if_necessary(
             let markdown_text = discourse::archiving_post_markdown(new_topic_id);
             debug!("markdown_text.len() = {}", markdown_text.len());
 
-            let result = if !utils::is_dry_run(env)? {
+            let result = if !env.is_dry_run()? {
                 discourse::post(
                     &markdown_text,
                     discourse_api_key,

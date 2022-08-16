@@ -4,12 +4,15 @@ use tracing::debug;
 use worker::{Env, Method, Url};
 
 use crate::{
+    env::EnvExt,
     network::{self, ContentType},
-    utils,
 };
 
 pub async fn send_error_message(env: &Env, log: &str) -> anyhow::Result<()> {
-    let url = utils::discord_webhook_url(env).context("could not get Discord webhook URL")?;
+    let url = env
+        .discord_webhook_url()
+        .context("could not get Discord webhook URL")?;
+
     let url = Url::parse(&url).context("could not parse url")?;
 
     let boundary = "721640C74F194C8C9F795C59A371A868";
