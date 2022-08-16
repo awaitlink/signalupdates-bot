@@ -3,7 +3,7 @@ use std::{
     sync::{mpsc, Mutex},
 };
 
-use tracing::{debug, metadata::LevelFilter, subscriber::DefaultGuard};
+use tracing::{metadata::LevelFilter, subscriber::DefaultGuard};
 use tracing_subscriber::prelude::*;
 
 struct MpscWriter {
@@ -71,7 +71,7 @@ impl Logger {
     }
 
     pub fn collect_log(&self) -> String {
-        debug!("collecting log");
+        tracing::debug!("collecting log");
 
         let mut log = Vec::new();
         while let Ok(mut message) = self.rx.try_recv() {
@@ -83,5 +83,5 @@ impl Logger {
 }
 
 pub fn separator() {
-    debug!("----------------------------------------------------------------------");
+    tracing::debug!("----------------------------------------------------------------------");
 }

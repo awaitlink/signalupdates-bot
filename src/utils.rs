@@ -4,7 +4,6 @@ use anyhow::Context;
 use chrono::prelude::*;
 use sha2::{Digest, Sha256};
 use strum::IntoEnumIterator;
-use tracing::debug;
 use worker::Delay;
 
 use crate::platform::Platform;
@@ -16,11 +15,11 @@ pub fn sha256_string(input: &str) -> String {
 
 /// Asynchronously waits for the specified number of milliseconds.
 pub async fn delay(milliseconds: u64) {
-    debug!("waiting {milliseconds} milliseconds");
+    tracing::debug!("waiting {milliseconds} milliseconds");
 
     Delay::from(Duration::from_millis(milliseconds)).await;
 
-    debug!("done waiting {milliseconds} milliseconds");
+    tracing::debug!("done waiting {milliseconds} milliseconds");
 }
 
 pub fn now() -> SystemTime {

@@ -1,6 +1,5 @@
 use anyhow::{bail, Context};
 use serde::de::DeserializeOwned;
-use tracing::{debug, warn};
 use worker::{Fetch, Method, Url};
 
 use crate::{
@@ -16,7 +15,9 @@ pub async fn get_comparison(
     old_tag: &str,
     new_tag: &str,
 ) -> anyhow::Result<Comparison> {
-    debug!("getting comparison between {old_tag} and {new_tag} for {platform} from GitHub");
+    tracing::debug!(
+        "getting comparison between {old_tag} and {new_tag} for {platform} from GitHub"
+    );
 
     let initial_url = platform.github_api_comparison_url(old_tag, new_tag);
 
@@ -50,7 +51,7 @@ pub async fn get_comparison(
 }
 
 pub async fn get_commit(platform: Platform, sha: &str) -> anyhow::Result<Commit> {
-    debug!("getting commit {sha} for {platform} from GitHub");
+    tracing::debug!("getting commit {sha} for {platform} from GitHub");
 
     let initial_url = platform.github_api_commit_url(sha);
 
@@ -86,7 +87,7 @@ where
     T: DeserializeOwned,
     F: Fn(&mut T, &mut T),
 {
-    debug!("getting paginated response from GitHub");
+    tracing::debug!("getting paginated response from GitHub");
 
     let mut page = 1;
     let per_page = 100;
@@ -96,7 +97,7 @@ where
     let mut result: T = initial_result;
 
     loop {
-        debug!("getting page = {page}, url = {url_string}");
+        tracing::debug!("getting page = {page}, url = {url_string}");
 
         let url = Url::parse(&url_string).context("could not parse URL")?;
         let request = network::create_request(
@@ -121,7 +122,7 @@ where
         let link_header_string = match response.headers().get("Link").unwrap() {
             Some(header_string) => header_string,
             None => {
-                warn!(
+                tracing::warn!(
                     "no `Link` header in GitHub's response, likely done getting paginated response"
                 );
                 break;
@@ -137,7 +138,7 @@ where
                 page += 1;
             }
             None => {
-                debug!("no `next` link, done getting full response");
+                tracing::debug!("no `next` link, done getting full response");
                 break;
             }
         }

@@ -1,7 +1,5 @@
 use std::fmt;
 
-use tracing::debug;
-
 use crate::{
     github::{Comparison, Tag},
     localization::{
@@ -29,11 +27,11 @@ impl<'a> LocalizationChanges<'a> {
         comparison: &'a Comparison,
     ) -> LocalizationChanges<'a> {
         let complete = comparison.are_files_likely_complete().unwrap();
-        debug!("complete = {}", complete);
+        tracing::debug!("complete = {}", complete);
 
         let changes = LocalizationChange::unsorted_changes_from_files(platform, &comparison.files);
 
-        debug!("changes.len() = {:?}", changes.len());
+        tracing::debug!("changes.len() = {:?}", changes.len());
 
         Self {
             platform,

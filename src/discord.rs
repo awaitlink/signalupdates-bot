@@ -1,6 +1,5 @@
 use anyhow::Context;
 use serde_json::Value;
-use tracing::debug;
 use worker::{Env, Method, Url};
 
 use crate::{
@@ -46,7 +45,7 @@ pub async fn send_error_message(env: &Env, log: &str) -> anyhow::Result<()> {
         .await
         .context("could not send request to Discord")?;
 
-    debug!("response from Discord: {:?}", response);
+    tracing::debug!("response from Discord: {:?}", response);
 
     Ok(())
 }

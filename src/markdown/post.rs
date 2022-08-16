@@ -2,7 +2,6 @@ use std::collections::HashMap;
 
 use anyhow::bail;
 use strum::IntoEnumIterator;
-use tracing::{debug, warn};
 
 use super::{Commit, CommitStatus};
 use crate::{
@@ -138,13 +137,13 @@ Gathered from [signalapp/Signal-{platform}]({comparison_url})
         let mut post_markdown: Option<String> = None;
 
         for mode in LocalizationChangeRenderMode::iter() {
-            debug!("trying localization change collection render mode = {mode:?}");
+            tracing::debug!("trying localization change collection render mode = {mode:?}");
 
             let text = self.markdown_text(&commits_markdown, mode);
-            debug!("text.len() = {}", text.len());
+            tracing::debug!("text.len() = {}", text.len());
 
             if text.len() > 32_000 {
-                warn!("text is likely too long to post");
+                tracing::warn!("text is likely too long to post");
                 post_markdown = None;
             } else {
                 post_markdown = Some(text);
@@ -157,7 +156,7 @@ Gathered from [signalapp/Signal-{platform}]({comparison_url})
                 if !is_dry_run {
                     discourse::post(markdown_text, api_key, topic_id, reply_to_post_number).await
                 } else {
-                    warn!("dry run; not posting to Discourse");
+                    tracing::warn!("dry run; not posting to Discourse");
                     Ok(PostingOutcome::Posted {
                         number: reply_to_post_number.unwrap_or(0),
                     })

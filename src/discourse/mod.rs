@@ -1,7 +1,6 @@
 use anyhow::{bail, Context};
 use semver::Version;
 use serde_json::json;
-use tracing::{debug, warn};
 use worker::{Env, Method, Url};
 
 use crate::{
@@ -18,7 +17,7 @@ pub async fn get_topic_id(
     platform: Platform,
     version: &Version,
 ) -> anyhow::Result<Option<u64>> {
-    debug!("getting topic id for version {version}");
+    tracing::debug!("getting topic id for version {version}");
 
     let url =
         Url::parse(&platform.discourse_topic_slug_url(version)).context("could not parse URL")?;
@@ -37,12 +36,12 @@ pub async fn get_topic_id(
         ApiResponse::Ok(response) => match response.post_stream.posts.first() {
             Some(post) => Ok(Some(post.topic_id)),
             None => {
-                warn!("response = {:?}", response);
+                tracing::warn!("response = {:?}", response);
                 bail!("no posts in topic")
             }
         },
         ApiResponse::Err(Error::NotFound) => {
-            warn!("topic not found");
+            tracing::warn!("topic not found");
             Ok(None)
         }
         ApiResponse::Unknown(value) => bail!("unexpected response = {value:?}"),
@@ -57,7 +56,7 @@ pub async fn get_topic_id_or_override(
 ) -> anyhow::Result<Option<u64>> {
     match env.topic_id_override()? {
         Some(id) => {
-            warn!("using topic id override: {id}");
+            tracing::warn!("using topic id override: {id}");
             Ok(Some(id))
         }
         None => get_topic_id(api_key, platform, version)
@@ -140,7 +139,7 @@ pub async fn get_post_number(post_id: u64) -> anyhow::Result<Option<u64>> {
     Ok(match post {
         ApiResponse::Ok(post) => Some(post.post_number),
         ApiResponse::Err(Error::NotFound) => {
-            warn!("post not found");
+            tracing::warn!("post not found");
             None
         }
         ApiResponse::Unknown(value) => bail!("unexpected response = {value:?}"),

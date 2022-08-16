@@ -2,7 +2,6 @@ use std::fmt;
 
 use anyhow::{anyhow, Context};
 use serde::de::DeserializeOwned;
-use tracing::debug;
 use worker::{wasm_bindgen::JsValue, Fetch, Headers, Method, Request, RequestInit, Response, Url};
 
 pub const USER_AGENT: &str = "updates-bot";
@@ -37,7 +36,7 @@ pub async fn fetch(configuration: Fetch) -> anyhow::Result<Response> {
         .context("could not fetch");
 
     if let Ok(response) = &result {
-        debug!("response.status_code() = {}", response.status_code());
+        tracing::debug!("response.status_code() = {}", response.status_code());
     }
 
     result
@@ -78,7 +77,7 @@ pub fn create_request(
     body: Option<String>,
     discourse_api_key: Option<&str>,
 ) -> anyhow::Result<Request> {
-    debug!(url.domain = url.domain(), ?method, "creating request");
+    tracing::debug!(url.domain = url.domain(), ?method, "creating request");
 
     let mut headers = Headers::new();
 
