@@ -61,7 +61,7 @@ async fn main(env: &Env) {
         Err(error) => {
             error!("{error:?}");
 
-            let log = logging::recv_log(rx);
+            let log = logging::collect_log(rx);
 
             match discord::send_error_message(env, &log)
                 .await

@@ -7,11 +7,11 @@ use tracing::{debug, metadata::LevelFilter};
 use tracing_subscriber::prelude::*;
 
 struct MpscWriter {
-    sender: mpsc::Sender<String>,
+    sender: mpsc::Sender<Vec<u8>>,
 }
 
 impl MpscWriter {
-    fn new(sender: mpsc::Sender<String>) -> Self {
+    fn new(sender: mpsc::Sender<Vec<u8>>) -> Self {
         Self { sender }
     }
 }
@@ -19,7 +19,7 @@ impl MpscWriter {
 impl io::Write for MpscWriter {
     fn write(&mut self, buf: &[u8]) -> io::Result<usize> {
         self.sender
-            .send(String::from_utf8_lossy(buf).to_string())
+            .send(buf.to_vec())
             .map_err(|error| io::Error::new(io::ErrorKind::Other, error))?;
 
         Ok(buf.len())
@@ -30,7 +30,7 @@ impl io::Write for MpscWriter {
     }
 }
 
-pub fn configure() -> (mpsc::Receiver<String>, impl tracing::Subscriber) {
+pub fn configure() -> (mpsc::Receiver<Vec<u8>>, impl tracing::Subscriber) {
     let (tx, rx) = mpsc::channel();
     let tx = Mutex::new(tx);
 
@@ -60,13 +60,15 @@ pub fn configure() -> (mpsc::Receiver<String>, impl tracing::Subscriber) {
     (rx, subscriber)
 }
 
-pub fn recv_log(rx: mpsc::Receiver<String>) -> String {
+pub fn collect_log(rx: mpsc::Receiver<Vec<u8>>) -> String {
+    debug!("collecting log");
+
     let mut log = Vec::new();
-    while let Ok(message) = rx.try_recv() {
-        log.push(message);
+    while let Ok(mut message) = rx.try_recv() {
+        log.append(&mut message);
     }
 
-    log.join("")
+    String::from_utf8_lossy(&log).into_owned()
 }
 
 pub fn separator() {
