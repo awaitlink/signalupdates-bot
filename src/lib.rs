@@ -405,7 +405,6 @@ async fn check_platform(
     }
 }
 
-#[tracing::instrument(skip(state_controller, env, discourse_api_key))]
 async fn post_archiving_message_if_necessary(
     same_release: bool,
     state_controller: &mut StateController,
