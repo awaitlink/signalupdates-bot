@@ -25,6 +25,7 @@ use crate::{
     localization::{
         Completeness, LocalizationChange, LocalizationChangeCollection, LocalizationChanges,
     },
+    logging::Logger,
     platform::Platform,
     state::{PendingState, StateController},
 };
@@ -59,14 +60,13 @@ pub async fn scheduled(_event: ScheduledEvent, env: Env, _ctx: ScheduleContext) 
 async fn main(env: &Env) {
     panic_hook::set_panic_hook();
 
-    let (rx, subscriber) = logging::configure();
-    let _guard = tracing::subscriber::set_default(subscriber);
+    let logger = Logger::new();
 
     match check_all_platforms(env).await {
         Err(error) => {
             error!("{error:?}");
 
-            let log = logging::collect_log(rx);
+            let log = logger.collect_log();
 
             match discord::send_error_message(env, &log)
                 .await
