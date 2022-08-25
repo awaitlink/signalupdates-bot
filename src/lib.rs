@@ -142,6 +142,12 @@ async fn check_platform(
                 .context("could not set platform state after confirming post approval")?;
 
             tracing::trace!("continuing main logic");
+
+            // Submit log for potentially helping debug incorrect `reply_to_post_number` on post after an approved post
+            // TODO: remove once issue is resolved
+            return Err(anyhow::anyhow!(
+                "[for debugging] confirmed approval of post"
+            ));
         } else {
             return Ok(WaitingForApproval);
         }
