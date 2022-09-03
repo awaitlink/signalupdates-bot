@@ -226,7 +226,11 @@ async fn check_platform(
                     .await
                     .context("could not get build comparison from GitHub")?;
 
-                tracing::trace!(?comparison);
+                tracing::trace!(
+                    comparison.total_commits,
+                    comparison.commits.len = comparison.commits.len(),
+                    comparison.files.len = comparison.files.as_ref().map(|files| files.len()),
+                );
 
                 let unfiltered_commits: Vec<markdown::Commit> = comparison
                     .commits
@@ -264,14 +268,12 @@ async fn check_platform(
                         for commit in localization_change_commits {
                             let with_files = github::get_commit(platform, commit.sha()).await?;
 
-                            tracing::trace!(?with_files);
-
                             let mut changes = LocalizationChange::unsorted_changes_from_files(
                                 platform,
                                 &with_files.files,
                             );
 
-                            tracing::trace!(?changes);
+                            tracing::trace!(changes.len = changes.len());
 
                             build_localization_changes.add_unsorted_changes(&mut changes);
 
