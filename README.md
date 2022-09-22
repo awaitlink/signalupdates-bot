@@ -83,7 +83,7 @@ To send the bot's log to a Discord channel in case an error occurs, set up a web
     wrangler secret put DISCORD_WEBHOOK_URL -e production
     ```
 
-### Deploying
+### Deployment
 
 Run the following command to deploy the bot:
 
