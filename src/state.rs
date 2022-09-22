@@ -24,7 +24,7 @@ pub struct PlatformState {
     pub last_posted_tag: Tag,
 
     #[serde(default)]
-    pub last_post_number: Option<u64>,
+    pub last_post: Option<PostInformation>,
 
     #[serde(default)]
     pub posted_archiving_message: bool,
@@ -35,7 +35,7 @@ pub struct PlatformState {
     pub localization_changes: UnsortedChanges,
 
     #[serde(default)]
-    pub pending_state: Option<Box<PendingState>>,
+    pub pending_state: Option<Box<PlatformState>>,
 }
 
 impl PlatformState {
@@ -54,12 +54,12 @@ impl PlatformState {
             bail!("last_posted_version_previous_release >= last_posted_version");
         }
 
-        if let Some(PendingState { platform_state, .. }) = self.pending_state.as_deref() {
+        if let Some(platform_state) = self.pending_state.as_deref() {
             let (pending_last_posted_version_previous_release, pending_last_posted_version) =
                 platform_state.validate().context("invalid pending state")?;
 
-            if platform_state.last_post_number.is_some() {
-                bail!("pending state unexpectedly has post number");
+            if platform_state.last_post.is_some() {
+                bail!("pending state unexpectedly has last post");
             }
 
             if pending_last_posted_version_previous_release < last_posted_version_previous_release {
@@ -76,9 +76,9 @@ impl PlatformState {
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq)]
-pub struct PendingState {
-    pub post_id: u64,
-    pub platform_state: PlatformState,
+pub struct PostInformation {
+    pub id: u64,
+    pub number: u64,
 }
 
 pub struct StateController {

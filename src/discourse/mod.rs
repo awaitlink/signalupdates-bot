@@ -75,8 +75,8 @@ If you have feedback specifically related to the new beta version, please post i
 
 #[derive(Debug)]
 pub enum PostingOutcome {
-    Posted { number: u64 },
-    Enqueued { id: u64 },
+    Posted { id: u64, number: u64 },
+    Enqueued,
 }
 
 pub async fn post(
@@ -107,21 +107,20 @@ pub async fn post(
 
     match api_response {
         ApiResponse::Ok(CreatePostResponse::Posted(post)) => Ok(PostingOutcome::Posted {
+            id: post.id,
             number: post.post_number,
         }),
-        ApiResponse::Ok(CreatePostResponse::Action(PostAction::Enqueued { pending_post })) => {
-            Ok(PostingOutcome::Enqueued {
-                id: pending_post.id,
-            })
+        ApiResponse::Ok(CreatePostResponse::Action(PostAction::Enqueued { .. })) => {
+            Ok(PostingOutcome::Enqueued)
         }
         ApiResponse::Err(error) => bail!("error = {error:?}"),
         ApiResponse::Unknown(value) => bail!("unexpected response = {value:?}"),
     }
 }
 
-pub async fn get_post_number(post_id: u64) -> anyhow::Result<Option<u64>> {
+pub async fn get_replies_to_post(post_id: u64) -> anyhow::Result<Vec<Post>> {
     let url = Url::parse(&format!(
-        "https://community.signalusers.org/posts/{post_id}.json"
+        "https://community.signalusers.org/posts/{post_id}/replies.json"
     ))
     .context("could not parse URL")?;
 
@@ -134,14 +133,11 @@ pub async fn get_post_number(post_id: u64) -> anyhow::Result<Option<u64>> {
         None,
         None,
     )?;
-    let post: ApiResponse<Post> = network::get_json_from_request(request).await?;
+    let posts: ApiResponse<Vec<Post>> = network::get_json_from_request(request).await?;
 
-    Ok(match post {
-        ApiResponse::Ok(post) => Some(post.post_number),
-        ApiResponse::Err(Error::NotFound) => {
-            tracing::warn!("post not found");
-            None
-        }
+    Ok(match posts {
+        ApiResponse::Ok(posts) => posts,
+        ApiResponse::Err(error) => bail!("error = {error:?}"),
         ApiResponse::Unknown(value) => bail!("unexpected response = {value:?}"),
     })
 }

@@ -158,6 +158,7 @@ Gathered from [signalapp/Signal-{platform}]({comparison_url})
                 } else {
                     tracing::warn!("dry run; not posting to Discourse");
                     Ok(PostingOutcome::Posted {
+                        id: 0,
                         number: reply_to_post_number.unwrap_or(0),
                     })
                 }

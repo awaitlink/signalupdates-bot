@@ -32,6 +32,8 @@ pub struct Post {
 
     pub topic_id: u64,
     pub post_number: u64,
+
+    pub user_id: u64,
 }
 
 #[derive(Deserialize, Debug, PartialEq, Eq)]
@@ -50,7 +52,8 @@ pub enum PostAction {
 
 #[derive(Deserialize, Debug, PartialEq, Eq)]
 pub struct PendingPost {
-    pub id: u64,
+    #[serde(rename = "id")]
+    pub reviewable_id: u64,
 }
 
 #[cfg(test)]
@@ -102,6 +105,7 @@ mod tests {
             "id": 0,
             "topic_id": 0,
             "post_number": 0,
+            "user_id": 0,
         }};
 
         assert_eq!(
@@ -110,6 +114,7 @@ mod tests {
                 id: 0,
                 topic_id: 0,
                 post_number: 0,
+                user_id: 0,
             }))
         );
     }
@@ -126,7 +131,7 @@ mod tests {
         assert_eq!(
             serde_json::from_str::<ApiResponse<CreatePostResponse>>(&input.to_string()).unwrap(),
             ApiResponse::Ok(CreatePostResponse::Action(PostAction::Enqueued {
-                pending_post: PendingPost { id: 0 }
+                pending_post: PendingPost { reviewable_id: 0 }
             }))
         );
     }

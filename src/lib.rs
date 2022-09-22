@@ -13,7 +13,7 @@ mod platform;
 mod state;
 mod utils;
 
-use anyhow::Context;
+use anyhow::{bail, Context};
 use chrono::prelude::*;
 use semver::Version;
 use worker::{event, Env, ScheduleContext, ScheduledEvent};
@@ -26,7 +26,7 @@ use crate::{
     },
     logging::Logger,
     platform::Platform,
-    state::{PendingState, StateController},
+    state::{PostInformation, StateController},
 };
 
 const POSTING_DELAY_MILLISECONDS: u64 = 3000;
@@ -117,24 +117,42 @@ async fn check_platform(
     tracing::debug!(%platform, "checking platform");
 
     // Check if a pending post exists and has been approved
-    if let Some(PendingState {
-        post_id,
-        platform_state,
-    }) = state_controller
+    if let Some(pending_state) = state_controller
         .platform_state(platform)
         .pending_state
         .as_deref()
     {
+        let last_post_id = match state_controller
+            .platform_state(platform)
+            .last_post
+            .as_ref()
+            .map(|post| post.id)
+        {
+            Some(id) => id,
+            None => bail!("unexpected state: a post is waiting for approval, but there is no last_post in state; unable to confirm post approval in this state"),
+        };
+
         tracing::debug!(
-            post.id = post_id,
-            "post is waiting for approval, checking if there is a post number"
+            "a post is waiting for approval, checking if there is a reply by the bot to the latest known post"
         );
 
-        if let Some(number) = discourse::get_post_number(*post_id).await? {
-            tracing::info!(post.number = number, "approval confirmed");
+        let user_id = env.user_id().context("couldn't get user id from env")?;
+        let posts = discourse::get_replies_to_post(last_post_id)
+            .await
+            .context("couldn't get replies to latest known post")?;
 
-            let mut new_state = platform_state.clone();
-            new_state.last_post_number = Some(number);
+        tracing::trace!(?posts);
+
+        let first_reply_by_bot = posts.iter().find(|post| post.user_id == user_id);
+
+        if let Some(post) = first_reply_by_bot {
+            tracing::info!(?post, "approval confirmed");
+
+            let mut new_state = pending_state.clone();
+            new_state.last_post = Some(PostInformation {
+                id: post.id,
+                number: post.post_number,
+            });
 
             state_controller
                 .set_platform_state(platform, new_state)
@@ -216,7 +234,11 @@ async fn check_platform(
                 // Post commits to new topic
 
                 let reply_to_post_number = if same_release {
-                    state_controller.platform_state(platform).last_post_number
+                    state_controller
+                        .platform_state(platform)
+                        .last_post
+                        .as_ref()
+                        .map(|post| post.number)
                 } else {
                     None
                 };
@@ -374,7 +396,7 @@ async fn check_platform(
                     let mut new_state = state::PlatformState {
                         last_posted_tag_previous_release: last_posted_tag_previous_release.clone(),
                         last_posted_tag: new_tag.clone(),
-                        last_post_number: None,
+                        last_post: None,
                         posted_archiving_message: false,
                         localization_changes_completeness,
                         localization_changes,
@@ -382,18 +404,13 @@ async fn check_platform(
                     };
 
                     match outcome {
-                        PostingOutcome::Posted { number } => {
-                            new_state.last_post_number = Some(number);
+                        PostingOutcome::Posted { id, number } => {
+                            new_state.last_post = Some(PostInformation { id, number });
                             new_state
                         }
-                        PostingOutcome::Enqueued { id } => {
+                        PostingOutcome::Enqueued => {
                             let mut final_state = state_controller.platform_state(platform).clone();
-
-                            final_state.pending_state = Some(Box::new(PendingState {
-                                post_id: id,
-                                platform_state: new_state,
-                            }));
-
+                            final_state.pending_state = Some(Box::new(new_state));
                             final_state
                         }
                     }
@@ -450,12 +467,16 @@ async fn post_archiving_message_if_necessary(
                     &markdown_text,
                     discourse_api_key,
                     old_topic_id,
-                    state_controller.platform_state(platform).last_post_number,
+                    state_controller
+                        .platform_state(platform)
+                        .last_post
+                        .as_ref()
+                        .map(|post| post.number),
                 )
                 .await
             } else {
                 tracing::warn!("dry run; not posting to Discourse");
-                Ok(PostingOutcome::Posted { number: 0 })
+                Ok(PostingOutcome::Posted { id: 0, number: 0 })
             };
 
             match result {
