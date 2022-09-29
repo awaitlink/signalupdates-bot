@@ -21,8 +21,9 @@ pub type UnsortedChanges = HashMap<Language, HashSet<StringsFileKind>>;
 // TODO: the '.' from StringsFileKind::path() will be interpreted as "any character", not just '.'
 
 const ANDROID_LANGUAGE_CODE_PATTERN: &str = "([a-zA-Z]{2,3}(-r[A-Z]{2})?)";
-const IOS_DESKTOP_LANGUAGE_CODE_PATTERN: &str = "([a-zA-Z]{2,3}(_[A-Z]{2})?)";
+const IOS_LANGUAGE_CODE_PATTERN: &str = "([a-zA-Z]{2,3}(_[A-Z]{2})?)";
 const IOS_APP_STORE_LANGUAGE_CODE_PATTERN: &str = "([a-zA-Z]{2,3}(-[a-zA-Z]{2,4})?)";
+const DESKTOP_LANGUAGE_CODE_PATTERN: &str = "([a-zA-Z]{2,3}(-[A-Z]{2})?)";
 
 fn regex(platform: Platform, kind: StringsFileKind, pattern: &str) -> Regex {
     Regex::new(&kind.path(platform, pattern)).unwrap()
@@ -35,11 +36,11 @@ lazy_static! {
 
     // iOS
     static ref IOS_MAIN_REGEX: Regex =
-        regex(Ios, Main, IOS_DESKTOP_LANGUAGE_CODE_PATTERN);
+        regex(Ios, Main, IOS_LANGUAGE_CODE_PATTERN);
     static ref IOS_INFO_PLIST_REGEX: Regex =
-        regex(Ios, InfoPlist, IOS_DESKTOP_LANGUAGE_CODE_PATTERN);
+        regex(Ios, InfoPlist, IOS_LANGUAGE_CODE_PATTERN);
     static ref IOS_PLURAL_AWARE_REGEX: Regex =
-        regex(Ios, PluralAware, IOS_DESKTOP_LANGUAGE_CODE_PATTERN);
+        regex(Ios, PluralAware, IOS_LANGUAGE_CODE_PATTERN);
     static ref IOS_APP_STORE_DESCRIPTION_REGEX: Regex =
         regex(Ios, AppStoreDescription, IOS_APP_STORE_LANGUAGE_CODE_PATTERN);
     static ref IOS_APP_STORE_RELEASE_NOTES_REGEX: Regex =
@@ -47,7 +48,7 @@ lazy_static! {
 
     // Desktop
     static ref DESKTOP_REGEX: Regex =
-        regex(Desktop, Main, IOS_DESKTOP_LANGUAGE_CODE_PATTERN);
+        regex(Desktop, Main, DESKTOP_LANGUAGE_CODE_PATTERN);
 }
 
 #[derive(Deserialize, Serialize, Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
@@ -192,10 +193,10 @@ impl LocalizationChange {
                         "en" => ANDROID_DEFAULT_STRINGS_FILENAME.to_owned(),
                         _ => kind.path(platform, &self.language.full_code().replace('-', "-r")),
                     },
-                    (Ios, Main | InfoPlist | PluralAware) | (Desktop, _) => {
+                    (Ios, Main | InfoPlist | PluralAware) => {
                         kind.path(platform, &self.language.full_code().replace('-', "_"))
                     }
-                    (Ios, AppStoreDescription | AppStoreReleaseNotes) => {
+                    (Ios, AppStoreDescription | AppStoreReleaseNotes) | (Desktop, _) => {
                         kind.path(platform, &self.language.full_code())
                     }
                 }
@@ -321,7 +322,7 @@ mod tests {
     #[test_case(Android, "app/src/main/res/values-pa-rPK/strings.xml", "Panjabi (`pa-PK`)"; "Android: pa dash r PK")]
     #[test_case(Desktop, "_locales/en/messages.json", "English (`en`)"; "Desktop: en")]
     #[test_case(Desktop, "_locales/kab/messages.json", "Kabyle (`kab`)"; "Desktop: kab")]
-    #[test_case(Desktop, "_locales/pa_PK/messages.json", "Panjabi (`pa-PK`)"; "Desktop: pa underscore PK")]
+    #[test_case(Desktop, "_locales/pa-PK/messages.json", "Panjabi (`pa-PK`)"; "Desktop: pa dash PK")]
     #[test_case(Ios, "Signal/translations/en.lproj/Localizable.strings", "English (`en`)"; "iOS main: en")]
     #[test_case(Ios, "Signal/translations/kab.lproj/Localizable.strings", "Kabyle (`kab`)"; "iOS main: kab")]
     #[test_case(Ios, "Signal/translations/pa_PK.lproj/Localizable.strings", "Panjabi (`pa-PK`)"; "iOS main: pa underscore PK")]
@@ -404,7 +405,7 @@ mod tests {
     #[test_case(Android, Main, "en", "app/src/main/res/values/strings.xml"; "Android: en")]
     #[test_case(Android, Main, "en-US", "app/src/main/res/values-en-rUS/strings.xml"; "Android: en dash US")]
     #[test_case(Desktop, Main, "en", "_locales/en/messages.json"; "Desktop: en")]
-    #[test_case(Desktop, Main, "en-US", "_locales/en_US/messages.json"; "Desktop: en dash US")]
+    #[test_case(Desktop, Main, "en-US", "_locales/en-US/messages.json"; "Desktop: en dash US")]
     #[test_case(Ios, Main, "en", "Signal/translations/en.lproj/Localizable.strings"; "iOS main: en")]
     #[test_case(Ios, Main, "en-US", "Signal/translations/en_US.lproj/Localizable.strings"; "iOS main: en dash US")]
     #[test_case(Ios, InfoPlist, "en", "Signal/translations/en.lproj/InfoPlist.strings"; "iOS info plist: en")]
