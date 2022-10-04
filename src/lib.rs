@@ -13,7 +13,7 @@ mod platform;
 mod state;
 mod utils;
 
-use anyhow::{bail, Context};
+use anyhow::Context;
 use chrono::prelude::*;
 use semver::Version;
 use worker::{event, Env, ScheduleContext, ScheduledEvent};
@@ -122,52 +122,67 @@ async fn check_platform(
         .pending_state
         .as_deref()
     {
-        let last_post_id = match state_controller
+        tracing::debug!("a post is waiting for approval");
+
+        match state_controller
             .platform_state(platform)
             .last_post
             .as_ref()
             .map(|post| post.id)
         {
-            Some(id) => id,
-            None => bail!("unexpected state: a post is waiting for approval, but there is no last_post in state; unable to confirm post approval in this state"),
-        };
+            Some(last_post_id) => {
+                tracing::debug!("checking if there is a reply by the bot to the latest known post");
 
-        tracing::debug!(
-            "a post is waiting for approval, checking if there is a reply by the bot to the latest known post"
-        );
+                let user_id = env.user_id().context("couldn't get user id from env")?;
+                let posts = discourse::get_replies_to_post(last_post_id)
+                    .await
+                    .context("couldn't get replies to latest known post")?;
 
-        let user_id = env.user_id().context("couldn't get user id from env")?;
-        let posts = discourse::get_replies_to_post(last_post_id)
-            .await
-            .context("couldn't get replies to latest known post")?;
+                tracing::trace!(?posts);
 
-        tracing::trace!(?posts);
+                let first_reply_by_bot = posts.iter().find(|post| post.user_id == user_id);
 
-        let first_reply_by_bot = posts.iter().find(|post| post.user_id == user_id);
+                if let Some(post) = first_reply_by_bot {
+                    tracing::info!(?post, "approval confirmed");
 
-        if let Some(post) = first_reply_by_bot {
-            tracing::info!(?post, "approval confirmed");
+                    let mut new_state = pending_state.clone();
+                    new_state.last_post = Some(PostInformation {
+                        id: post.id,
+                        number: post.post_number,
+                    });
 
-            let mut new_state = pending_state.clone();
-            new_state.last_post = Some(PostInformation {
-                id: post.id,
-                number: post.post_number,
-            });
+                    state_controller
+                        .set_platform_state(platform, new_state)
+                        .await
+                        .context("could not set platform state after confirming post approval")?;
 
-            state_controller
-                .set_platform_state(platform, new_state)
-                .await
-                .context("could not set platform state after confirming post approval")?;
+                    tracing::trace!("continuing main logic");
 
-            tracing::trace!("continuing main logic");
+                    // Submit log for potentially helping debug incorrect `reply_to_post_number` on post after an approved post
+                    // TODO: remove once issue is resolved
+                    return Err(anyhow::anyhow!(
+                        "[for debugging] confirmed approval of post"
+                    ));
+                } else {
+                    return Ok(WaitingForApproval);
+                }
+            }
+            None => {
+                tracing::warn!("there is no last_post in state; confirming post approval isn't implemented in this state; assuming it is already approved, but with an unknown post ID and number");
 
-            // Submit log for potentially helping debug incorrect `reply_to_post_number` on post after an approved post
-            // TODO: remove once issue is resolved
-            return Err(anyhow::anyhow!(
-                "[for debugging] confirmed approval of post"
-            ));
-        } else {
-            return Ok(WaitingForApproval);
+                state_controller
+                    .set_platform_state(platform, pending_state.clone())
+                    .await
+                    .context("could not set platform state after assumed post approval")?;
+
+                tracing::trace!("continuing main logic");
+
+                // Submit log for potentially helping debug incorrect `reply_to_post_number` on post after an approved post
+                // TODO: remove once issue is resolved
+                return Err(anyhow::anyhow!(
+                    "[for debugging] confirmed approval of post"
+                ));
+            }
         }
     } else {
         tracing::trace!("no post waiting for approval, continuing main logic");
@@ -406,6 +421,10 @@ async fn check_platform(
                     match outcome {
                         PostingOutcome::Posted { id, number } => {
                             new_state.last_post = Some(PostInformation { id, number });
+                            new_state
+                        }
+                        PostingOutcome::Enqueued if !same_release => {
+                            tracing::warn!("verifying post approval when the post is in a new topic is not implemented; assuming it is already approved, but with an unknown post ID and number");
                             new_state
                         }
                         PostingOutcome::Enqueued => {
