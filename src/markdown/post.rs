@@ -11,7 +11,7 @@ use crate::{
     platform::Platform,
 };
 
-pub const MAX_COMMITS_WITHOUT_DETAILS_TAG: usize = 20;
+pub const MAX_COMMITS_WITHOUT_DETAILS_TAG: usize = 10;
 
 #[derive(Debug)]
 pub struct Post<'a> {
@@ -315,7 +315,7 @@ Localization changes for the release are the same, as this is the first build of
     MAX_COMMITS_WITHOUT_DETAILS_TAG + 1, None, "## New Version: 1.2.4
 (Not Yet) Available via [Firebase App Distribution](https://community.signalusers.org/t/17538)
 [quote]
-21 new commits since 1.2.3:
+11 new commits since 1.2.3:
 [details=\"Show commits\"]
 - Test commit. [[1]](https://github.com/signalapp/Signal-Android/commit/abcdef)
 
@@ -337,27 +337,7 @@ Localization changes for the release are the same, as this is the first build of
 
 - Test commit. [[10]](https://github.com/signalapp/Signal-Android/commit/abcdef)
 
-- Test commit. [[11]](https://github.com/signalapp/Signal-Android/commit/abcdef)
-
-- Test commit. [[12]](https://github.com/signalapp/Signal-Android/commit/abcdef)
-
-- Test commit. [[13]](https://github.com/signalapp/Signal-Android/commit/abcdef)
-
-- Test commit. [[14]](https://github.com/signalapp/Signal-Android/commit/abcdef)
-
-- Test commit. [[15]](https://github.com/signalapp/Signal-Android/commit/abcdef)
-
-- Test commit. [[16]](https://github.com/signalapp/Signal-Android/commit/abcdef)
-
-- Test commit. [[17]](https://github.com/signalapp/Signal-Android/commit/abcdef)
-
-- Test commit. [[18]](https://github.com/signalapp/Signal-Android/commit/abcdef)
-
-- Test commit. [[19]](https://github.com/signalapp/Signal-Android/commit/abcdef)
-
-- Test commit. [[20]](https://github.com/signalapp/Signal-Android/commit/abcdef)
-
-- Bump version to 1.2.4 [[21]](https://github.com/signalapp/Signal-Android/commit/abc123)
+- Bump version to 1.2.4 [[11]](https://github.com/signalapp/Signal-Android/commit/abc123)
 
 [/details]
 ---
