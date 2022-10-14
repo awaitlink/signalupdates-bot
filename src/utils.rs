@@ -2,9 +2,9 @@ use std::time::{Duration, SystemTime};
 
 use anyhow::Context;
 use chrono::prelude::*;
+use factorial::Factorial;
 use sha2::{Digest, Sha256};
 use worker::Delay;
-use factorial::Factorial;
 
 use crate::platform::Platform;
 
