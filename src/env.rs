@@ -1,5 +1,8 @@
 use anyhow::{anyhow, Context};
+use strum::IntoEnumIterator;
 use worker::{wasm_bindgen::JsValue, Env};
+
+use crate::platform::Platform;
 
 #[derive(Debug)]
 enum StringBindingKind {
@@ -22,6 +25,14 @@ fn get_env_string(env: &Env, kind: StringBindingKind, name: &str) -> anyhow::Res
         .ok_or_else(|| anyhow!("couldn't get value of string binding"))
 }
 
+fn filter_platforms(string: &str) -> Vec<Platform> {
+    Platform::iter()
+        .filter(|platform| {
+            string.contains(platform.to_string().to_lowercase().chars().next().unwrap())
+        })
+        .collect()
+}
+
 pub trait EnvExt {
     fn discourse_api_key(&self) -> anyhow::Result<String>;
     fn discord_webhook_url(&self) -> anyhow::Result<String>;
@@ -29,6 +40,7 @@ pub trait EnvExt {
     fn user_id(&self) -> anyhow::Result<u64>;
     fn topic_id_override(&self) -> anyhow::Result<Option<u64>>;
     fn is_dry_run(&self) -> anyhow::Result<bool>;
+    fn enabled_platforms(&self) -> anyhow::Result<Vec<Platform>>;
 }
 
 impl EnvExt for Env {
@@ -54,5 +66,27 @@ impl EnvExt for Env {
 
     fn is_dry_run(&self) -> anyhow::Result<bool> {
         get_env_string(self, Var, "DRY_RUN").map(|string| string == "true")
+    }
+
+    fn enabled_platforms(&self) -> anyhow::Result<Vec<Platform>> {
+        get_env_string(self, Var, "ENABLED_PLATFORMS").map(|s| filter_platforms(&s))
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use pretty_assertions::assert_eq;
+    use test_case::test_case;
+
+    use super::*;
+    use crate::platform::Platform::*;
+
+    #[test_case("aid", &[Android, Ios, Desktop])]
+    #[test_case("ai", &[Android, Ios])]
+    #[test_case("id", &[Ios, Desktop])]
+    #[test_case("a", &[Android])]
+    #[test_case("", &[])]
+    fn filter_platforms(string: &str, output: &[Platform]) {
+        assert_eq!(super::filter_platforms(string), output);
     }
 }

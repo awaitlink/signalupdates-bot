@@ -7,13 +7,13 @@ command = "cargo install worker-build && worker-build --release"
 
 [env.production]
 name = "signalupdates-bot"
-vars = { USER_ID = "...", TOPIC_ID_OVERRIDE = "", DRY_RUN = "" }
+vars = { USER_ID = "...", TOPIC_ID_OVERRIDE = "", DRY_RUN = "", ENABLED_PLATFORMS = "aid" }
 kv_namespaces = [{ binding = "STATE", id = "..." }]
 workers_dev = false
 triggers = { crons = ["*/10 * * * *"] }
 
 [env.staging]
 name = "signalupdates-bot-staging"
-vars = { USER_ID = "...", TOPIC_ID_OVERRIDE = "...", DRY_RUN = "..." }
+vars = { USER_ID = "...", TOPIC_ID_OVERRIDE = "...", DRY_RUN = "...", ENABLED_PLATFORMS = "aid" }
 kv_namespaces = [{ binding = "STATE", id = "..." }]
 workers_dev = true

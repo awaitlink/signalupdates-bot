@@ -83,7 +83,7 @@ async fn check_all_platforms(env: &Env) -> anyhow::Result<()> {
     let now = DateTime::from(utils::now());
     tracing::debug!("now = {} (seconds: {})", now.to_rfc3339(), now.timestamp());
 
-    let platforms = utils::platforms_order(now.time())?;
+    let platforms = utils::platforms_order(&env.enabled_platforms()?, now.time())?;
     tracing::debug!(?platforms);
 
     let mut state_controller = state::StateController::from_kv(env).await?;

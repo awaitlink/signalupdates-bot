@@ -38,6 +38,7 @@ tracing = { version = "0.1", features = [
 ] }
 tracing-subscriber = "0.3"
 tracing-wasm = "0.2"
+factorial = "0.2"
 
 [dev-dependencies]
 test-case = "2.1"

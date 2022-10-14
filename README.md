@@ -28,6 +28,7 @@ To run this bot, do the following:
     `USER_ID` | The bot's numeric user ID like `12345`. You can find it by inspecting the HTML or JSON of any of the bot's posts. It is used to find the bot's posts when confirming post approval (which is done without the API key in case the post is returned even if it's not approved, so the `yours` property of posts can't be used).
     `TOPIC_ID_OVERRIDE` | If you'd like all of the bot's posts to go to a single topic, set this variable to the topic's ID, for example `12345`. Otherwise, leave it empty.
     `DRY_RUN` | If you'd like the bot to skip actually posting to Discourse, but otherwise do everything else, including modifying the state (with dummy post numbers), set this to `true`. Otherwise, leave it empty.
+    `ENABLED_PLATFORMS` | Specify first letters of platform names you want to enable. For example, specify `aid` to enable all supported platforms (Android, iOS, and Desktop).
 
 1. In the KV namespace(s) you created, manually create a key-value pair with the key `state` and a value like:
 
