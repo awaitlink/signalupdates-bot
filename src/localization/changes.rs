@@ -9,6 +9,8 @@ use crate::{
     platform::Platform,
 };
 
+pub const MAX_CHANGES_WITHOUT_DETAILS_TAG: usize = 20;
+
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct LocalizationChanges<'a> {
     pub platform: Platform,
@@ -84,7 +86,7 @@ impl fmt::Display for LocalizationChanges<'_> {
         let changes_len = self.unsorted_changes.len();
 
         let (prefix, suffix) = match changes_len {
-            0..=20 => ("", ""),
+            0..=MAX_CHANGES_WITHOUT_DETAILS_TAG => ("", ""),
             _ => ("\n[details=\"Show changes\"]", "\n[/details]"),
         };
 

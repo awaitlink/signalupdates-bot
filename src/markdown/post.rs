@@ -11,6 +11,8 @@ use crate::{
     platform::Platform,
 };
 
+pub const MAX_COMMITS_WITHOUT_DETAILS_TAG: usize = 20;
+
 #[derive(Debug)]
 pub struct Post<'a> {
     platform: Platform,
@@ -97,7 +99,7 @@ impl<'a> Post<'a> {
 
         let commits_count = self.commits.len();
         let (commits_prefix, commits_postfix) = match commits_count {
-            0..=20 => ("", ""),
+            0..=MAX_COMMITS_WITHOUT_DETAILS_TAG => ("", ""),
             _ => ("[details=\"Show commits\"]\n", "\n[/details]"),
         };
 
@@ -307,10 +309,10 @@ Localization changes for the release are the same, as this is the first build of
 [/details]"; "Android: five commits with reverts")]
     #[test_case(Android, "v1.2.3", "v1.2.4",
     std::iter::repeat(Commit::new(Android, "Test commit.", "abcdef"))
-        .take(20)
+        .take(MAX_COMMITS_WITHOUT_DETAILS_TAG)
         .chain(vec![Commit::new(Android, "Bump version to 1.2.4", "abc123")].iter().cloned())
         .collect(),
-    21, None, "## New Version: 1.2.4
+    MAX_COMMITS_WITHOUT_DETAILS_TAG + 1, None, "## New Version: 1.2.4
 (Not Yet) Available via [Firebase App Distribution](https://community.signalusers.org/t/17538)
 [quote]
 21 new commits since 1.2.3:
