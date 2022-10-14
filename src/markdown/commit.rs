@@ -94,7 +94,15 @@ impl<'a> Commit<'a> {
             Normal => ("", String::new()),
         };
 
-        let main_content = format!("- {prefix}{message} [[{number}]]({commit_url}){suffix}\n");
+        let description_omitted_notice = if self.platform.should_show_commit_details() {
+            ""
+        } else {
+            "[…] "
+        };
+
+        let main_content = format!(
+            "- {prefix}{message} {description_omitted_notice}[[{number}]]({commit_url}){suffix}\n"
+        );
         let details = match message_lines.len() {
             (2..) if self.platform.should_show_commit_details() => {
                 format!("\n    {}", message_lines[1..].join("\n    "))
@@ -190,7 +198,7 @@ mod tests {
     )]
     #[test_case(
         Ios, "Test commit. Continuation.\nContinuation 2.\nContinuation 3.", "abcdef", Normal,
-        "- Test commit. Continuation. [[2]](https://github.com/signalapp/Signal-iOS/commit/abcdef)\n";
+        "- Test commit. Continuation. […] [[2]](https://github.com/signalapp/Signal-iOS/commit/abcdef)\n";
         "iOS: three lines, details are not shown"
     )]
     fn commit_markdown(
