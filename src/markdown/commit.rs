@@ -94,20 +94,17 @@ impl<'a> Commit<'a> {
             Normal => ("", String::new()),
         };
 
-        let description_omitted_notice = if self.platform.should_show_commit_details() {
-            ""
-        } else {
-            "[…] "
-        };
+        let description_exists = message_lines.len() >= 2;
+        let description_omitted = description_exists && !self.platform.should_show_commit_details();
+        let description_omitted_notice = if description_omitted { "[…] " } else { "" };
 
         let main_content = format!(
             "- {prefix}{message} {description_omitted_notice}[[{number}]]({commit_url}){suffix}\n"
         );
-        let details = match message_lines.len() {
-            (2..) if self.platform.should_show_commit_details() => {
-                format!("\n    {}", message_lines[1..].join("\n    "))
-            }
-            _ => String::new(),
+        let details = if description_exists && self.platform.should_show_commit_details() {
+            format!("\n    {}", message_lines[1..].join("\n    "))
+        } else {
+            String::new()
         };
 
         main_content + &details
@@ -195,6 +192,11 @@ mod tests {
         Desktop, "Test commit. Test <HtmlTag/>!\n<AnotherTag>Test!</AnotherTag>.", "abcdef", Normal,
         "- Test commit. Test &lt;HtmlTag/&gt;! [[2]](https://github.com/signalapp/Signal-Desktop/commit/abcdef)\n\n    &lt;AnotherTag&gt;Test!&lt;/AnotherTag&gt;.";
         "Desktop: two lines with HTML"
+    )]
+    #[test_case(
+        Ios, "Test commit. Continuation.", "abcdef", Normal,
+        "- Test commit. Continuation. [[2]](https://github.com/signalapp/Signal-iOS/commit/abcdef)\n";
+        "iOS: one line"
     )]
     #[test_case(
         Ios, "Test commit. Continuation.\nContinuation 2.\nContinuation 3.", "abcdef", Normal,
