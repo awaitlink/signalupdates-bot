@@ -84,10 +84,10 @@ impl fmt::Display for StringsFileKind {
             "{}",
             match self {
                 Main => "main",
-                InfoPlist => "info plist",
-                PluralAware => "plural aware",
-                AppStoreDescription => "description",
-                AppStoreReleaseNotes => "release notes",
+                InfoPlist => "info",
+                PluralAware => "plural",
+                AppStoreDescription => "desc",
+                AppStoreReleaseNotes => "release",
             }
         )
     }
