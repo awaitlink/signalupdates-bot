@@ -40,13 +40,13 @@ impl StringsFileKind {
     /// Expects `language_placeholder_value` to be in the expected format for `platform` and `kind`.
     fn path_folder_name(&self, platform: Platform, language_placeholder_value: &str) -> String {
         if !self.applicable_for_platform(platform) {
-            panic!("unexpected strings file for {platform}: {:?}", self)
+            panic!("unexpected strings file for {platform}: {self:?}")
         }
 
         match (platform, self) {
-            (Android, _) => format!("values-{}", language_placeholder_value),
+            (Android, _) => format!("values-{language_placeholder_value}"),
             (Ios, Main | InfoPlist | PluralAware) => {
-                format!("{}.lproj", language_placeholder_value)
+                format!("{language_placeholder_value}.lproj")
             }
             (Ios, AppStoreDescription | AppStoreReleaseNotes) | (Desktop, _) => {
                 language_placeholder_value.to_owned()

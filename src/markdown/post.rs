@@ -110,7 +110,7 @@ impl<'a> Post<'a> {
         let difference = self.unfiltered_commits_len - self.commits.len();
         let filtered_notice = if difference != 0 {
             let suffix = if difference == 1 { "" } else { "s" };
-            format!(" (+ {} commit{suffix} omitted)", difference)
+            format!(" (+ {difference} commit{suffix} omitted)")
         } else {
             String::new()
         };

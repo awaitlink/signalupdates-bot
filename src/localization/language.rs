@@ -25,7 +25,7 @@ impl Default for Language {
 impl Language {
     pub fn full_code(&self) -> String {
         match &self.region_code {
-            Some(region_code) => format!("{}-{}", self.language_code, region_code),
+            Some(region_code) => format!("{}-{region_code}", self.language_code),
             None => self.language_code.to_string(),
         }
     }

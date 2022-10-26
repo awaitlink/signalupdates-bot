@@ -33,7 +33,7 @@ impl<'a> LocalizationChangeCollection<'a> {
 
         let notice = match (mode, &self.release_changes) {
             (Full, Some(_)) => String::from(""),
-            (Full | WithoutRelease, None) => format!("\n\n{}", same_notice),
+            (Full | WithoutRelease, None) => format!("\n\n{same_notice}"),
             (WithoutRelease, Some(release_changes)) => format!(
                 "\n\nLocalization changes for the release didn't fit in character limit. {}",
                 release_changes.full_comparison_notice()
