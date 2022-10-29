@@ -440,22 +440,22 @@ mod tests {
 
     #[test_case(
         Android, &[Main], "en",
-        "[English (`en`)](https://github.com/signalapp/Signal-Android/compare/v1.2.3..v1.2.4#diff-5e01f7d37a66e4ca03deefc205d8e7008661cdd0284a05aaba1858e6b7bf9103)";
+        "[English (`en`)](//github.com/signalapp/Signal-Android/compare/v1.2.3..v1.2.4#diff-5e01f7d37a66e4ca03deefc205d8e7008661cdd0284a05aaba1858e6b7bf9103)";
         "Android: en"
     )]
     #[test_case(
         Desktop, &[Main], "en",
-        "[English (`en`)](https://github.com/signalapp/Signal-Desktop/compare/v1.2.3..v1.2.4#diff-4362c7f7032e9687a0a5910cadc127afbe8259b2b941de40dd4246c35b1446f0)";
+        "[English (`en`)](//github.com/signalapp/Signal-Desktop/compare/v1.2.3..v1.2.4#diff-4362c7f7032e9687a0a5910cadc127afbe8259b2b941de40dd4246c35b1446f0)";
         "Desktop: en"
     )]
     #[test_case(
         Ios, &[Main, InfoPlist, PluralAware], "en",
-        "English (`en`): [main](https://github.com/signalapp/Signal-iOS/compare/v1.2.3..v1.2.4#diff-e51dc1f3b323f252674c72d0a8c33e70ea2a9c4f0c7784bdc39bdf2bf166233b) • [info](https://github.com/signalapp/Signal-iOS/compare/v1.2.3..v1.2.4#diff-fa966e7c12e08d6d541dc0cc19dac11cc749da30a4c855f48eaea6d38ba6e370) • [plural](https://github.com/signalapp/Signal-iOS/compare/v1.2.3..v1.2.4#diff-b1406c86358c13ed48eee0e5f535316b4754e72e30b1318e2c85ca1d75125262)";
+        "English (`en`): [main](//github.com/signalapp/Signal-iOS/compare/v1.2.3..v1.2.4#diff-e51dc1f3b323f252674c72d0a8c33e70ea2a9c4f0c7784bdc39bdf2bf166233b) • [info](//github.com/signalapp/Signal-iOS/compare/v1.2.3..v1.2.4#diff-fa966e7c12e08d6d541dc0cc19dac11cc749da30a4c855f48eaea6d38ba6e370) • [plural](//github.com/signalapp/Signal-iOS/compare/v1.2.3..v1.2.4#diff-b1406c86358c13ed48eee0e5f535316b4754e72e30b1318e2c85ca1d75125262)";
         "iOS main, info plist, plural aware: en"
     )]
     #[test_case(
         Ios, &[AppStoreDescription, AppStoreReleaseNotes], "en-US",
-        "English (`en-US`): [desc](https://github.com/signalapp/Signal-iOS/compare/v1.2.3..v1.2.4#diff-e7a69d0898d3b2197f77bec55cad6b6d2ff8c973b873bfbe0fe568a1c710ef9c) • [release](https://github.com/signalapp/Signal-iOS/compare/v1.2.3..v1.2.4#diff-4256fffd9552dba2d12fe36150428ff03b2ede950c4040c5d840a6d6b1240df8)";
+        "English (`en-US`): [desc](//github.com/signalapp/Signal-iOS/compare/v1.2.3..v1.2.4#diff-e7a69d0898d3b2197f77bec55cad6b6d2ff8c973b873bfbe0fe568a1c710ef9c) • [release](//github.com/signalapp/Signal-iOS/compare/v1.2.3..v1.2.4#diff-4256fffd9552dba2d12fe36150428ff03b2ede950c4040c5d840a6d6b1240df8)";
         "iOS app store: en dash US"
     )]
     fn string(platform: Platform, kinds: &[StringsFileKind], language_code: &str, result: &str) {

@@ -140,67 +140,67 @@ mod tests {
 
     #[test_case(
         Android, "Test commit.", "abcdef", Normal,
-        "- Test commit. [[2]](https://github.com/signalapp/Signal-Android/commit/abcdef)\n";
+        "- Test commit. [[2]](//github.com/signalapp/Signal-Android/commit/abcdef)\n";
         "Android: one line"
     )]
     #[test_case(
         Android, "Test commit.\nAnother line.", "abcdef", Normal,
-        "- Test commit. [[2]](https://github.com/signalapp/Signal-Android/commit/abcdef)\n\n    Another line.";
+        "- Test commit. [[2]](//github.com/signalapp/Signal-Android/commit/abcdef)\n\n    Another line.";
         "Android: two lines"
     )]
     #[test_case(
         Android, "Test commit.\nAnother line.\nAnd another line.", "abcdef", Normal,
-        "- Test commit. [[2]](https://github.com/signalapp/Signal-Android/commit/abcdef)\n\n    Another line.\n    And another line.";
+        "- Test commit. [[2]](//github.com/signalapp/Signal-Android/commit/abcdef)\n\n    Another line.\n    And another line.";
         "Android: three lines"
     )]
     #[test_case(
         Android, "Test commit.\nCo-Authored-By: user", "abcdef", Normal,
-        "- Test commit. [[2]](https://github.com/signalapp/Signal-Android/commit/abcdef)\n";
+        "- Test commit. [[2]](//github.com/signalapp/Signal-Android/commit/abcdef)\n";
         "Android: Co-Authored-By is removed"
     )]
     #[test_case(
         Android, "Test commit.\nCo-authored-by: user", "abcdef", Normal,
-        "- Test commit. [[2]](https://github.com/signalapp/Signal-Android/commit/abcdef)\n";
+        "- Test commit. [[2]](//github.com/signalapp/Signal-Android/commit/abcdef)\n";
         "Android: Co-Authored-By in any case is removed"
     )]
     #[test_case(
         Android, "Revert \"Test commit\".\nThis reverts commit fedcba.", "abcdef", Reverts(1),
-        "- <ins>Revert &quot;Test commit&quot;. [[2]](https://github.com/signalapp/Signal-Android/commit/abcdef)</ins> (reverts [1])\n";
+        "- <ins>Revert &quot;Test commit&quot;. [[2]](//github.com/signalapp/Signal-Android/commit/abcdef)</ins> (reverts [1])\n";
         "Android: reverts commit"
     )]
     #[test_case(
         Android, "Test commit.", "abcdef", IsRevertedBy(3),
-        "- <del>Test commit. [[2]](https://github.com/signalapp/Signal-Android/commit/abcdef)</del> (reverted by [3])\n";
+        "- <del>Test commit. [[2]](//github.com/signalapp/Signal-Android/commit/abcdef)</del> (reverted by [3])\n";
         "Android: reverted commit"
     )]
     #[test_case(
         Android, "Test commit.", "abcdef", Both { reverts: 1, is_reverted_by: 3 },
-        "- <del>Test commit. [[2]](https://github.com/signalapp/Signal-Android/commit/abcdef)</del> (reverts [1], reverted by [3])\n";
+        "- <del>Test commit. [[2]](//github.com/signalapp/Signal-Android/commit/abcdef)</del> (reverts [1], reverted by [3])\n";
         "Android: reverted commit that reverts"
     )]
     #[test_case(
         Desktop, "Test commit.", "abcdef", Normal,
-        "- Test commit. [[2]](https://github.com/signalapp/Signal-Desktop/commit/abcdef)\n";
+        "- Test commit. [[2]](//github.com/signalapp/Signal-Desktop/commit/abcdef)\n";
         "Desktop: one line"
     )]
     #[test_case(
         Desktop, "Test commit. Test @mention!\nTest@mention2.", "abcdef", Normal,
-        "- Test commit. Test `@mention`! [[2]](https://github.com/signalapp/Signal-Desktop/commit/abcdef)\n\n    Test`@mention2`.";
+        "- Test commit. Test `@mention`! [[2]](//github.com/signalapp/Signal-Desktop/commit/abcdef)\n\n    Test`@mention2`.";
         "Desktop: two lines with mention"
     )]
     #[test_case(
         Desktop, "Test commit. Test <HtmlTag/>!\n<AnotherTag>Test!</AnotherTag>.", "abcdef", Normal,
-        "- Test commit. Test &lt;HtmlTag/&gt;! [[2]](https://github.com/signalapp/Signal-Desktop/commit/abcdef)\n\n    &lt;AnotherTag&gt;Test!&lt;/AnotherTag&gt;.";
+        "- Test commit. Test &lt;HtmlTag/&gt;! [[2]](//github.com/signalapp/Signal-Desktop/commit/abcdef)\n\n    &lt;AnotherTag&gt;Test!&lt;/AnotherTag&gt;.";
         "Desktop: two lines with HTML"
     )]
     #[test_case(
         Ios, "Test commit. Continuation.", "abcdef", Normal,
-        "- Test commit. Continuation. [[2]](https://github.com/signalapp/Signal-iOS/commit/abcdef)\n";
+        "- Test commit. Continuation. [[2]](//github.com/signalapp/Signal-iOS/commit/abcdef)\n";
         "iOS: one line"
     )]
     #[test_case(
         Ios, "Test commit. Continuation.\nContinuation 2.\nContinuation 3.", "abcdef", Normal,
-        "- Test commit. Continuation. […] [[2]](https://github.com/signalapp/Signal-iOS/commit/abcdef)\n";
+        "- Test commit. Continuation. […] [[2]](//github.com/signalapp/Signal-iOS/commit/abcdef)\n";
         "iOS: three lines, details are not shown"
     )]
     fn commit_markdown(

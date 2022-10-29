@@ -184,13 +184,13 @@ mod tests {
     #[test_case(Android, "v1.2.3", "v1.2.4", vec![
         Commit::new(Android, "Test commit.", "abcdef")
     ], 1, None, "## New Version: 1.2.4
-(Not Yet) Available via [Firebase App Distribution](https://community.signalusers.org/t/17538)
+(Not Yet) Available via [Firebase App Distribution](/t/17538)
 [quote]
 1 new commit since 1.2.3:
-- Test commit. [[1]](https://github.com/signalapp/Signal-Android/commit/abcdef)
+- Test commit. [[1]](//github.com/signalapp/Signal-Android/commit/abcdef)
 
 ---
-Gathered from [signalapp/Signal-Android](https://github.com/signalapp/Signal-Android/compare/v1.2.3...v1.2.4)
+Gathered from [signalapp/Signal-Android](//github.com/signalapp/Signal-Android/compare/v1.2.3...v1.2.4)
 [/quote]
 [details=\"Localization changes\"]
 [quote]
@@ -206,15 +206,15 @@ Localization changes for the release are the same, as this is the first build of
         Commit::new(Android, "Test commit.", "abcdef"),
         Commit::new(Android, "Bump version to 1.2.4", "abc123")
     ], 2, None, "## New Version: 1.2.4
-(Not Yet) Available via [Firebase App Distribution](https://community.signalusers.org/t/17538)
+(Not Yet) Available via [Firebase App Distribution](/t/17538)
 [quote]
 2 new commits since 1.2.3:
-- Test commit. [[1]](https://github.com/signalapp/Signal-Android/commit/abcdef)
+- Test commit. [[1]](//github.com/signalapp/Signal-Android/commit/abcdef)
 
-- Bump version to 1.2.4 [[2]](https://github.com/signalapp/Signal-Android/commit/abc123)
+- Bump version to 1.2.4 [[2]](//github.com/signalapp/Signal-Android/commit/abc123)
 
 ---
-Gathered from [signalapp/Signal-Android](https://github.com/signalapp/Signal-Android/compare/v1.2.3...v1.2.4)
+Gathered from [signalapp/Signal-Android](//github.com/signalapp/Signal-Android/compare/v1.2.3...v1.2.4)
 [/quote]
 [details=\"Localization changes\"]
 [quote]
@@ -230,15 +230,15 @@ Localization changes for the release are the same, as this is the first build of
         Commit::new(Android, "Test commit.", "abcdef"),
         Commit::new(Android, "Bump version to 1.2.4", "abc123")
     ], 3, None, "## New Version: 1.2.4
-(Not Yet) Available via [Firebase App Distribution](https://community.signalusers.org/t/17538)
+(Not Yet) Available via [Firebase App Distribution](/t/17538)
 [quote]
 2 new commits since 1.2.3 (+ 1 commit omitted):
-- Test commit. [[1]](https://github.com/signalapp/Signal-Android/commit/abcdef)
+- Test commit. [[1]](//github.com/signalapp/Signal-Android/commit/abcdef)
 
-- Bump version to 1.2.4 [[2]](https://github.com/signalapp/Signal-Android/commit/abc123)
+- Bump version to 1.2.4 [[2]](//github.com/signalapp/Signal-Android/commit/abc123)
 
 ---
-Gathered from [signalapp/Signal-Android](https://github.com/signalapp/Signal-Android/compare/v1.2.3...v1.2.4)
+Gathered from [signalapp/Signal-Android](//github.com/signalapp/Signal-Android/compare/v1.2.3...v1.2.4)
 [/quote]
 [details=\"Localization changes\"]
 [quote]
@@ -254,15 +254,15 @@ Localization changes for the release are the same, as this is the first build of
         Commit::new(Android, "Test commit.", "abcdef"),
         Commit::new(Android, "Bump version to 1.2.4", "abc123")
     ], 4, None, "## New Version: 1.2.4
-(Not Yet) Available via [Firebase App Distribution](https://community.signalusers.org/t/17538)
+(Not Yet) Available via [Firebase App Distribution](/t/17538)
 [quote]
 2 new commits since 1.2.3 (+ 2 commits omitted):
-- Test commit. [[1]](https://github.com/signalapp/Signal-Android/commit/abcdef)
+- Test commit. [[1]](//github.com/signalapp/Signal-Android/commit/abcdef)
 
-- Bump version to 1.2.4 [[2]](https://github.com/signalapp/Signal-Android/commit/abc123)
+- Bump version to 1.2.4 [[2]](//github.com/signalapp/Signal-Android/commit/abc123)
 
 ---
-Gathered from [signalapp/Signal-Android](https://github.com/signalapp/Signal-Android/compare/v1.2.3...v1.2.4)
+Gathered from [signalapp/Signal-Android](//github.com/signalapp/Signal-Android/compare/v1.2.3...v1.2.4)
 [/quote]
 [details=\"Localization changes\"]
 [quote]
@@ -281,21 +281,21 @@ Localization changes for the release are the same, as this is the first build of
         Commit::new(Android, "Revert \"Test commit 0.\".\nThis reverts commit abc000.", "abc444"),
         Commit::new(Android, "Test commit 2.", "abc555"),
     ], 5, None, "## New Version: 1.2.4
-(Not Yet) Available via [Firebase App Distribution](https://community.signalusers.org/t/17538)
+(Not Yet) Available via [Firebase App Distribution](/t/17538)
 [quote]
 5 new commits since 1.2.3:
-- <del>Test commit. [[1]](https://github.com/signalapp/Signal-Android/commit/abc111)</del> (reverted by [2])
+- <del>Test commit. [[1]](//github.com/signalapp/Signal-Android/commit/abc111)</del> (reverted by [2])
 
-- <del>Revert &quot;Test commit.&quot;. [[2]](https://github.com/signalapp/Signal-Android/commit/abc222)</del> (reverts [1], reverted by [3])
+- <del>Revert &quot;Test commit.&quot;. [[2]](//github.com/signalapp/Signal-Android/commit/abc222)</del> (reverts [1], reverted by [3])
 
-- <ins>Revert &quot;Revert &quot;Test commit.&quot;.&quot;. [[3]](https://github.com/signalapp/Signal-Android/commit/abc333)</ins> (reverts [2])
+- <ins>Revert &quot;Revert &quot;Test commit.&quot;.&quot;. [[3]](//github.com/signalapp/Signal-Android/commit/abc333)</ins> (reverts [2])
 
-- Revert &quot;Test commit 0.&quot;. [[4]](https://github.com/signalapp/Signal-Android/commit/abc444)
+- Revert &quot;Test commit 0.&quot;. [[4]](//github.com/signalapp/Signal-Android/commit/abc444)
 
-- Test commit 2. [[5]](https://github.com/signalapp/Signal-Android/commit/abc555)
+- Test commit 2. [[5]](//github.com/signalapp/Signal-Android/commit/abc555)
 
 ---
-Gathered from [signalapp/Signal-Android](https://github.com/signalapp/Signal-Android/compare/v1.2.3...v1.2.4)
+Gathered from [signalapp/Signal-Android](//github.com/signalapp/Signal-Android/compare/v1.2.3...v1.2.4)
 [/quote]
 [details=\"Localization changes\"]
 [quote]
@@ -313,35 +313,35 @@ Localization changes for the release are the same, as this is the first build of
         .chain(vec![Commit::new(Android, "Bump version to 1.2.4", "abc123")].iter().cloned())
         .collect(),
     MAX_COMMITS_WITHOUT_DETAILS_TAG + 1, None, "## New Version: 1.2.4
-(Not Yet) Available via [Firebase App Distribution](https://community.signalusers.org/t/17538)
+(Not Yet) Available via [Firebase App Distribution](/t/17538)
 [quote]
 11 new commits since 1.2.3:
 [details=\"Show commits\"]
-- Test commit. [[1]](https://github.com/signalapp/Signal-Android/commit/abcdef)
+- Test commit. [[1]](//github.com/signalapp/Signal-Android/commit/abcdef)
 
-- Test commit. [[2]](https://github.com/signalapp/Signal-Android/commit/abcdef)
+- Test commit. [[2]](//github.com/signalapp/Signal-Android/commit/abcdef)
 
-- Test commit. [[3]](https://github.com/signalapp/Signal-Android/commit/abcdef)
+- Test commit. [[3]](//github.com/signalapp/Signal-Android/commit/abcdef)
 
-- Test commit. [[4]](https://github.com/signalapp/Signal-Android/commit/abcdef)
+- Test commit. [[4]](//github.com/signalapp/Signal-Android/commit/abcdef)
 
-- Test commit. [[5]](https://github.com/signalapp/Signal-Android/commit/abcdef)
+- Test commit. [[5]](//github.com/signalapp/Signal-Android/commit/abcdef)
 
-- Test commit. [[6]](https://github.com/signalapp/Signal-Android/commit/abcdef)
+- Test commit. [[6]](//github.com/signalapp/Signal-Android/commit/abcdef)
 
-- Test commit. [[7]](https://github.com/signalapp/Signal-Android/commit/abcdef)
+- Test commit. [[7]](//github.com/signalapp/Signal-Android/commit/abcdef)
 
-- Test commit. [[8]](https://github.com/signalapp/Signal-Android/commit/abcdef)
+- Test commit. [[8]](//github.com/signalapp/Signal-Android/commit/abcdef)
 
-- Test commit. [[9]](https://github.com/signalapp/Signal-Android/commit/abcdef)
+- Test commit. [[9]](//github.com/signalapp/Signal-Android/commit/abcdef)
 
-- Test commit. [[10]](https://github.com/signalapp/Signal-Android/commit/abcdef)
+- Test commit. [[10]](//github.com/signalapp/Signal-Android/commit/abcdef)
 
-- Bump version to 1.2.4 [[11]](https://github.com/signalapp/Signal-Android/commit/abc123)
+- Bump version to 1.2.4 [[11]](//github.com/signalapp/Signal-Android/commit/abc123)
 
 [/details]
 ---
-Gathered from [signalapp/Signal-Android](https://github.com/signalapp/Signal-Android/compare/v1.2.3...v1.2.4)
+Gathered from [signalapp/Signal-Android](//github.com/signalapp/Signal-Android/compare/v1.2.3...v1.2.4)
 [/quote]
 [details=\"Localization changes\"]
 [quote]
@@ -358,10 +358,10 @@ Localization changes for the release are the same, as this is the first build of
     ], 1, None, "## New Version: 1.2.3-beta.2
 [quote]
 1 new commit since 1.2.3-beta.1:
-- Test commit. [[1]](https://github.com/signalapp/Signal-Desktop/commit/abcdef)
+- Test commit. [[1]](//github.com/signalapp/Signal-Desktop/commit/abcdef)
 
 ---
-Gathered from [signalapp/Signal-Desktop](https://github.com/signalapp/Signal-Desktop/compare/v1.2.3-beta.1...v1.2.3-beta.2)
+Gathered from [signalapp/Signal-Desktop](//github.com/signalapp/Signal-Desktop/compare/v1.2.3-beta.1...v1.2.3-beta.2)
 [/quote]
 [details=\"Localization changes\"]
 [quote]
@@ -376,26 +376,26 @@ Localization changes for the release are the same, as this is the first build of
     #[test_case(Android, "v1.2.3", "v1.2.4", vec![
         Commit::new(Android, "Test commit.", "abcdef")
     ], 1, Some(Completeness::Complete), "## New Version: 1.2.4
-(Not Yet) Available via [Firebase App Distribution](https://community.signalusers.org/t/17538)
+(Not Yet) Available via [Firebase App Distribution](/t/17538)
 [quote]
 1 new commit since 1.2.3:
-- Test commit. [[1]](https://github.com/signalapp/Signal-Android/commit/abcdef)
+- Test commit. [[1]](//github.com/signalapp/Signal-Android/commit/abcdef)
 
 ---
-Gathered from [signalapp/Signal-Android](https://github.com/signalapp/Signal-Android/compare/v1.2.3...v1.2.4)
+Gathered from [signalapp/Signal-Android](//github.com/signalapp/Signal-Android/compare/v1.2.3...v1.2.4)
 [/quote]
 [details=\"Localization changes\"]
 [quote]
 Note: after clicking a link, it may take a few seconds before GitHub jumps to the file (try scrolling a bit if it doesn't).
 
 #### 2 languages changed since 1.2.3:
-- [English (`en`)](https://github.com/signalapp/Signal-Android/compare/v1.2.3..v1.2.4#diff-5e01f7d37a66e4ca03deefc205d8e7008661cdd0284a05aaba1858e6b7bf9103)
-- [English (`en-US`)](https://github.com/signalapp/Signal-Android/compare/v1.2.3..v1.2.4#diff-33a220e7f3b2e559ebec12cbf273da0c135bfade5a547e41e2bb5a66d75a01d2)
+- [English (`en`)](//github.com/signalapp/Signal-Android/compare/v1.2.3..v1.2.4#diff-5e01f7d37a66e4ca03deefc205d8e7008661cdd0284a05aaba1858e6b7bf9103)
+- [English (`en-US`)](//github.com/signalapp/Signal-Android/compare/v1.2.3..v1.2.4#diff-33a220e7f3b2e559ebec12cbf273da0c135bfade5a547e41e2bb5a66d75a01d2)
 
 #### 3 languages changed since 1.1.5:
-- [English (`en`)](https://github.com/signalapp/Signal-Android/compare/v1.1.5..v1.2.4#diff-5e01f7d37a66e4ca03deefc205d8e7008661cdd0284a05aaba1858e6b7bf9103)
-- [English (`en-CA`)](https://github.com/signalapp/Signal-Android/compare/v1.1.5..v1.2.4#diff-11b72e6873b6a42a2a1b92999e4225d7ff2921e323baa5e7b31fdc49471d9724)
-- [English (`en-US`)](https://github.com/signalapp/Signal-Android/compare/v1.1.5..v1.2.4#diff-33a220e7f3b2e559ebec12cbf273da0c135bfade5a547e41e2bb5a66d75a01d2)
+- [English (`en`)](//github.com/signalapp/Signal-Android/compare/v1.1.5..v1.2.4#diff-5e01f7d37a66e4ca03deefc205d8e7008661cdd0284a05aaba1858e6b7bf9103)
+- [English (`en-CA`)](//github.com/signalapp/Signal-Android/compare/v1.1.5..v1.2.4#diff-11b72e6873b6a42a2a1b92999e4225d7ff2921e323baa5e7b31fdc49471d9724)
+- [English (`en-US`)](//github.com/signalapp/Signal-Android/compare/v1.1.5..v1.2.4#diff-33a220e7f3b2e559ebec12cbf273da0c135bfade5a547e41e2bb5a66d75a01d2)
 [/quote]
 [/details]"; "Android: one commit with localization changes")]
     fn post_markdown(

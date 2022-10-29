@@ -49,10 +49,10 @@ impl Platform {
     pub fn github_comparison_url(&self, old: &str, new: &str, file_path: Option<&str>) -> String {
         match file_path {
             Some(file_path) => format!(
-                "https://github.com/signalapp/Signal-{self}/compare/{old}..{new}#diff-{}", // note: using `..` instead of `...`
+                "//github.com/signalapp/Signal-{self}/compare/{old}..{new}#diff-{}", // note: using `..` instead of `...`
                 utils::sha256_string(file_path)
             ),
-            None => format!("https://github.com/signalapp/Signal-{self}/compare/{old}...{new}"),
+            None => format!("//github.com/signalapp/Signal-{self}/compare/{old}...{new}"),
         }
     }
 
@@ -61,12 +61,12 @@ impl Platform {
     }
 
     pub fn github_commit_url(&self, sha: &str) -> String {
-        format!("https://github.com/signalapp/Signal-{self}/commit/{sha}")
+        format!("//github.com/signalapp/Signal-{self}/commit/{sha}")
     }
 
     pub const fn availability_notice(&self) -> &'static str {
         match self {
-            Android => "\n(Not Yet) Available via [Firebase App Distribution](https://community.signalusers.org/t/17538)",
+            Android => "\n(Not Yet) Available via [Firebase App Distribution](/t/17538)",
             Ios | Desktop => "",
         }
     }
