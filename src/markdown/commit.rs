@@ -33,6 +33,9 @@ impl<'a> Commit<'a> {
             || lowercase.contains("release note")
             || lowercase.contains("i18n")
             || lowercase.contains("l10n")
+            || lowercase.contains("update messages")
+            || lowercase.contains("updated messages")
+            || lowercase.contains("updates messages")
     }
 
     pub fn sha(&self) -> &str {
@@ -127,6 +130,9 @@ mod tests {
     #[test_case(true, "Update translations")]
     #[test_case(true, "Update release notes")]
     #[test_case(true, "Update release notes & App Store descriptions")]
+    #[test_case(true, "Update messages")]
+    #[test_case(true, "Updates messages")]
+    #[test_case(true, "Updated messages")]
     #[test_case(false, "Update GitHub Actions")]
     #[test_case(false, "Test commit.")]
     fn is_likely_localization_change(result: bool, message: &str) {
