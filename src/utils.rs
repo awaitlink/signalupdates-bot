@@ -71,7 +71,13 @@ mod tests {
         let mut set = HashSet::new();
 
         for minute in 0..=59 {
-            set.insert(platforms_order(all_platforms, NaiveTime::from_hms(0, minute, 0)).unwrap());
+            set.insert(
+                platforms_order(
+                    all_platforms,
+                    NaiveTime::from_hms_opt(0, minute, 0).unwrap(),
+                )
+                .unwrap(),
+            );
         }
 
         assert_eq!(set.len(), result_len);
