@@ -6,19 +6,6 @@ use worker::{wasm_bindgen::JsValue, Fetch, Headers, Method, Request, RequestInit
 
 pub const USER_AGENT: &str = "updates-bot";
 
-pub async fn get_json_from_url<T: DeserializeOwned>(url: &str) -> anyhow::Result<T> {
-    let url = Url::parse(url).context("could not parse URL")?;
-    let request = create_request(
-        url,
-        Method::Get,
-        ContentType::ApplicationJson,
-        ContentType::ApplicationJson,
-        None,
-        None,
-    )?;
-    json_from_configuration(Fetch::Request(request)).await
-}
-
 pub async fn get_json_from_request<T: DeserializeOwned>(request: Request) -> anyhow::Result<T> {
     json_from_configuration(Fetch::Request(request)).await
 }

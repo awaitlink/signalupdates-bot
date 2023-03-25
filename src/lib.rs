@@ -188,31 +188,15 @@ async fn check_platform(
         tracing::trace!("no post waiting for approval, continuing main logic");
     }
 
-    let all_tags: Vec<github::Tag> = network::get_json_from_url(&platform.github_api_tags_url())
-        .await
-        .context("could not fetch tags from GitHub")?;
-
-    tracing::trace!(?all_tags);
-
-    let mut tags: Vec<(github::Tag, Version)> = all_tags
-        .iter()
-        .filter_map(|tag| tag.to_version().ok().map(|version| (tag.clone(), version)))
-        .filter(|(_, version)| platform.should_post_version(version))
-        .collect();
-
-    tracing::trace!(?tags);
-
-    tags.sort_unstable_by(|(_, lhs), (_, rhs)| lhs.cmp(rhs));
-    tracing::trace!(?tags, "after sorting");
-
-    // TODO: assumes the last posted tag can be found on this GitHub API page
-    let tags_to_post: Vec<(github::Tag, Version)> = tags
-        .iter()
-        .skip_while(|(tag, _)| tag != &state_controller.platform_state(platform).last_posted_tag)
-        .cloned()
-        .collect();
-
-    tracing::debug!(?tags_to_post);
+    let tags_to_post = github::get_tags_to_post(
+        state_controller
+            .platform_state(platform)
+            .last_posted_tag
+            .clone(),
+        platform,
+    )
+    .await
+    .context("could not obtain tags to post")?;
 
     if let Some([(old_tag, old_version), (new_tag, new_version)]) =
         tags_to_post.array_windows().next()

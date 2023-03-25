@@ -1,4 +1,5 @@
 use anyhow::{bail, Context};
+use semver::Version;
 use serde::de::DeserializeOwned;
 use worker::{Fetch, Method, Url};
 
@@ -9,6 +10,44 @@ use crate::{
 
 mod types;
 pub use types::*;
+
+pub async fn get_tags_to_post(
+    last_posted_tag: Tag,
+    platform: Platform,
+) -> anyhow::Result<Vec<(Tag, Version)>> {
+    tracing::debug!(?last_posted_tag, %platform, "getting tags for platform from GitHub until last_posted_tag is found");
+
+    let enough_tags = get_paginated_response(
+        &platform.github_api_tags_url(),
+        vec![],
+        |target, source| target.append(source),
+        |result| result.contains(&last_posted_tag),
+    )
+    .await
+    .context("could not fetch tags from GitHub")?;
+
+    tracing::trace!(?enough_tags);
+
+    let mut tags: Vec<(Tag, Version)> = enough_tags
+        .iter()
+        .filter_map(|tag| tag.to_version().ok().map(|version| (tag.clone(), version)))
+        .filter(|(_, version)| platform.should_post_version(version))
+        .collect();
+
+    tracing::trace!(?tags);
+
+    tags.sort_unstable_by(|(_, lhs), (_, rhs)| lhs.cmp(rhs));
+    tracing::trace!(?tags, "after sorting");
+
+    let tags_to_post: Vec<(Tag, Version)> = tags
+        .iter()
+        .skip_while(|(tag, _)| *tag != last_posted_tag)
+        .cloned()
+        .collect();
+
+    tracing::debug!(?tags_to_post);
+    Ok(tags_to_post)
+}
 
 pub async fn get_comparison(
     platform: Platform,
@@ -36,6 +75,7 @@ pub async fn get_comparison(
                 target.files.as_mut().unwrap().append(part_files);
             }
         },
+        |_| false,
     )
     .await?;
 
@@ -72,6 +112,7 @@ pub async fn get_commit(platform: Platform, sha: &str) -> anyhow::Result<Commit>
                 target.files.as_mut().unwrap().append(part_files);
             }
         },
+        |_| false,
     )
     .await?;
 
@@ -79,14 +120,16 @@ pub async fn get_commit(platform: Platform, sha: &str) -> anyhow::Result<Commit>
 }
 
 /// `merge`: `Fn(&mut target, &mut source)`
-async fn get_paginated_response<T, F>(
+async fn get_paginated_response<T, F, P>(
     initial_url: &str,
     initial_result: T,
     merge: F,
+    stop_if_result: P,
 ) -> anyhow::Result<T>
 where
     T: DeserializeOwned,
     F: Fn(&mut T, &mut T),
+    P: Fn(&T) -> bool,
 {
     tracing::trace!("getting paginated response from GitHub");
 
@@ -119,6 +162,13 @@ where
             .context("could not get JSON for part")?;
 
         merge(&mut result, &mut part);
+
+        if stop_if_result(&result) {
+            tracing::debug!(
+                "provided stop condition matched, stopping getting paginating response"
+            );
+            break;
+        }
 
         let link_header_string = match response.headers().get("Link").unwrap() {
             Some(header_string) => header_string,
