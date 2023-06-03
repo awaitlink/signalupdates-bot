@@ -40,6 +40,7 @@ pub async fn json_from_response<T: DeserializeOwned>(response: &mut Response) ->
 pub enum ContentType {
     ApplicationJson,
     MultipartFormData(String),
+    TextPlain,
 }
 
 impl fmt::Display for ContentType {
@@ -51,6 +52,7 @@ impl fmt::Display for ContentType {
                 ContentType::ApplicationJson => String::from("application/json"),
                 ContentType::MultipartFormData(boundary) =>
                     format!(r#"multipart/form-data; boundary="{boundary}""#),
+                ContentType::TextPlain => String::from("text/plain"),
             }
         )
     }

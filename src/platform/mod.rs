@@ -5,6 +5,8 @@ use strum_macros::EnumIter;
 
 use crate::utils;
 
+pub mod android;
+
 pub const ANDROID_DEFAULT_STRINGS_FILENAME: &str = "app/src/main/res/values/strings.xml";
 
 #[derive(Debug, Clone, Copy, EnumIter, PartialEq, Eq, Hash)]
@@ -62,6 +64,10 @@ impl Platform {
 
     pub fn github_commit_url(&self, sha: &str) -> String {
         format!("//github.com/signalapp/Signal-{self}/commit/{sha}")
+    }
+
+    pub fn github_raw_url(&self, revision: &str) -> String {
+        format!("https://raw.githubusercontent.com/signalapp/Signal-{self}/{revision}")
     }
 
     pub const fn availability_notice(&self) -> &'static str {

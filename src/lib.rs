@@ -15,6 +15,7 @@ mod utils;
 
 use anyhow::Context;
 use chrono::prelude::*;
+use github::Tag;
 use semver::Version;
 use worker::{event, Env, ScheduleContext, ScheduledEvent};
 
@@ -25,7 +26,7 @@ use crate::{
         Completeness, LocalizationChange, LocalizationChangeCollection, LocalizationChanges,
     },
     logging::Logger,
-    platform::Platform,
+    platform::{android::BuildConfiguration, Platform},
     state::{PostInformation, StateController},
 };
 
@@ -367,10 +368,23 @@ async fn check_platform(
                     .unsorted_changes
                     .clone();
 
+                let new_build_configuration = if platform == Platform::Android {
+                    match get_android_build_configuration(new_tag).await {
+                        Ok(config) => Some(config),
+                        Err(e) => {
+                            tracing::error!("couldn't get new build configuration: {e:?}");
+                            None
+                        }
+                    }
+                } else {
+                    None
+                };
+
                 let post = markdown::Post::new(
                     platform,
                     old_tag,
                     new_tag,
+                    new_build_configuration,
                     commits,
                     unfiltered_commits_len,
                     LocalizationChangeCollection {
@@ -507,4 +521,12 @@ async fn post_archiving_message_if_necessary(
     }
 
     Ok(())
+}
+
+async fn get_android_build_configuration(new_tag: &Tag) -> anyhow::Result<BuildConfiguration> {
+    let file = github::get_file_content(Platform::Android, &new_tag.name, "app/build.gradle")
+        .await
+        .context("couldn't get app/build.gradle file content")?;
+
+    BuildConfiguration::from_app_build_gradle(&file).context("couldn't parse build configuration")
 }

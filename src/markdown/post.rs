@@ -8,7 +8,7 @@ use crate::{
     discourse::{self, PostingOutcome},
     github::Tag,
     localization::{LocalizationChangeCollection, LocalizationChangeRenderMode},
-    platform::Platform,
+    platform::{android::BuildConfiguration, Platform},
 };
 
 pub const MAX_COMMITS_WITHOUT_DETAILS_TAG: usize = 10;
@@ -18,6 +18,7 @@ pub struct Post<'a> {
     platform: Platform,
     old_tag: &'a Tag,
     new_tag: &'a Tag,
+    new_build_configuration: Option<BuildConfiguration>,
     commits: Vec<Commit<'a>>,
     unfiltered_commits_len: usize,
     localization_change_collection: LocalizationChangeCollection<'a>,
@@ -28,16 +29,22 @@ impl<'a> Post<'a> {
         platform: Platform,
         old_tag: &'a Tag,
         new_tag: &'a Tag,
+        new_build_configuration: Option<BuildConfiguration>,
         commits: Vec<Commit<'a>>,
         unfiltered_commits_len: usize,
         localization_change_collection: LocalizationChangeCollection<'a>,
     ) -> Self {
         assert!(commits.len() <= unfiltered_commits_len);
 
+        if platform == Platform::Android && new_build_configuration.is_none() {
+            tracing::warn!("no new_build_configuration despite platform = Android")
+        }
+
         Self {
             platform,
             old_tag,
             new_tag,
+            new_build_configuration,
             commits,
             unfiltered_commits_len,
             localization_change_collection,
@@ -92,6 +99,47 @@ impl<'a> Post<'a> {
         let old_version = &self.old_tag.exact_version_string();
         let new_version = &self.new_tag.exact_version_string();
 
+        let (metadata_part1, metadata_part2) = match &self.new_build_configuration {
+            Some(BuildConfiguration {
+                canonical_version_code,
+                postfix_size,
+                abi_postfixes,
+            }) => {
+                let mut vec: Vec<(&String, &u64)> = abi_postfixes.iter().collect();
+                vec.sort_by(|a, b| a.1.cmp(b.1));
+
+                let build_numbers = vec
+                    .iter()
+                    .map(|(abi, postfix)| {
+                        format!(
+                            "`{abi}`|`{}`",
+                            (canonical_version_code * postfix_size) + *postfix
+                        )
+                    })
+                    .collect::<Vec<String>>()
+                    .join("\n");
+
+                (
+                    format!(" ({canonical_version_code})"),
+                    format!(
+                        "
+[details=\"Specific build numbers\"]
+ABI | Build
+-|-
+{build_numbers}
+[/details]"
+                    ),
+                )
+            }
+            None => {
+                if self.platform == Platform::Android {
+                    (String::new(), String::from("\n*An error occurred when trying to find specific build numbers for this version.*"))
+                } else {
+                    (String::new(), String::new())
+                }
+            }
+        };
+
         let platform = self.platform;
         let availability_notice = platform.availability_notice();
         let comparison_url =
@@ -116,7 +164,7 @@ impl<'a> Post<'a> {
         };
 
         format!(
-            "## New Version: {new_version}{availability_notice}
+            "## New Version: {new_version}{metadata_part1}{availability_notice}{metadata_part2}
 [quote]
 {commits_count} new commit{commits_word_suffix} since {old_version}{filtered_notice}:
 {commits_prefix}{commits_markdown}{commits_postfix}
@@ -181,10 +229,11 @@ mod tests {
         platform::Platform::{self, *},
     };
 
-    #[test_case(Android, "v1.2.3", "v1.2.4", vec![
+    #[test_case(Android, "v1.2.3", "v1.2.4", None, vec![
         Commit::new(Android, "Test commit.", "abcdef")
     ], 1, None, "## New Version: 1.2.4
 (Not Yet) Available via [Firebase App Distribution](/t/17538)
+*An error occurred when trying to find specific build numbers for this version.*
 [quote]
 1 new commit since 1.2.3:
 - Test commit. [[1]](//github.com/signalapp/Signal-Android/commit/abcdef)
@@ -202,11 +251,54 @@ Note: after clicking a link, it may take a few seconds before GitHub jumps to th
 Localization changes for the release are the same, as this is the first build of the release.
 [/quote]
 [/details]"; "Android: one commit")]
-    #[test_case(Android, "v1.2.3", "v1.2.4", vec![
+    #[test_case(Android, "v1.2.3", "v1.2.4", Some(BuildConfiguration {
+    canonical_version_code: 1234,
+    postfix_size: 100,
+    abi_postfixes: {
+        let mut map = HashMap::new();
+        map.insert(String::from("universal"), 0);
+        map.insert(String::from("armeabi-v7a"), 1);
+        map.insert(String::from("arm64-v8a"), 2);
+        map.insert(String::from("x86"), 3);
+        map.insert(String::from("x86_64"), 4);
+        map
+    },
+}), vec![
+    Commit::new(Android, "Test commit.", "abcdef")
+], 1, None, "## New Version: 1.2.4 (1234)
+(Not Yet) Available via [Firebase App Distribution](/t/17538)
+[details=\"Specific build numbers\"]
+ABI | Build
+-|-
+`universal`|`123400`
+`armeabi-v7a`|`123401`
+`arm64-v8a`|`123402`
+`x86`|`123403`
+`x86_64`|`123404`
+[/details]
+[quote]
+1 new commit since 1.2.3:
+- Test commit. [[1]](//github.com/signalapp/Signal-Android/commit/abcdef)
+
+---
+Gathered from [signalapp/Signal-Android](//github.com/signalapp/Signal-Android/compare/v1.2.3...v1.2.4)
+[/quote]
+[details=\"Localization changes\"]
+[quote]
+Note: after clicking a link, it may take a few seconds before GitHub jumps to the file (try scrolling a bit if it doesn't).
+
+#### 0 languages changed since 1.2.3:
+*No localization changes found*
+
+Localization changes for the release are the same, as this is the first build of the release.
+[/quote]
+[/details]"; "Android: build configuration")]
+    #[test_case(Android, "v1.2.3", "v1.2.4", None, vec![
         Commit::new(Android, "Test commit.", "abcdef"),
         Commit::new(Android, "Bump version to 1.2.4", "abc123")
     ], 2, None, "## New Version: 1.2.4
 (Not Yet) Available via [Firebase App Distribution](/t/17538)
+*An error occurred when trying to find specific build numbers for this version.*
 [quote]
 2 new commits since 1.2.3:
 - Test commit. [[1]](//github.com/signalapp/Signal-Android/commit/abcdef)
@@ -226,11 +318,12 @@ Note: after clicking a link, it may take a few seconds before GitHub jumps to th
 Localization changes for the release are the same, as this is the first build of the release.
 [/quote]
 [/details]"; "Android: two commits")]
-    #[test_case(Android, "v1.2.3", "v1.2.4", vec![
+    #[test_case(Android, "v1.2.3", "v1.2.4", None, vec![
         Commit::new(Android, "Test commit.", "abcdef"),
         Commit::new(Android, "Bump version to 1.2.4", "abc123")
     ], 3, None, "## New Version: 1.2.4
 (Not Yet) Available via [Firebase App Distribution](/t/17538)
+*An error occurred when trying to find specific build numbers for this version.*
 [quote]
 2 new commits since 1.2.3 (+ 1 commit omitted):
 - Test commit. [[1]](//github.com/signalapp/Signal-Android/commit/abcdef)
@@ -250,11 +343,12 @@ Note: after clicking a link, it may take a few seconds before GitHub jumps to th
 Localization changes for the release are the same, as this is the first build of the release.
 [/quote]
 [/details]"; "Android: two commits, one omitted")]
-    #[test_case(Android, "v1.2.3", "v1.2.4", vec![
+    #[test_case(Android, "v1.2.3", "v1.2.4", None, vec![
         Commit::new(Android, "Test commit.", "abcdef"),
         Commit::new(Android, "Bump version to 1.2.4", "abc123")
     ], 4, None, "## New Version: 1.2.4
 (Not Yet) Available via [Firebase App Distribution](/t/17538)
+*An error occurred when trying to find specific build numbers for this version.*
 [quote]
 2 new commits since 1.2.3 (+ 2 commits omitted):
 - Test commit. [[1]](//github.com/signalapp/Signal-Android/commit/abcdef)
@@ -274,7 +368,7 @@ Note: after clicking a link, it may take a few seconds before GitHub jumps to th
 Localization changes for the release are the same, as this is the first build of the release.
 [/quote]
 [/details]"; "Android: two commits, two omitted")]
-    #[test_case(Android, "v1.2.3", "v1.2.4", vec![
+    #[test_case(Android, "v1.2.3", "v1.2.4", None, vec![
         Commit::new(Android, "Test commit.", "abc111"),
         Commit::new(Android, "Revert \"Test commit.\".\nThis reverts commit abc111.", "abc222"),
         Commit::new(Android, "Revert \"Revert \"Test commit.\".\".\nThis reverts commit abc222.", "abc333"),
@@ -282,6 +376,7 @@ Localization changes for the release are the same, as this is the first build of
         Commit::new(Android, "Test commit 2.", "abc555"),
     ], 5, None, "## New Version: 1.2.4
 (Not Yet) Available via [Firebase App Distribution](/t/17538)
+*An error occurred when trying to find specific build numbers for this version.*
 [quote]
 5 new commits since 1.2.3:
 - <del>Test commit. [[1]](//github.com/signalapp/Signal-Android/commit/abc111)</del> (reverted by [2])
@@ -307,13 +402,14 @@ Note: after clicking a link, it may take a few seconds before GitHub jumps to th
 Localization changes for the release are the same, as this is the first build of the release.
 [/quote]
 [/details]"; "Android: five commits with reverts")]
-    #[test_case(Android, "v1.2.3", "v1.2.4",
+    #[test_case(Android, "v1.2.3", "v1.2.4", None,
     std::iter::repeat(Commit::new(Android, "Test commit.", "abcdef"))
         .take(MAX_COMMITS_WITHOUT_DETAILS_TAG)
         .chain(vec![Commit::new(Android, "Bump version to 1.2.4", "abc123")].iter().cloned())
         .collect(),
     MAX_COMMITS_WITHOUT_DETAILS_TAG + 1, None, "## New Version: 1.2.4
 (Not Yet) Available via [Firebase App Distribution](/t/17538)
+*An error occurred when trying to find specific build numbers for this version.*
 [quote]
 11 new commits since 1.2.3:
 [details=\"Show commits\"]
@@ -353,7 +449,7 @@ Note: after clicking a link, it may take a few seconds before GitHub jumps to th
 Localization changes for the release are the same, as this is the first build of the release.
 [/quote]
 [/details]"; "Android: twenty one commits")]
-    #[test_case(Desktop, "v1.2.3-beta.1", "v1.2.3-beta.2", vec![
+    #[test_case(Desktop, "v1.2.3-beta.1", "v1.2.3-beta.2", None, vec![
         Commit::new(Desktop, "Test commit.", "abcdef")
     ], 1, None, "## New Version: 1.2.3-beta.2
 [quote]
@@ -373,10 +469,11 @@ Note: after clicking a link, it may take a few seconds before GitHub jumps to th
 Localization changes for the release are the same, as this is the first build of the release.
 [/quote]
 [/details]"; "Desktop: one commit")]
-    #[test_case(Android, "v1.2.3", "v1.2.4", vec![
+    #[test_case(Android, "v1.2.3", "v1.2.4", None, vec![
         Commit::new(Android, "Test commit.", "abcdef")
     ], 1, Some(Completeness::Complete), "## New Version: 1.2.4
 (Not Yet) Available via [Firebase App Distribution](/t/17538)
+*An error occurred when trying to find specific build numbers for this version.*
 [quote]
 1 new commit since 1.2.3:
 - Test commit. [[1]](//github.com/signalapp/Signal-Android/commit/abcdef)
@@ -402,6 +499,7 @@ Note: after clicking a link, it may take a few seconds before GitHub jumps to th
         platform: Platform,
         old_tag: &str,
         new_tag: &str,
+        new_build_configuration: Option<BuildConfiguration>,
         commits: Vec<Commit>,
         unfiltered_commits_len: usize,
         localization_change_collection: Option<Completeness>,
@@ -451,6 +549,7 @@ Note: after clicking a link, it may take a few seconds before GitHub jumps to th
             platform,
             &old_tag,
             &new_tag,
+            new_build_configuration,
             commits,
             unfiltered_commits_len,
             localization_change_collection,

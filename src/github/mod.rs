@@ -1,4 +1,4 @@
-use anyhow::{bail, Context};
+use anyhow::{anyhow, bail, Context};
 use semver::Version;
 use serde::de::DeserializeOwned;
 use worker::{Fetch, Method, Url};
@@ -196,4 +196,34 @@ where
     }
 
     Ok(result)
+}
+
+pub async fn get_file_content(
+    platform: Platform,
+    revision: &str,
+    path: &str,
+) -> anyhow::Result<String> {
+    tracing::trace!(?platform, revision, path, "getting file content");
+
+    let url = platform.github_raw_url(revision) + "/" + path;
+    let url = Url::parse(&url).context("could not parse URL")?;
+
+    let request = network::create_request(
+        url,
+        Method::Get,
+        ContentType::ApplicationJson,
+        ContentType::TextPlain,
+        None,
+        None,
+    )?;
+
+    let mut response = network::fetch(Fetch::Request(request))
+        .await
+        .context("could not fetch from GitHub")?;
+
+    response
+        .text()
+        .await
+        .map_err(|e| anyhow!(e.to_string()))
+        .context("couldn't get text")
 }
