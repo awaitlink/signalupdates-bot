@@ -78,9 +78,9 @@ dependencies = [
 
 [[package]]
 name = "base16ct"
-version = "0.1.1"
+version = "0.2.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "349a06037c7bf932dd7e7d1f653678b2038b9ad46a74102f1fc7bd7872678cce"
+checksum = "4c7f02d4ea65f2c1853089ffd8d2787bdbc63de2f0d29dedbcf8ccdfa0ccd4cf"
 
 [[package]]
 name = "base64"
@@ -1257,21 +1257,21 @@ dependencies = [
 
 [[package]]
 name = "strum"
-version = "0.24.1"
+version = "0.25.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "063e6045c0e62079840579a7e47a355ae92f60eb74daaf156fb1e84ba164e63f"
+checksum = "290d54ea6f91c969195bdbcd7442c8c2a2ba87da8bf60a7ee86a235d4bc1e125"
 
 [[package]]
 name = "strum_macros"
-version = "0.24.3"
+version = "0.25.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "1e385be0d24f186b4ce2f9982191e7101bb737312ad61c1f2f984f34bcf85d59"
+checksum = "6069ca09d878a33f883cc06aaa9718ede171841d3832450354410b718b097232"
 dependencies = [
  "heck",
  "proc-macro2",
  "quote",
  "rustversion",
- "syn 1.0.109",
+ "syn 2.0.26",
 ]
 
 [[package]]
@@ -1312,24 +1312,37 @@ dependencies = [
 
 [[package]]
 name = "test-case"
-version = "2.2.2"
+version = "3.1.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "21d6cf5a7dffb3f9dceec8e6b8ca528d9bd71d36c9f074defb548ce161f598c0"
+checksum = "2a1d6e7bde536b0412f20765b76e921028059adfd1b90d8974d33fd3c91b25df"
 dependencies = [
  "test-case-macros",
 ]
 
 [[package]]
-name = "test-case-macros"
-version = "2.2.2"
+name = "test-case-core"
+version = "3.1.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "e45b7bf6e19353ddd832745c8fcf77a17a93171df7151187f26623f2b75b5b26"
+checksum = "d10394d5d1e27794f772b6fc854c7e91a2dc26e2cbf807ad523370c2a59c0cee"
 dependencies = [
  "cfg-if",
  "proc-macro-error",
  "proc-macro2",
  "quote",
  "syn 1.0.109",
+]
+
+[[package]]
+name = "test-case-macros"
+version = "3.1.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "eeb9a44b1c6a54c1ba58b152797739dba2a83ca74e18168a68c980eb142f9404"
+dependencies = [
+ "proc-macro-error",
+ "proc-macro2",
+ "quote",
+ "syn 1.0.109",
+ "test-case-core",
 ]
 
 [[package]]
