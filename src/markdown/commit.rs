@@ -69,7 +69,9 @@ impl<'a> Commit<'a> {
             .split('\n')
             .filter(|line| {
                 let lowercase = line.to_lowercase();
-                !lowercase.contains("co-authored-by") && !lowercase.contains("this reverts commit")
+                !lowercase.contains("co-authored-by")
+                    && !lowercase.contains("signed-off-by")
+                    && !lowercase.contains("this reverts commit")
             })
             .map(|line| MENTION_REGEX.replace_all(line, "`@$1`"))
             .map(|line| utils::escape_html(&line))
@@ -198,6 +200,11 @@ mod tests {
         Desktop, "Test commit. Test <HtmlTag/>!\n<AnotherTag>Test!</AnotherTag>.", "abcdef", Normal,
         "- Test commit. Test &lt;HtmlTag/&gt;! [[2]](//github.com/signalapp/Signal-Desktop/commit/abcdef)\n\n    &lt;AnotherTag&gt;Test!&lt;/AnotherTag&gt;.";
         "Desktop: two lines with HTML"
+    )]
+    #[test_case(
+        Desktop, "Test commit.\nSigned-off-by: dependabot[bot] <support@github.com>\nCo-authored-by: dependabot[bot] <49699333+dependabot[bot]@users.noreply.github.com>\nCo-authored-by: Another Author <other@example.com>", "abcdef", Normal,
+        "- Test commit. [[2]](//github.com/signalapp/Signal-Desktop/commit/abcdef)\n";
+        "Desktop: signed-off-by and co-authored-by"
     )]
     #[test_case(
         Ios, "Test commit. Continuation.", "abcdef", Normal,
