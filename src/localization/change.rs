@@ -162,7 +162,7 @@ impl LocalizationChange {
                 self.language,
                 self.kinds
                     .iter()
-                    .zip(self.file_paths(platform).into_iter())
+                    .zip(self.file_paths(platform))
                     .map(|(kind, path)| {
                         format!(
                             "[{}]({})",
