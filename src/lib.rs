@@ -37,6 +37,7 @@ enum PlatformCheckOutcome {
     LatestVersionIsAlreadyPosted,
     NewTopicNotFound,
     PostedCommits,
+    NotifyForDebugging(String),
 }
 
 use PlatformCheckOutcome::*;
@@ -62,13 +63,13 @@ async fn main(env: &Env) {
 
     let logger = Logger::new();
 
-    match check_all_platforms(env).await {
+    match check_all_platforms(env, &logger).await {
         Err(error) => {
             tracing::error!(?error);
 
             let log = logger.collect_log();
 
-            match discord::send_error_message(env, &log)
+            match discord::send_error_message(env, &error, &log)
                 .await
                 .context("could not send error message to Discord")
             {
@@ -80,7 +81,7 @@ async fn main(env: &Env) {
     }
 }
 
-async fn check_all_platforms(env: &Env) -> anyhow::Result<()> {
+async fn check_all_platforms(env: &Env, logger: &Logger) -> anyhow::Result<()> {
     let now = DateTime::from(utils::now());
     tracing::debug!("now = {} (seconds: {})", now.to_rfc3339(), now.timestamp());
 
@@ -101,6 +102,19 @@ async fn check_all_platforms(env: &Env) -> anyhow::Result<()> {
             PostedCommits => {
                 tracing::warn!(%platform, "outcome: already posted for platform and currently doing only one \"commits\" post per invocation, done");
                 break;
+            }
+            NotifyForDebugging(content) => {
+                tracing::info!("outcome: notify for debugging");
+
+                let log = logger.collect_log();
+
+                match discord::send_misc_message(env, &content, &log)
+                    .await
+                    .context("could not send misc message to Discord")
+                {
+                    Ok(_) => tracing::info!("sent misc message to Discord"),
+                    Err(error) => tracing::warn!(?error),
+                };
             }
         }
 
@@ -161,9 +175,9 @@ async fn check_platform(
 
                     // Submit log for potentially helping debug incorrect `reply_to_post_number` on post after an approved post
                     // TODO: remove once issue is resolved
-                    return Err(anyhow::anyhow!(
-                        "[for debugging] confirmed approval of post"
-                    ));
+                    return Ok(NotifyForDebugging(String::from(
+                        "confirmed approval of post",
+                    )));
                 } else {
                     return Ok(WaitingForApproval);
                 }
@@ -180,9 +194,9 @@ async fn check_platform(
 
                 // Submit log for potentially helping debug incorrect `reply_to_post_number` on post after an approved post
                 // TODO: remove once issue is resolved
-                return Err(anyhow::anyhow!(
-                    "[for debugging] confirmed approval of post"
-                ));
+                return Ok(NotifyForDebugging(String::from(
+                    "confirmed approval of post",
+                )));
             }
         }
     } else {
