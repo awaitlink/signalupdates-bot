@@ -1,6 +1,6 @@
 use std::fmt;
 
-use anyhow::{anyhow, Context};
+use anyhow::{anyhow, bail, Context};
 use serde::de::DeserializeOwned;
 use worker::{wasm_bindgen::JsValue, Fetch, Headers, Method, Request, RequestInit, Response, Url};
 
@@ -22,11 +22,25 @@ pub async fn fetch(configuration: Fetch) -> anyhow::Result<Response> {
         .map_err(|e| anyhow!(e.to_string()))
         .context("could not fetch");
 
-    if let Ok(response) = &result {
+    if let Ok(mut response) = result {
         tracing::debug!(response.status_code = response.status_code());
-    }
 
-    result
+        if response.status_code() < 200 || response.status_code() > 299 {
+            let text = response
+                .text()
+                .await
+                .map_err(|e| anyhow!(e.to_string()))
+                .context("could not get text of response")?;
+
+            tracing::debug!(response.text = text);
+
+            bail!("status code not 2xx: {}", response.status_code());
+        } else {
+            Ok(response)
+        }
+    } else {
+        result
+    }
 }
 
 pub async fn json_from_response<T: DeserializeOwned>(response: &mut Response) -> anyhow::Result<T> {
