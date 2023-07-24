@@ -115,6 +115,8 @@ async fn check_all_platforms(env: &Env, logger: &Logger) -> anyhow::Result<()> {
                     Ok(_) => tracing::info!("sent misc message to Discord"),
                     Err(error) => tracing::warn!(?error),
                 };
+
+                break;
             }
         }
 
