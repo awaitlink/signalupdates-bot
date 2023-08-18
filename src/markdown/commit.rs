@@ -67,8 +67,14 @@ impl<'a> Commit<'a> {
         let message_lines: Vec<_> = self
             .full_message
             .split('\n')
+            .map(|line| line.trim())
             .filter(|line| {
+                if line.is_empty() {
+                    return false;
+                }
+
                 let lowercase = line.to_lowercase();
+
                 !lowercase.contains("co-authored-by")
                     && !lowercase.contains("signed-off-by")
                     && !lowercase.contains("this reverts commit")
@@ -215,6 +221,11 @@ mod tests {
         Ios, "Test commit. Continuation.\nContinuation 2.\nContinuation 3.", "abcdef", Normal,
         "- Test commit. Continuation. […] [[2]](//github.com/signalapp/Signal-iOS/commit/abcdef)\n";
         "iOS: three lines, details are not shown"
+    )]
+    #[test_case(
+        Ios, "  Test commit. Continuation.    \n   Co-authored-by: user      \n   ", "abcdef", Normal,
+        "- Test commit. Continuation. [[2]](//github.com/signalapp/Signal-iOS/commit/abcdef)\n";
+        "iOS: co-authored-by and empty lines are removed, thus details indicator not shown; lines are trimmed"
     )]
     fn commit_markdown(
         platform: Platform,
