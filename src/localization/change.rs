@@ -94,9 +94,7 @@ impl LocalizationChange {
         let mut map: UnsortedChanges = HashMap::new();
 
         for (language, kind) in pairs {
-            map.entry(language)
-                .or_insert_with(HashSet::new)
-                .insert(kind);
+            map.entry(language).or_default().insert(kind);
         }
 
         map
@@ -123,7 +121,7 @@ impl LocalizationChange {
         for unsorted_changes in items {
             for (language, kinds) in unsorted_changes {
                 map.entry(language.clone())
-                    .or_insert_with(HashSet::new)
+                    .or_default()
                     .extend(kinds.iter().copied());
             }
         }
