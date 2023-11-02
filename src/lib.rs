@@ -37,7 +37,6 @@ enum PlatformCheckOutcome {
     LatestVersionIsAlreadyPosted,
     NewTopicNotFound,
     PostedCommits,
-    NotifyForDebugging(String),
 }
 
 use PlatformCheckOutcome::*;
@@ -91,7 +90,7 @@ async fn check_all_platforms(env: &Env, logger: &Logger) -> anyhow::Result<()> {
     let mut state_controller = state::StateController::from_kv(env).await?;
 
     for platform in platforms {
-        let outcome = check_platform(&mut state_controller, env, platform).await?;
+        let outcome = check_platform(&mut state_controller, env, platform, logger).await?;
 
         match outcome {
             WaitingForApproval => tracing::warn!("outcome: waiting for post approval"),
@@ -103,21 +102,6 @@ async fn check_all_platforms(env: &Env, logger: &Logger) -> anyhow::Result<()> {
                 tracing::warn!(%platform, "outcome: already posted for platform and currently doing only one \"commits\" post per invocation, done");
                 break;
             }
-            NotifyForDebugging(content) => {
-                tracing::info!("outcome: notify for debugging");
-
-                let log = logger.collect_log();
-
-                match discord::send_misc_message(env, &content, &log)
-                    .await
-                    .context("could not send misc message to Discord")
-                {
-                    Ok(_) => tracing::info!("sent misc message to Discord"),
-                    Err(error) => tracing::warn!(?error),
-                };
-
-                break;
-            }
         }
 
         logging::separator();
@@ -126,10 +110,26 @@ async fn check_all_platforms(env: &Env, logger: &Logger) -> anyhow::Result<()> {
     Ok(())
 }
 
+// Use to send the log via Discord (e.g. in case of non-fatal errors).
+async fn notify_for_debugging(env: &Env, logger: &Logger, reason: &str) -> anyhow::Result<()> {
+    tracing::info!("called notify_for_debugging");
+
+    let log = logger.collect_log();
+
+    discord::send_misc_message(env, reason, &log)
+        .await
+        .context("could not send misc message to Discord")?;
+
+    tracing::info!("sent misc message to Discord");
+
+    Ok(())
+}
+
 async fn check_platform(
     state_controller: &mut StateController,
     env: &Env,
     platform: Platform,
+    logger: &Logger,
 ) -> anyhow::Result<PlatformCheckOutcome> {
     tracing::debug!(%platform, "checking platform");
 
@@ -177,9 +177,7 @@ async fn check_platform(
 
                     // Submit log for potentially helping debug incorrect `reply_to_post_number` on post after an approved post
                     // TODO: remove once issue is resolved
-                    return Ok(NotifyForDebugging(String::from(
-                        "confirmed approval of post",
-                    )));
+                    notify_for_debugging(env, logger, "confirmed approval of post").await?;
                 } else {
                     return Ok(WaitingForApproval);
                 }
@@ -196,9 +194,7 @@ async fn check_platform(
 
                 // Submit log for potentially helping debug incorrect `reply_to_post_number` on post after an approved post
                 // TODO: remove once issue is resolved
-                return Ok(NotifyForDebugging(String::from(
-                    "confirmed approval of post",
-                )));
+                notify_for_debugging(env, logger, "confirmed approval of post").await?;
             }
         }
     } else {
@@ -389,6 +385,12 @@ async fn check_platform(
                         Ok(config) => Some(config),
                         Err(e) => {
                             tracing::error!("couldn't get new build configuration: {e:?}");
+                            notify_for_debugging(
+                                env,
+                                logger,
+                                "couldn't get new build configuration",
+                            )
+                            .await?;
                             None
                         }
                     }
