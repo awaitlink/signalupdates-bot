@@ -220,6 +220,8 @@ Gathered from [signalapp/Signal-{platform}]({comparison_url})
 
 #[cfg(test)]
 mod tests {
+    #![allow(clippy::too_many_arguments)]
+
     use pretty_assertions::assert_str_eq;
     use test_case::test_case;
 
@@ -405,7 +407,7 @@ Localization changes for the release are the same, as this is the first build of
     #[test_case(Android, "v1.2.3", "v1.2.4", None,
     std::iter::repeat(Commit::new(Android, "Test commit.", "abcdef"))
         .take(MAX_COMMITS_WITHOUT_DETAILS_TAG)
-        .chain(vec![Commit::new(Android, "Bump version to 1.2.4", "abc123")].iter().cloned())
+        .chain([Commit::new(Android, "Bump version to 1.2.4", "abc123")].iter().cloned())
         .collect(),
     MAX_COMMITS_WITHOUT_DETAILS_TAG + 1, None, "## New Version: 1.2.4
 (Not Yet) Available via [Firebase App Distribution](/t/17538)

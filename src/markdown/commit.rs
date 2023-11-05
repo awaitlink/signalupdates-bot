@@ -83,7 +83,7 @@ impl<'a> Commit<'a> {
             .map(|line| utils::escape_html(&line))
             .collect();
 
-        let message = match message_lines.get(0) {
+        let message = match message_lines.first() {
             Some(line) => line,
             None => "*Empty commit message*",
         };
