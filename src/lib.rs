@@ -542,9 +542,10 @@ async fn post_archiving_message_if_necessary(
 }
 
 async fn get_android_build_configuration(new_tag: &Tag) -> anyhow::Result<BuildConfiguration> {
-    let file = github::get_file_content(Platform::Android, &new_tag.name, "app/build.gradle")
+    let file = github::get_file_content(Platform::Android, &new_tag.name, "app/build.gradle.kts")
         .await
-        .context("couldn't get app/build.gradle file content")?;
+        .context("couldn't get app/build.gradle.kts file content")?;
 
-    BuildConfiguration::from_app_build_gradle(&file).context("couldn't parse build configuration")
+    BuildConfiguration::from_app_build_gradle_kts(&file)
+        .context("couldn't parse build configuration")
 }
