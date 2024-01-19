@@ -423,6 +423,32 @@ async fn check_platform(
 
                 tracing::info!(?outcome, "posted to Discourse");
 
+                let result = discord::notify(
+                    env,
+                    &post,
+                    Some(new_topic_id),
+                    if let PostingOutcome::Posted { number, .. } = outcome {
+                        Some(number)
+                    } else {
+                        None
+                    },
+                )
+                .await
+                .context("could not notify discord about new version");
+
+                // For now it's not a fatal error
+                if let Err(e) = result {
+                    tracing::error!(?e);
+
+                    // Here, ignore if an error occurs
+                    let _ = notify_for_debugging(
+                        env,
+                        logger,
+                        "could not notify discord about new version",
+                    )
+                    .await;
+                }
+
                 let final_state = {
                     let mut new_state = state::PlatformState {
                         last_posted_tag_previous_release: last_posted_tag_previous_release.clone(),

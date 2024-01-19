@@ -35,7 +35,11 @@ fn filter_platforms(string: &str) -> Vec<Platform> {
 
 pub trait EnvExt {
     fn discourse_api_key(&self) -> anyhow::Result<String>;
-    fn discord_webhook_url(&self) -> anyhow::Result<String>;
+
+    fn discord_webhook_url_errors(&self) -> anyhow::Result<String>;
+    fn discord_webhook_url_updates(&self) -> anyhow::Result<String>;
+    fn discord_errors_mention_role(&self) -> anyhow::Result<String>;
+    fn discord_updates_mention_role(&self) -> anyhow::Result<String>;
 
     fn user_id(&self) -> anyhow::Result<u64>;
     fn topic_id_override(&self) -> anyhow::Result<Option<u64>>;
@@ -48,8 +52,20 @@ impl EnvExt for Env {
         get_env_string(self, Secret, "DISCOURSE_API_KEY")
     }
 
-    fn discord_webhook_url(&self) -> anyhow::Result<String> {
+    fn discord_webhook_url_errors(&self) -> anyhow::Result<String> {
         get_env_string(self, Secret, "DISCORD_WEBHOOK_URL")
+    }
+
+    fn discord_webhook_url_updates(&self) -> anyhow::Result<String> {
+        get_env_string(self, Secret, "DISCORD_WEBHOOK_URL_UPDATES")
+    }
+
+    fn discord_errors_mention_role(&self) -> anyhow::Result<String> {
+        get_env_string(self, Var, "DISCORD_ERRORS_MENTION_ROLE")
+    }
+
+    fn discord_updates_mention_role(&self) -> anyhow::Result<String> {
+        get_env_string(self, Var, "DISCORD_UPDATES_MENTION_ROLE")
     }
 
     fn user_id(&self) -> anyhow::Result<u64> {

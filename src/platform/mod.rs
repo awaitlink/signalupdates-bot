@@ -48,14 +48,22 @@ impl Platform {
         format!("https://api.github.com/repos/signalapp/Signal-{self}/compare/{old}...{new}")
     }
 
-    pub fn github_comparison_url(&self, old: &str, new: &str, file_path: Option<&str>) -> String {
-        match file_path {
+    pub fn github_comparison_url(
+        &self,
+        old: &str,
+        new: &str,
+        file_path: Option<&str>,
+        specify_protocol: bool,
+    ) -> String {
+        let base = match file_path {
             Some(file_path) => format!(
                 "//github.com/signalapp/Signal-{self}/compare/{old}..{new}#diff-{}", // note: using `..` instead of `...`
                 utils::sha256_string(file_path)
             ),
             None => format!("//github.com/signalapp/Signal-{self}/compare/{old}...{new}"),
-        }
+        };
+
+        format!("{}{base}", if specify_protocol { "https:" } else { "" })
     }
 
     pub fn github_api_commit_url(&self, sha: &str) -> String {
@@ -86,6 +94,18 @@ impl Platform {
 
     pub fn state_key(&self) -> String {
         self.to_string().to_lowercase()
+    }
+
+    pub const fn color(&self) -> u64 {
+        match self {
+            Android => 0x1d8663,
+            Ios => 0x336ba3,
+            Desktop => 0xaa377a,
+        }
+    }
+
+    pub fn repo_slug(&self) -> String {
+        format!("signalapp/Signal-{self}")
     }
 }
 

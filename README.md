@@ -1,6 +1,6 @@
 # `signalupdates-bot`
 
-An [unofficial](#disclaimer) bot that creates posts about new tags in Signal repositories in the corresponding [beta feedback](https://community.signalusers.org/c/25) topics.
+An [unofficial](#disclaimer) bot that creates posts about new tags in Signal repositories in the corresponding [beta feedback](https://community.signalusers.org/c/25) topics and sends update notices to [Discord](https://community.signalusers.org/t/58381).
 
 ## Running an instance
 
@@ -29,6 +29,8 @@ To run this bot, do the following:
     `TOPIC_ID_OVERRIDE` | If you'd like all of the bot's posts to go to a single topic, set this variable to the topic's ID, for example `12345`. Otherwise, leave it empty.
     `DRY_RUN` | If you'd like the bot to skip actually posting to Discourse, but otherwise do everything else, including modifying the state (with dummy post numbers), set this to `true`. Otherwise, leave it empty.
     `ENABLED_PLATFORMS` | Specify first letters of platform names you want to enable. For example, specify `aid` to enable all supported platforms (Android, iOS, and Desktop).
+    `DISCORD_UPDATES_MENTION_ROLE` | Role ID to mention about new versions in Discord.
+    `DISCORD_ERRORS_MENTION_ROLE` | Role ID to mention about errors in Discord.
 
 1. In the KV namespace(s) you created, manually create a key-value pair with the key `state` and a value like:
 
@@ -83,6 +85,8 @@ To send the bot's log to a Discord channel in case an error occurs, set up a web
     ```shell
     wrangler secret put DISCORD_WEBHOOK_URL -e production
     ```
+
+For sending update notices themselves to Discord as well, set `DISCORD_WEBHOOK_URL_UPDATES` in the same way.
 
 ### Deployment
 

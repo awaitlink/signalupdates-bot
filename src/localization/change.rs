@@ -152,7 +152,8 @@ impl LocalizationChange {
                 platform.github_comparison_url(
                     &old_tag.name,
                     &new_tag.name,
-                    Some(&self.file_paths(platform)[0])
+                    Some(&self.file_paths(platform)[0]),
+                    false,
                 )
             ),
             _ => format!(
@@ -168,7 +169,8 @@ impl LocalizationChange {
                             platform.github_comparison_url(
                                 &old_tag.name,
                                 &new_tag.name,
-                                Some(&path)
+                                Some(&path),
+                                false,
                             )
                         )
                     })

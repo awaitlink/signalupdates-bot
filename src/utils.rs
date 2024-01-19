@@ -8,6 +8,14 @@ use worker::Delay;
 
 use crate::platform::Platform;
 
+pub fn discourse_topic_url(topic_id: u64) -> String {
+    format!("https://community.signalusers.org/t/{topic_id}")
+}
+
+pub fn discourse_post_url(topic_id: u64, post_number: u64) -> String {
+    format!("{}/{post_number}", discourse_topic_url(topic_id))
+}
+
 pub fn sha256_string(input: &str) -> String {
     let result = Sha256::digest(input.as_bytes());
     base16ct::lower::encode_string(&result)

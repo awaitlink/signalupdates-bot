@@ -143,7 +143,7 @@ ABI | Build
         let platform = self.platform;
         let availability_notice = platform.availability_notice();
         let comparison_url =
-            platform.github_comparison_url(&self.old_tag.name, &self.new_tag.name, None);
+            platform.github_comparison_url(&self.old_tag.name, &self.new_tag.name, None, false);
 
         let commits_count = self.commits.len();
         let (commits_prefix, commits_postfix) = match commits_count {
@@ -163,13 +163,15 @@ ABI | Build
             String::new()
         };
 
+        let provider = self.github_comparison_name();
+
         format!(
             "## New Version: {new_version}{metadata_part1}{availability_notice}{metadata_part2}
 [quote]
 {commits_count} new commit{commits_word_suffix} since {old_version}{filtered_notice}:
 {commits_prefix}{commits_markdown}{commits_postfix}
 ---
-Gathered from [signalapp/Signal-{platform}]({comparison_url})
+Gathered from [{provider}]({comparison_url})
 [/quote]
 {localization_changes_string}"
         )
@@ -215,6 +217,43 @@ Gathered from [signalapp/Signal-{platform}]({comparison_url})
             }
             None => bail!("could not make a post that fits within the allowed character count"),
         }
+    }
+
+    pub fn platform(&self) -> Platform {
+        self.platform
+    }
+
+    pub fn old_tag(&self) -> &Tag {
+        self.old_tag
+    }
+
+    pub fn new_tag(&self) -> &Tag {
+        self.new_tag
+    }
+
+    pub fn new_build_configuration(&self) -> Option<&BuildConfiguration> {
+        self.new_build_configuration.as_ref()
+    }
+
+    pub fn commits(&self) -> &[Commit<'_>] {
+        self.commits.as_ref()
+    }
+
+    pub fn unfiltered_commits_len(&self) -> usize {
+        self.unfiltered_commits_len
+    }
+
+    pub fn localization_change_collection(&self) -> &LocalizationChangeCollection<'a> {
+        &self.localization_change_collection
+    }
+
+    pub fn github_comparison_name(&self) -> String {
+        format!(
+            "{} {}...{}",
+            self.platform.repo_slug(),
+            &self.old_tag.name,
+            &self.new_tag.name
+        )
     }
 }
 

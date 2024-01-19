@@ -54,8 +54,12 @@ impl<'a> LocalizationChanges<'a> {
         format!(
             "You can view the full comparison to {} so far [here]({}).",
             self.old_tag.exact_version_string(),
-            self.platform
-                .github_comparison_url(&self.old_tag.name, &self.new_tag.name, None)
+            self.platform.github_comparison_url(
+                &self.old_tag.name,
+                &self.new_tag.name,
+                None,
+                false
+            )
         )
     }
 
