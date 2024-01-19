@@ -280,7 +280,7 @@ mod tests {
 - Test commit. [[1]](//github.com/signalapp/Signal-Android/commit/abcdef)
 
 ---
-Gathered from [signalapp/Signal-Android](//github.com/signalapp/Signal-Android/compare/v1.2.3...v1.2.4)
+Gathered from [signalapp/Signal-Android v1.2.3...v1.2.4](//github.com/signalapp/Signal-Android/compare/v1.2.3...v1.2.4)
 [/quote]
 [details=\"Localization changes\"]
 [quote]
@@ -322,7 +322,7 @@ ABI | Build
 - Test commit. [[1]](//github.com/signalapp/Signal-Android/commit/abcdef)
 
 ---
-Gathered from [signalapp/Signal-Android](//github.com/signalapp/Signal-Android/compare/v1.2.3...v1.2.4)
+Gathered from [signalapp/Signal-Android v1.2.3...v1.2.4](//github.com/signalapp/Signal-Android/compare/v1.2.3...v1.2.4)
 [/quote]
 [details=\"Localization changes\"]
 [quote]
@@ -347,7 +347,7 @@ Localization changes for the release are the same, as this is the first build of
 - Bump version to 1.2.4 [[2]](//github.com/signalapp/Signal-Android/commit/abc123)
 
 ---
-Gathered from [signalapp/Signal-Android](//github.com/signalapp/Signal-Android/compare/v1.2.3...v1.2.4)
+Gathered from [signalapp/Signal-Android v1.2.3...v1.2.4](//github.com/signalapp/Signal-Android/compare/v1.2.3...v1.2.4)
 [/quote]
 [details=\"Localization changes\"]
 [quote]
@@ -372,7 +372,7 @@ Localization changes for the release are the same, as this is the first build of
 - Bump version to 1.2.4 [[2]](//github.com/signalapp/Signal-Android/commit/abc123)
 
 ---
-Gathered from [signalapp/Signal-Android](//github.com/signalapp/Signal-Android/compare/v1.2.3...v1.2.4)
+Gathered from [signalapp/Signal-Android v1.2.3...v1.2.4](//github.com/signalapp/Signal-Android/compare/v1.2.3...v1.2.4)
 [/quote]
 [details=\"Localization changes\"]
 [quote]
@@ -397,7 +397,7 @@ Localization changes for the release are the same, as this is the first build of
 - Bump version to 1.2.4 [[2]](//github.com/signalapp/Signal-Android/commit/abc123)
 
 ---
-Gathered from [signalapp/Signal-Android](//github.com/signalapp/Signal-Android/compare/v1.2.3...v1.2.4)
+Gathered from [signalapp/Signal-Android v1.2.3...v1.2.4](//github.com/signalapp/Signal-Android/compare/v1.2.3...v1.2.4)
 [/quote]
 [details=\"Localization changes\"]
 [quote]
@@ -431,7 +431,7 @@ Localization changes for the release are the same, as this is the first build of
 - Test commit 2. [[5]](//github.com/signalapp/Signal-Android/commit/abc555)
 
 ---
-Gathered from [signalapp/Signal-Android](//github.com/signalapp/Signal-Android/compare/v1.2.3...v1.2.4)
+Gathered from [signalapp/Signal-Android v1.2.3...v1.2.4](//github.com/signalapp/Signal-Android/compare/v1.2.3...v1.2.4)
 [/quote]
 [details=\"Localization changes\"]
 [quote]
@@ -478,7 +478,7 @@ Localization changes for the release are the same, as this is the first build of
 
 [/details]
 ---
-Gathered from [signalapp/Signal-Android](//github.com/signalapp/Signal-Android/compare/v1.2.3...v1.2.4)
+Gathered from [signalapp/Signal-Android v1.2.3...v1.2.4](//github.com/signalapp/Signal-Android/compare/v1.2.3...v1.2.4)
 [/quote]
 [details=\"Localization changes\"]
 [quote]
@@ -498,7 +498,7 @@ Localization changes for the release are the same, as this is the first build of
 - Test commit. [[1]](//github.com/signalapp/Signal-Desktop/commit/abcdef)
 
 ---
-Gathered from [signalapp/Signal-Desktop](//github.com/signalapp/Signal-Desktop/compare/v1.2.3-beta.1...v1.2.3-beta.2)
+Gathered from [signalapp/Signal-Desktop v1.2.3-beta.1...v1.2.3-beta.2](//github.com/signalapp/Signal-Desktop/compare/v1.2.3-beta.1...v1.2.3-beta.2)
 [/quote]
 [details=\"Localization changes\"]
 [quote]
@@ -520,7 +520,7 @@ Localization changes for the release are the same, as this is the first build of
 - Test commit. [[1]](//github.com/signalapp/Signal-Android/commit/abcdef)
 
 ---
-Gathered from [signalapp/Signal-Android](//github.com/signalapp/Signal-Android/compare/v1.2.3...v1.2.4)
+Gathered from [signalapp/Signal-Android v1.2.3...v1.2.4](//github.com/signalapp/Signal-Android/compare/v1.2.3...v1.2.4)
 [/quote]
 [details=\"Localization changes\"]
 [quote]
