@@ -21,7 +21,10 @@ use StringsFileKind::*;
 
 impl StringsFileKind {
     pub const fn applicable_for_platform(&self, platform: Platform) -> bool {
-        matches!((platform, self), (Android | Desktop, Main) | (Ios, _))
+        matches!(
+            (platform, self),
+            (Android | Desktop | Server, Main) | (Ios, _)
+        )
     }
 
     pub fn applicable_iter(platform: Platform) -> impl Iterator<Item = Self> {
@@ -34,6 +37,7 @@ impl StringsFileKind {
             (Ios, Main | InfoPlist | PluralAware) => "Signal/translations",
             (Ios, AppStoreDescription | AppStoreReleaseNotes) => "fastlane/metadata",
             (Desktop, _) => "_locales",
+            (Server, _) => "service/src/main/resources/org/signal",
         }
     }
 
@@ -51,6 +55,7 @@ impl StringsFileKind {
             (Ios, AppStoreDescription | AppStoreReleaseNotes) | (Desktop, _) => {
                 language_placeholder_value.to_owned()
             }
+            (Server, _) => String::from("badges"),
         }
     }
 
@@ -63,6 +68,7 @@ impl StringsFileKind {
             (Ios, AppStoreDescription) => "description.txt",
             (Ios, AppStoreReleaseNotes) => "release_notes.txt",
             (Desktop, _) => "messages.json",
+            (Server, _) => "Badges.properties",
         }
     }
 

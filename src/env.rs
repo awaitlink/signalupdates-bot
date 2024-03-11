@@ -39,10 +39,14 @@ pub trait EnvExt {
     fn discord_webhook_url_errors(&self) -> anyhow::Result<String>;
     fn discord_webhook_url_updates(&self) -> anyhow::Result<String>;
     fn discord_errors_mention_role(&self) -> anyhow::Result<String>;
+    fn discord_server_updates_mention_role(&self) -> anyhow::Result<String>;
     fn discord_updates_mention_role(&self) -> anyhow::Result<String>;
 
     fn user_id(&self) -> anyhow::Result<u64>;
+
+    fn topic_id_for_server_updates(&self) -> anyhow::Result<u64>;
     fn topic_id_override(&self) -> anyhow::Result<Option<u64>>;
+
     fn is_dry_run(&self) -> anyhow::Result<bool>;
     fn enabled_platforms(&self) -> anyhow::Result<Vec<Platform>>;
 }
@@ -64,6 +68,10 @@ impl EnvExt for Env {
         get_env_string(self, Var, "DISCORD_ERRORS_MENTION_ROLE")
     }
 
+    fn discord_server_updates_mention_role(&self) -> anyhow::Result<String> {
+        get_env_string(self, Var, "DISCORD_SERVER_UPDATES_MENTION_ROLE")
+    }
+
     fn discord_updates_mention_role(&self) -> anyhow::Result<String> {
         get_env_string(self, Var, "DISCORD_UPDATES_MENTION_ROLE")
     }
@@ -73,6 +81,14 @@ impl EnvExt for Env {
             string
                 .parse()
                 .context("couldn't parse user ID from the environment")
+        })?
+    }
+
+    fn topic_id_for_server_updates(&self) -> anyhow::Result<u64> {
+        get_env_string(self, Var, "TOPIC_ID_FOR_SERVER_UPDATES").map(|string| {
+            string
+                .parse()
+                .context("couldn't parse topic ID for server updates from the environment")
         })?
     }
 

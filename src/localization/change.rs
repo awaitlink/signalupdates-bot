@@ -12,7 +12,7 @@ use crate::{
     },
     platform::{
         Platform::{self, *},
-        ANDROID_DEFAULT_STRINGS_FILENAME,
+        ANDROID_DEFAULT_STRINGS_FILENAME, SERVER_STRINGS_FILENAME,
     },
 };
 
@@ -80,13 +80,30 @@ impl LocalizationChange {
                         AppStoreReleaseNotes => &*IOS_APP_STORE_RELEASE_NOTES_REGEX,
                     },
                     Desktop => &*DESKTOP_REGEX,
+                    Server => {
+                        if filename == &SERVER_STRINGS_FILENAME {
+                            return Some((Language::default(), Main));
+                        } else {
+                            return None;
+                        }
+                    }
                 };
 
                 regex
                     .captures_iter(filename)
                     .filter_map(|captures| captures.get(1))
                     .map(|capture| capture.as_str())
-                    .find_map(|language_code| Language::try_from(language_code).ok())
+                    .find_map(|language_code| {
+                        Language::try_from(language_code)
+                            .or_else(|e| {
+                                if platform == Server {
+                                    Ok(Default::default())
+                                } else {
+                                    Err(e)
+                                }
+                            })
+                            .ok()
+                    })
                     .map(|language| (language, kind))
             })
         });
@@ -146,7 +163,7 @@ impl LocalizationChange {
 
     pub fn string(&self, platform: Platform, old_tag: &Tag, new_tag: &Tag) -> String {
         match (platform, &self.kinds[..]) {
-            (Android | Desktop, &[Main]) => format!(
+            (Android | Desktop | Server, &[Main]) => format!(
                 "[{}]({})",
                 self.language,
                 platform.github_comparison_url(
@@ -199,6 +216,7 @@ impl LocalizationChange {
                     (Ios, AppStoreDescription | AppStoreReleaseNotes) | (Desktop, _) => {
                         kind.path(platform, &self.language.full_code())
                     }
+                    (Server, _) => kind.path(platform, "<irrelevant>"),
                 }
             })
             .collect()
@@ -330,6 +348,7 @@ mod tests {
     #[test_case(Ios, "Signal/translations/en.lproj/PluralAware.stringsdict", "English (`en`)"; "iOS plural aware: en")]
     #[test_case(Ios, "fastlane/metadata/en-US/description.txt", "English (`en-US`)"; "iOS app store description: en dash US")]
     #[test_case(Ios, "fastlane/metadata/en-US/release_notes.txt", "English (`en-US`)"; "iOS app store release notes: en dash US")]
+    #[test_case(Server, "service/src/main/resources/org/signal/badges/Badges.properties", "English (`en`)"; "server")]
     fn localization_change_language(platform: Platform, file_path: &str, result: &str) {
         assert_eq!(
             LocalizationChange::sorted_changes(
@@ -393,6 +412,7 @@ mod tests {
     #[test_case(Ios, "Signal/translations/.tx/signal-ios.localizablestrings-30/de_translation"; "iOS: dot tx 1")]
     #[test_case(Ios, "Signal/translations/.tx/signal-ios.localizablestrings-30/zh_CN_translation"; "iOS: dot tx 2")]
     #[test_case(Ios, "Signal/translations/.tx/signal-ios.localizablestrings-30/zh_TW.Big5_translation"; "iOS: dot tx 3")]
+    #[test_case(Server, "service/src/main/resources/org/signal/badges/Badges_en.properties"; "server")]
     fn localization_change_none(platform: Platform, file_path: &str) {
         assert_eq!(
             LocalizationChange::sorted_changes(
@@ -412,6 +432,7 @@ mod tests {
     #[test_case(Ios, PluralAware, "en", "Signal/translations/en.lproj/PluralAware.stringsdict"; "iOS plural aware: en")]
     #[test_case(Ios, AppStoreDescription, "en-US", "fastlane/metadata/en-US/description.txt"; "iOS app store description: en dash US")]
     #[test_case(Ios, AppStoreReleaseNotes, "en-US", "fastlane/metadata/en-US/release_notes.txt"; "iOS app store release notes: en dash US")]
+    #[test_case(Server, Main, "en", "service/src/main/resources/org/signal/badges/Badges.properties"; "server")]
     fn path_for_language_code_and_reverse(
         platform: Platform,
         kind: StringsFileKind,
@@ -457,6 +478,11 @@ mod tests {
         Ios, &[AppStoreDescription, AppStoreReleaseNotes], "en-US",
         "English (`en-US`): [desc](//github.com/signalapp/Signal-iOS/compare/v1.2.3..v1.2.4#diff-e7a69d0898d3b2197f77bec55cad6b6d2ff8c973b873bfbe0fe568a1c710ef9c) • [release](//github.com/signalapp/Signal-iOS/compare/v1.2.3..v1.2.4#diff-4256fffd9552dba2d12fe36150428ff03b2ede950c4040c5d840a6d6b1240df8)";
         "iOS app store: en dash US"
+    )]
+    #[test_case(
+        Server, &[Main], "en",
+        "[English (`en`)](//github.com/signalapp/Signal-Server/compare/v1.2.3..v1.2.4#diff-f96483c859f7e570d7c984e5f7e9f4ec82510560e47023c6793c1efbf0b798db)";
+        "server"
     )]
     fn string(platform: Platform, kinds: &[StringsFileKind], language_code: &str, result: &str) {
         let localization_change = LocalizationChange {

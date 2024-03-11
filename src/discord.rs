@@ -7,6 +7,7 @@ use crate::{
     markdown::Post,
     network::{self, ContentType},
     utils,
+    Platform::*,
 };
 
 pub async fn notify(
@@ -19,9 +20,14 @@ pub async fn notify(
         .discord_webhook_url_updates()
         .context("could not get Discord updates webhook URL")?;
 
-    let role = env
-        .discord_updates_mention_role()
-        .context("could not get Discord updates mention role")?;
+    let role = match post.platform() {
+        Android | Ios | Desktop => env
+            .discord_updates_mention_role()
+            .context("could not get Discord updates mention role")?,
+        Server => env
+            .discord_server_updates_mention_role()
+            .context("could not get Discord server updates mention role")?,
+    };
 
     let url = Url::parse(&url).context("could not parse url")?;
 

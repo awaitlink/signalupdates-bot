@@ -7,13 +7,31 @@ command = "cargo install worker-build && worker-build --release"
 
 [env.production]
 name = "signalupdates-bot"
-vars = { USER_ID = "...", TOPIC_ID_OVERRIDE = "", DRY_RUN = "", ENABLED_PLATFORMS = "aid", DISCORD_UPDATES_MENTION_ROLE = "...", DISCORD_ERRORS_MENTION_ROLE = "..." }
 kv_namespaces = [{ binding = "STATE", id = "..." }]
 workers_dev = false
 triggers = { crons = ["*/10 * * * *"] }
 
+[env.production.vars]
+USER_ID = "..."
+TOPIC_ID_FOR_SERVER_UPDATES = "..."
+TOPIC_ID_OVERRIDE = ""
+DRY_RUN = ""
+ENABLED_PLATFORMS = "said"
+DISCORD_UPDATES_MENTION_ROLE = "..."
+DISCORD_SERVER_UPDATES_MENTION_ROLE = "..."
+DISCORD_ERRORS_MENTION_ROLE = "..."
+
 [env.staging]
 name = "signalupdates-bot-staging"
-vars = { USER_ID = "...", TOPIC_ID_OVERRIDE = "...", DRY_RUN = "...", ENABLED_PLATFORMS = "aid", DISCORD_UPDATES_MENTION_ROLE = "...", DISCORD_ERRORS_MENTION_ROLE = "..." }
 kv_namespaces = [{ binding = "STATE", id = "..." }]
 workers_dev = true
+
+[env.staging.vars]
+USER_ID = "..."
+TOPIC_ID_FOR_SERVER_UPDATES = "..."
+TOPIC_ID_OVERRIDE = ""
+DRY_RUN = ""
+ENABLED_PLATFORMS = "said"
+DISCORD_UPDATES_MENTION_ROLE = "..."
+DISCORD_SERVER_UPDATES_MENTION_ROLE = "..."
+DISCORD_ERRORS_MENTION_ROLE = "..."

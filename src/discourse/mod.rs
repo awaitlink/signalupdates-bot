@@ -16,11 +16,12 @@ pub async fn get_topic_id(
     api_key: &str,
     platform: Platform,
     version: &Version,
+    topic_id_for_server_updates: u64,
 ) -> anyhow::Result<Option<u64>> {
     tracing::debug!(?version, "getting topic id for version");
 
-    let url =
-        Url::parse(&platform.discourse_topic_slug_url(version)).context("could not parse URL")?;
+    let url = Url::parse(&platform.discourse_topic_slug_url(version, topic_id_for_server_updates))
+        .context("could not parse URL")?;
 
     let request = network::create_request(
         url,
@@ -59,9 +60,14 @@ pub async fn get_topic_id_or_override(
             tracing::warn!(id, "using topic id override");
             Ok(Some(id))
         }
-        None => get_topic_id(api_key, platform, version)
-            .await
-            .context("could not find topic_id"),
+        None => get_topic_id(
+            api_key,
+            platform,
+            version,
+            env.topic_id_for_server_updates()?,
+        )
+        .await
+        .context("could not find topic_id"),
     }
 }
 

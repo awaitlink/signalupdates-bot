@@ -8,12 +8,15 @@ use crate::utils;
 pub mod android;
 
 pub const ANDROID_DEFAULT_STRINGS_FILENAME: &str = "app/src/main/res/values/strings.xml";
+pub const SERVER_STRINGS_FILENAME: &str =
+    "service/src/main/resources/org/signal/badges/Badges.properties";
 
 #[derive(Debug, Clone, Copy, EnumIter, PartialEq, Eq, Hash)]
 pub enum Platform {
     Android,
     Ios,
     Desktop,
+    Server,
 }
 
 use Platform::*;
@@ -27,12 +30,13 @@ impl Platform {
         match self {
             Android => version.build.is_empty(), // versions like 1.2.3.4 are filtered out (the "4" is parsed into `build` by lenient_semver)
             Ios | Desktop => version.pre.contains("beta"),
+            Server => true,
         }
     }
 
     pub fn should_show_commit(&self, full_message: &str) -> bool {
         match self {
-            Android | Desktop => true,
+            Android | Desktop | Server => true,
             Ios => {
                 !full_message.contains("Bump build to")
                     && !full_message.contains("Feature flags for")
@@ -41,7 +45,7 @@ impl Platform {
     }
 
     pub fn should_show_commit_details(&self) -> bool {
-        matches!(self, Android | Desktop)
+        matches!(self, Android | Desktop | Server)
     }
 
     pub fn github_api_comparison_url(&self, old: &str, new: &str) -> String {
@@ -81,15 +85,23 @@ impl Platform {
     pub const fn availability_notice(&self) -> &'static str {
         match self {
             Android => "\n(Not Yet) Available via [Firebase App Distribution](/t/17538)",
-            Ios | Desktop => "",
+            Ios | Desktop | Server => "",
         }
     }
 
-    pub fn discourse_topic_slug_url(&self, version: &Version) -> String {
-        format!(
-            "https://community.signalusers.org/t/beta-feedback-for-the-upcoming-{}-{}-{}-release.json",
-            self.to_string().to_ascii_lowercase(), version.major, version.minor
-        )
+    pub fn discourse_topic_slug_url(
+        &self,
+        version: &Version,
+        topic_id_for_server_updates: u64,
+    ) -> String {
+        match self {
+            Android | Ios | Desktop => format!(
+                "https://community.signalusers.org/t/beta-feedback-for-the-upcoming-{}-{}-{}-release.json",
+                self.to_string().to_ascii_lowercase(), version.major, version.minor
+            ),
+            Server => format!(
+                "https://community.signalusers.org/t/{}.json", topic_id_for_server_updates)
+        }
     }
 
     pub fn state_key(&self) -> String {
@@ -101,7 +113,12 @@ impl Platform {
             Android => 0x1d8663,
             Ios => 0x336ba3,
             Desktop => 0xaa377a,
+            Server => 0xffd624,
         }
+    }
+
+    pub fn archiving_message_necessary(&self) -> bool {
+        !matches!(self, Server)
     }
 
     pub fn repo_slug(&self) -> String {
@@ -118,6 +135,7 @@ impl fmt::Display for Platform {
                 Android => "Android",
                 Ios => "iOS",
                 Desktop => "Desktop",
+                Server => "Server",
             }
         )
     }

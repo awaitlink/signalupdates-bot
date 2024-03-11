@@ -500,6 +500,14 @@ async fn post_archiving_message_if_necessary(
     old_version: &Version,
     new_topic_id: u64,
 ) -> anyhow::Result<()> {
+    if !platform.archiving_message_necessary() {
+        tracing::trace!(
+            ?platform,
+            "archiving message not necessary for this platform",
+        );
+        return Ok(());
+    }
+
     if same_release
         || state_controller
             .platform_state(platform)

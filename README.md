@@ -26,10 +26,12 @@ To run this bot, do the following:
     `account_id` | Available in the [Cloudflare dashboard](https://dash.cloudflare.com/?to=/:account/workers/overview).
     `id` for `STATE` binding in `kv_namespaces` | Create a KV namespace [in the dashboard](https://dash.cloudflare.com/?to=/:account/workers/kv/namespaces), then copy its ID. If you'll be deploying the `staging` variant as well, it is recommended to create a separate KV namespace for it.
     `USER_ID` | The bot's numeric user ID like `12345`. You can find it by inspecting the HTML or JSON of any of the bot's posts. It is used to find the bot's posts when confirming post approval (which is done without the API key in case the post is returned even if it's not approved, so the `yours` property of posts can't be used).
+    `TOPIC_ID_FOR_SERVER_UPDATES` | The topic's ID for posting server updates, for example `12345`. `TOPIC_ID_OVERRIDE` overrides this one as well.
     `TOPIC_ID_OVERRIDE` | If you'd like all of the bot's posts to go to a single topic, set this variable to the topic's ID, for example `12345`. Otherwise, leave it empty.
     `DRY_RUN` | If you'd like the bot to skip actually posting to Discourse, but otherwise do everything else, including modifying the state (with dummy post numbers), set this to `true`. Otherwise, leave it empty.
-    `ENABLED_PLATFORMS` | Specify first letters of platform names you want to enable. For example, specify `aid` to enable all supported platforms (Android, iOS, and Desktop).
+    `ENABLED_PLATFORMS` | Specify first letters of platform names you want to enable. For example, specify `said` to enable all supported platforms (Server, Android, iOS, and Desktop).
     `DISCORD_UPDATES_MENTION_ROLE` | Role ID to mention about new versions in Discord.
+    `DISCORD_SERVER_UPDATES_MENTION_ROLE` | Role ID to mention about new Server versions in Discord.
     `DISCORD_ERRORS_MENTION_ROLE` | Role ID to mention about errors in Discord.
 
 1. In the KV namespace(s) you created, manually create a key-value pair with the key `state` and a value like:
@@ -47,6 +49,10 @@ To run this bot, do the following:
         "desktop": {
             "last_posted_tag_previous_release": { "name": "v1.2.0-beta.1" },
             "last_posted_tag": { "name": "v1.3.0-beta.1" }
+        },
+        "server": {
+            "last_posted_tag_previous_release": { "name": "v11.99.0" },
+            "last_posted_tag": { "name": "v12.6.0" }
         }
     }
     ```
@@ -86,7 +92,7 @@ To send the bot's log to a Discord channel in case an error occurs, set up a web
     wrangler secret put DISCORD_WEBHOOK_URL -e production
     ```
 
-For sending update notices themselves to Discord as well, set `DISCORD_WEBHOOK_URL_UPDATES` in the same way.
+For sending update notices themselves to Discord as well, set `DISCORD_WEBHOOK_URL_UPDATES` and `DISCORD_WEBHOOK_URL_SERVER_UPDATES` in the same way.
 
 ### Deployment
 
