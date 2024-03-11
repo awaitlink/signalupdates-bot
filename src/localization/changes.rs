@@ -115,8 +115,8 @@ mod tests {
 
     use super::*;
     use crate::{
-        localization::{LocalizationChange, LocalizationChanges, StringsFileKind::*},
-        platform::Platform::{self, *},
+        localization::{LocalizationChange, StringsFileKind::*},
+        platform::Platform::*,
     };
 
     #[test_case(Android, "v1.2.3", "v1.2.4", Complete, vec![

@@ -106,7 +106,7 @@ pub async fn get_commit(platform: Platform, sha: &str) -> anyhow::Result<Commit>
             files: Some(Vec::new()),
         },
         |target, source| {
-            target.sha = source.sha.clone();
+            target.sha.clone_from(&source.sha);
             target.commit = source.commit.clone();
             if let Some(part_files) = &mut source.files {
                 target.files.as_mut().unwrap().append(part_files);
@@ -185,7 +185,7 @@ where
 
         match link_header.get("next") {
             Some(link) => {
-                url_string = link.raw_uri.clone();
+                url_string.clone_from(&link.raw_uri);
                 page += 1;
             }
             None => {

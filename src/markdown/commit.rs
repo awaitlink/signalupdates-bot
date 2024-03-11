@@ -129,7 +129,7 @@ mod tests {
     use test_case::test_case;
 
     use super::*;
-    use crate::platform::Platform::{self, *};
+    use crate::platform::Platform::*;
 
     #[test_case(true, "Updated language translations.")]
     #[test_case(true, "Update strings")]

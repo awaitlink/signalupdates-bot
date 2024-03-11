@@ -258,16 +258,15 @@ Gathered from [{provider}]({comparison_url})
 }
 
 #[cfg(test)]
+#[allow(clippy::too_many_arguments)]
 mod tests {
-    #![allow(clippy::too_many_arguments)]
-
     use pretty_assertions::assert_str_eq;
     use test_case::test_case;
 
     use super::*;
     use crate::{
         localization::{Completeness, LocalizationChange, LocalizationChanges, StringsFileKind::*},
-        platform::Platform::{self, *},
+        platform::Platform::*,
     };
 
     #[test_case(Android, "v1.2.3", "v1.2.4", None, vec![
