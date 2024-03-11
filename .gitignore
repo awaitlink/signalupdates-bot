@@ -3,5 +3,6 @@
 wasm-pack.log
 build/
 .DS_Store
+.wrangler
 
 wrangler.toml
