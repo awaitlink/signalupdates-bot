@@ -21,8 +21,8 @@ serde_derive = "1.0"
 serde_json = "1.0"
 semver = "1.0"
 lenient_semver = "0.4"
-strum = "0.25"
-strum_macros = "0.25"
+strum = "0.26"
+strum_macros = "0.26"
 locale-codes = "0.3"
 regex = "1.5"
 lazy_static = "1.4"
@@ -38,7 +38,7 @@ tracing = { version = "0.1", features = [
 ] }
 tracing-subscriber = "0.3"
 tracing-wasm = "0.2"
-factorial = "0.3"
+factorial = "0.4"
 
 [dev-dependencies]
 test-case = "3.1"
