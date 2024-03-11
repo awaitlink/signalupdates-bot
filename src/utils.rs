@@ -42,7 +42,8 @@ pub fn platforms_order(
 
     let permutation_count = all_platforms.len().factorial();
 
-    let index: usize = (time.minute() / 10)
+    let index: usize = time
+        .minute()
         .try_into()
         .context("should be able to convert to usize")?;
 
@@ -50,7 +51,7 @@ pub fn platforms_order(
 
     let platforms = permute::permutations_of(all_platforms)
         .nth(index)
-        .context("there should be >= 6 permutations")?
+        .context("there must be enough permutations")?
         .copied()
         .collect::<Vec<_>>();
 
@@ -71,7 +72,9 @@ mod tests {
 
     use super::*;
 
-    #[test_case(&Platform::iter().collect::<Vec<Platform>>(), 6; "all")]
+    #[test_case(&Platform::iter().collect::<Vec<Platform>>(), 24; "all")]
+    #[test_case(&[Platform::Android, Platform::Ios, Platform::Desktop, Platform::Server], 24; "four")]
+    #[test_case(&[Platform::Android, Platform::Ios, Platform::Desktop], 6; "three")]
     #[test_case(&[Platform::Android, Platform::Ios], 2; "two")]
     #[test_case(&[Platform::Android], 1; "one")]
     #[test_case(&[], 1; "none")]
