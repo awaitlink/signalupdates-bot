@@ -113,7 +113,7 @@ impl Platform {
             Android => 0x1d8663,
             Ios => 0x336ba3,
             Desktop => 0xaa377a,
-            Server => 0xffd624,
+            Server => 0x6058ca,
         }
     }
 
