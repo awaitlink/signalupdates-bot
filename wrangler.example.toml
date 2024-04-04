@@ -8,7 +8,7 @@ command = "cargo install worker-build && worker-build --release"
 [env.production]
 name = "signalupdates-bot"
 kv_namespaces = [{ binding = "STATE", id = "..." }]
-workers_dev = false
+workers_dev = true
 triggers = { crons = ["*/10 * * * *"] }
 
 [env.production.vars]
