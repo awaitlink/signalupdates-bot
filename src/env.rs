@@ -49,6 +49,8 @@ pub trait EnvExt {
 
     fn is_dry_run(&self) -> anyhow::Result<bool>;
     fn enabled_platforms(&self) -> anyhow::Result<Vec<Platform>>;
+
+    fn access_token(&self) -> anyhow::Result<String>;
 }
 
 impl EnvExt for Env {
@@ -102,6 +104,10 @@ impl EnvExt for Env {
 
     fn enabled_platforms(&self) -> anyhow::Result<Vec<Platform>> {
         get_env_string(self, Var, "ENABLED_PLATFORMS").map(|s| filter_platforms(&s))
+    }
+
+    fn access_token(&self) -> anyhow::Result<String> {
+        get_env_string(self, Var, "ACCESS_TOKEN")
     }
 }
 

@@ -33,6 +33,7 @@ To run this bot, do the following:
     `DISCORD_UPDATES_MENTION_ROLE` | Role ID to mention about new versions in Discord.
     `DISCORD_SERVER_UPDATES_MENTION_ROLE` | Role ID to mention about new Server versions in Discord.
     `DISCORD_ERRORS_MENTION_ROLE` | Role ID to mention about errors in Discord.
+    `ACCESS_TOKEN` | Token that can be used to run the bot on demand or tell the latest Android Firebase version to it via API.
 
 1. In the KV namespace(s) you created, manually create a key-value pair with the key `state` and a value like:
 
@@ -102,7 +103,7 @@ Run the following command to deploy the bot:
 wrangler publish -e production
 ```
 
-The `production` variant is configured by default to run every 10 minutes. For the `staging` variant, you have to invoke it manually by visiting its URL (that looks like `signalupdates-bot-staging.<your-workers-subdomain>.workers.dev`).
+The `production` variant is configured by default to run every 10 minutes. For the `staging` variant, you have to invoke it manually by visiting its URL (that looks like `signalupdates-bot-staging.<your-workers-subdomain>.workers.dev/ACCESS_TOKEN/run`).
 
 ## Acknowledgements
 

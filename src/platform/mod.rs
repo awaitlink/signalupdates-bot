@@ -82,9 +82,15 @@ impl Platform {
         format!("https://raw.githubusercontent.com/signalapp/Signal-{self}/{revision}")
     }
 
-    pub const fn availability_notice(&self) -> &'static str {
+    pub const fn availability_notice(&self, available: bool) -> &'static str {
         match self {
-            Android => "\n(Not Yet) Available via [Firebase App Distribution](/t/17538)",
+            Android => {
+                if available {
+                    "\nAvailable via [Firebase App Distribution](/t/17538)"
+                } else {
+                    "\n**Not yet** available via [Firebase App Distribution](/t/17538)"
+                }
+            }
             Ios | Desktop | Server => "",
         }
     }

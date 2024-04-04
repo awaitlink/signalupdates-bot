@@ -19,17 +19,20 @@ pub struct Post<'a> {
     old_tag: &'a Tag,
     new_tag: &'a Tag,
     new_build_configuration: Option<BuildConfiguration>,
+    available: bool,
     commits: Vec<Commit<'a>>,
     unfiltered_commits_len: usize,
     localization_change_collection: LocalizationChangeCollection<'a>,
 }
 
 impl<'a> Post<'a> {
+    #[allow(clippy::too_many_arguments)]
     pub fn new(
         platform: Platform,
         old_tag: &'a Tag,
         new_tag: &'a Tag,
         new_build_configuration: Option<BuildConfiguration>,
+        available: bool,
         commits: Vec<Commit<'a>>,
         unfiltered_commits_len: usize,
         localization_change_collection: LocalizationChangeCollection<'a>,
@@ -45,6 +48,7 @@ impl<'a> Post<'a> {
             old_tag,
             new_tag,
             new_build_configuration,
+            available,
             commits,
             unfiltered_commits_len,
             localization_change_collection,
@@ -141,7 +145,7 @@ ABI | Build
         };
 
         let platform = self.platform;
-        let availability_notice = platform.availability_notice();
+        let availability_notice = platform.availability_notice(self.available);
         let comparison_url =
             platform.github_comparison_url(&self.old_tag.name, &self.new_tag.name, None, false);
 
@@ -269,10 +273,10 @@ mod tests {
         platform::Platform::*,
     };
 
-    #[test_case(Android, "v1.2.3", "v1.2.4", None, vec![
+    #[test_case(Android, "v1.2.3", "v1.2.4", None, false, vec![
         Commit::new(Android, "Test commit.", "abcdef")
     ], 1, None, "## New Version: 1.2.4
-(Not Yet) Available via [Firebase App Distribution](/t/17538)
+**Not yet** available via [Firebase App Distribution](/t/17538)
 *An error occurred when trying to find specific build numbers for this version.*
 [quote]
 1 new commit since 1.2.3:
@@ -291,6 +295,28 @@ Note: after clicking a link, it may take a few seconds before GitHub jumps to th
 Localization changes for the release are the same, as this is the first build of the release.
 [/quote]
 [/details]"; "Android: one commit")]
+    #[test_case(Android, "v1.2.3", "v1.2.4", None, true, vec![
+    Commit::new(Android, "Test commit.", "abcdef")
+], 1, None, "## New Version: 1.2.4
+Available via [Firebase App Distribution](/t/17538)
+*An error occurred when trying to find specific build numbers for this version.*
+[quote]
+1 new commit since 1.2.3:
+- Test commit. [[1]](//github.com/signalapp/Signal-Android/commit/abcdef)
+
+---
+Gathered from [signalapp/Signal-Android v1.2.3...v1.2.4](//github.com/signalapp/Signal-Android/compare/v1.2.3...v1.2.4)
+[/quote]
+[details=\"Localization changes\"]
+[quote]
+Note: after clicking a link, it may take a few seconds before GitHub jumps to the file (try scrolling a bit if it doesn't).
+
+#### 0 languages changed since 1.2.3:
+*No localization changes found*
+
+Localization changes for the release are the same, as this is the first build of the release.
+[/quote]
+[/details]"; "Android: one commit available")]
     #[test_case(Android, "v1.2.3", "v1.2.4", Some(BuildConfiguration {
     canonical_version_code: 1234,
     postfix_size: 100,
@@ -303,10 +329,10 @@ Localization changes for the release are the same, as this is the first build of
         map.insert(String::from("x86_64"), 4);
         map
     },
-}), vec![
+}), false, vec![
     Commit::new(Android, "Test commit.", "abcdef")
 ], 1, None, "## New Version: 1.2.4 (1234)
-(Not Yet) Available via [Firebase App Distribution](/t/17538)
+**Not yet** available via [Firebase App Distribution](/t/17538)
 [details=\"Specific build numbers\"]
 ABI | Build
 -|-
@@ -333,11 +359,11 @@ Note: after clicking a link, it may take a few seconds before GitHub jumps to th
 Localization changes for the release are the same, as this is the first build of the release.
 [/quote]
 [/details]"; "Android: build configuration")]
-    #[test_case(Android, "v1.2.3", "v1.2.4", None, vec![
+    #[test_case(Android, "v1.2.3", "v1.2.4", None, false, vec![
         Commit::new(Android, "Test commit.", "abcdef"),
         Commit::new(Android, "Bump version to 1.2.4", "abc123")
     ], 2, None, "## New Version: 1.2.4
-(Not Yet) Available via [Firebase App Distribution](/t/17538)
+**Not yet** available via [Firebase App Distribution](/t/17538)
 *An error occurred when trying to find specific build numbers for this version.*
 [quote]
 2 new commits since 1.2.3:
@@ -358,11 +384,11 @@ Note: after clicking a link, it may take a few seconds before GitHub jumps to th
 Localization changes for the release are the same, as this is the first build of the release.
 [/quote]
 [/details]"; "Android: two commits")]
-    #[test_case(Android, "v1.2.3", "v1.2.4", None, vec![
+    #[test_case(Android, "v1.2.3", "v1.2.4", None, false, vec![
         Commit::new(Android, "Test commit.", "abcdef"),
         Commit::new(Android, "Bump version to 1.2.4", "abc123")
     ], 3, None, "## New Version: 1.2.4
-(Not Yet) Available via [Firebase App Distribution](/t/17538)
+**Not yet** available via [Firebase App Distribution](/t/17538)
 *An error occurred when trying to find specific build numbers for this version.*
 [quote]
 2 new commits since 1.2.3 (+ 1 commit omitted):
@@ -383,11 +409,11 @@ Note: after clicking a link, it may take a few seconds before GitHub jumps to th
 Localization changes for the release are the same, as this is the first build of the release.
 [/quote]
 [/details]"; "Android: two commits, one omitted")]
-    #[test_case(Android, "v1.2.3", "v1.2.4", None, vec![
+    #[test_case(Android, "v1.2.3", "v1.2.4", None, false, vec![
         Commit::new(Android, "Test commit.", "abcdef"),
         Commit::new(Android, "Bump version to 1.2.4", "abc123")
     ], 4, None, "## New Version: 1.2.4
-(Not Yet) Available via [Firebase App Distribution](/t/17538)
+**Not yet** available via [Firebase App Distribution](/t/17538)
 *An error occurred when trying to find specific build numbers for this version.*
 [quote]
 2 new commits since 1.2.3 (+ 2 commits omitted):
@@ -408,14 +434,14 @@ Note: after clicking a link, it may take a few seconds before GitHub jumps to th
 Localization changes for the release are the same, as this is the first build of the release.
 [/quote]
 [/details]"; "Android: two commits, two omitted")]
-    #[test_case(Android, "v1.2.3", "v1.2.4", None, vec![
+    #[test_case(Android, "v1.2.3", "v1.2.4", None, false, vec![
         Commit::new(Android, "Test commit.", "abc111"),
         Commit::new(Android, "Revert \"Test commit.\".\nThis reverts commit abc111.", "abc222"),
         Commit::new(Android, "Revert \"Revert \"Test commit.\".\".\nThis reverts commit abc222.", "abc333"),
         Commit::new(Android, "Revert \"Test commit 0.\".\nThis reverts commit abc000.", "abc444"),
         Commit::new(Android, "Test commit 2.", "abc555"),
     ], 5, None, "## New Version: 1.2.4
-(Not Yet) Available via [Firebase App Distribution](/t/17538)
+**Not yet** available via [Firebase App Distribution](/t/17538)
 *An error occurred when trying to find specific build numbers for this version.*
 [quote]
 5 new commits since 1.2.3:
@@ -442,13 +468,13 @@ Note: after clicking a link, it may take a few seconds before GitHub jumps to th
 Localization changes for the release are the same, as this is the first build of the release.
 [/quote]
 [/details]"; "Android: five commits with reverts")]
-    #[test_case(Android, "v1.2.3", "v1.2.4", None,
+    #[test_case(Android, "v1.2.3", "v1.2.4", None, false,
     std::iter::repeat(Commit::new(Android, "Test commit.", "abcdef"))
         .take(MAX_COMMITS_WITHOUT_DETAILS_TAG)
         .chain([Commit::new(Android, "Bump version to 1.2.4", "abc123")].iter().cloned())
         .collect(),
     MAX_COMMITS_WITHOUT_DETAILS_TAG + 1, None, "## New Version: 1.2.4
-(Not Yet) Available via [Firebase App Distribution](/t/17538)
+**Not yet** available via [Firebase App Distribution](/t/17538)
 *An error occurred when trying to find specific build numbers for this version.*
 [quote]
 11 new commits since 1.2.3:
@@ -489,7 +515,7 @@ Note: after clicking a link, it may take a few seconds before GitHub jumps to th
 Localization changes for the release are the same, as this is the first build of the release.
 [/quote]
 [/details]"; "Android: twenty one commits")]
-    #[test_case(Desktop, "v1.2.3-beta.1", "v1.2.3-beta.2", None, vec![
+    #[test_case(Desktop, "v1.2.3-beta.1", "v1.2.3-beta.2", None, false, vec![
         Commit::new(Desktop, "Test commit.", "abcdef")
     ], 1, None, "## New Version: 1.2.3-beta.2
 [quote]
@@ -509,10 +535,10 @@ Note: after clicking a link, it may take a few seconds before GitHub jumps to th
 Localization changes for the release are the same, as this is the first build of the release.
 [/quote]
 [/details]"; "Desktop: one commit")]
-    #[test_case(Android, "v1.2.3", "v1.2.4", None, vec![
+    #[test_case(Android, "v1.2.3", "v1.2.4", None, false, vec![
         Commit::new(Android, "Test commit.", "abcdef")
     ], 1, Some(Completeness::Complete), "## New Version: 1.2.4
-(Not Yet) Available via [Firebase App Distribution](/t/17538)
+**Not yet** available via [Firebase App Distribution](/t/17538)
 *An error occurred when trying to find specific build numbers for this version.*
 [quote]
 1 new commit since 1.2.3:
@@ -540,6 +566,7 @@ Note: after clicking a link, it may take a few seconds before GitHub jumps to th
         old_tag: &str,
         new_tag: &str,
         new_build_configuration: Option<BuildConfiguration>,
+        available: bool,
         commits: Vec<Commit>,
         unfiltered_commits_len: usize,
         localization_change_collection: Option<Completeness>,
@@ -590,6 +617,7 @@ Note: after clicking a link, it may take a few seconds before GitHub jumps to th
             &old_tag,
             &new_tag,
             new_build_configuration,
+            available,
             commits,
             unfiltered_commits_len,
             localization_change_collection,

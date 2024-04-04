@@ -17,6 +17,7 @@ use anyhow::Context;
 use chrono::prelude::*;
 use github::Tag;
 use semver::Version;
+use subtle::ConstantTimeEq;
 use worker::{event, Env, ScheduleContext, ScheduledEvent};
 
 use crate::{
@@ -26,11 +27,19 @@ use crate::{
         Completeness, LocalizationChange, LocalizationChangeCollection, LocalizationChanges,
     },
     logging::Logger,
-    platform::{android::BuildConfiguration, Platform},
+    platform::{
+        android::BuildConfiguration,
+        Platform::{self, *},
+    },
     state::{PostInformation, StateController},
 };
 
 const POSTING_DELAY_MILLISECONDS: u64 = 3000;
+
+enum Mode {
+    MakeNewPostIfPossible,
+    EditExistingAndroidPostIfNeeded { latest_available: Tag },
+}
 
 enum PlatformCheckOutcome {
     WaitingForApproval,
@@ -39,30 +48,76 @@ enum PlatformCheckOutcome {
     PostedCommits,
 }
 
+use Mode::*;
 use PlatformCheckOutcome::*;
 
-// Used for debugging, to manually trigger the bot outside of schedule.
 #[event(fetch)]
 pub async fn fetch(
-    _req: worker::Request,
+    req: worker::Request,
     env: Env,
     _ctx: worker::Context,
 ) -> worker::Result<worker::Response> {
-    main(&env).await;
-    worker::Response::empty()
+    panic_hook::set_panic_hook();
+
+    let router = worker::Router::new();
+
+    router
+        .get_async("/:token/firebase/:version", |_req, ctx| async move {
+            if let Some(token) = ctx.param("token") {
+                if let Some(version) = ctx.param("version") {
+                    if token
+                        .as_bytes()
+                        .ct_eq(ctx.env.access_token().unwrap().as_bytes())
+                        .unwrap_u8()
+                        == 1
+                    {
+                        main(
+                            &ctx.env,
+                            EditExistingAndroidPostIfNeeded {
+                                latest_available: Tag::from_exact_version_string(version),
+                            },
+                        )
+                        .await;
+                    }
+                }
+            }
+
+            worker::Response::empty()
+        })
+        .get_async("/:token/run", |_req, ctx| async move {
+            if let Some(token) = ctx.param("token") {
+                if token
+                    .as_bytes()
+                    .ct_eq(ctx.env.access_token().unwrap().as_bytes())
+                    .unwrap_u8()
+                    == 1
+                {
+                    main(&ctx.env, MakeNewPostIfPossible).await;
+                }
+            }
+
+            worker::Response::empty()
+        })
+        .run(req, env)
+        .await
 }
 
 #[event(scheduled)]
 pub async fn scheduled(_event: ScheduledEvent, env: Env, _ctx: ScheduleContext) {
-    main(&env).await;
+    main(&env, MakeNewPostIfPossible).await;
 }
 
-async fn main(env: &Env) {
-    panic_hook::set_panic_hook();
-
+async fn main(env: &Env, mode: Mode) {
     let logger = Logger::new();
 
-    match check_all_platforms(env, &logger).await {
+    let result = match mode {
+        MakeNewPostIfPossible => check_all_platforms(env, &logger).await,
+        EditExistingAndroidPostIfNeeded { latest_available } => {
+            edit_existing_android_post_if_needed(env, latest_available).await
+        }
+    };
+
+    match result {
         Err(error) => {
             tracing::error!(?error);
 
@@ -78,6 +133,60 @@ async fn main(env: &Env) {
         }
         Ok(_) => tracing::info!("finished successfully"),
     }
+}
+
+async fn edit_existing_android_post_if_needed(
+    env: &Env,
+    latest_available: Tag,
+) -> anyhow::Result<()> {
+    tracing::debug!(?latest_available, "the god from beyond told us the new latest available version in firebase. let's see what we can do");
+    let latest_available_v = latest_available
+        .to_version()
+        .context("couldn't make version out of new latest available one")?;
+
+    let mut state_controller = state::StateController::from_kv(env).await?;
+    let previous_v = state_controller
+        .most_recent_android_firebase_version_tag()
+        .to_version()
+        .context("couldn't make version out of previous one")?;
+
+    if latest_available_v > previous_v {
+        tracing::debug!("latest_available > previous. good");
+
+        let platform_state = &state_controller.platform_state(Android);
+        tracing::debug!(?platform_state.last_posted_tag);
+
+        if platform_state.last_posted_tag == latest_available {
+            tracing::debug!("last_posted_tag == latest_available. will edit post");
+
+            if let Some(PostInformation { id, .. }) = platform_state.last_post {
+                let discourse_api_key = env.discourse_api_key()?;
+
+                tracing::trace!("getting existing post...");
+                let existing_post = discourse::get_post(id, &discourse_api_key).await?;
+                let new_raw = existing_post.raw.replace(
+                    Android.availability_notice(false),
+                    Android.availability_notice(true),
+                );
+
+                discourse::edit_post(id, &discourse_api_key, &new_raw).await?;
+                tracing::trace!("probably edited post!");
+            } else {
+                tracing::warn!("there's no post information but there is a last posted version!");
+            }
+        } else {
+            tracing::debug!("last_posted_tag != latest_available. will not edit any posts");
+            // TODO: store more previous posts and edit them?
+        }
+
+        tracing::trace!("updating KV...");
+        state_controller.set_firebase(latest_available).await?;
+        tracing::trace!("updated KV");
+    } else {
+        tracing::debug!("latest_available <= previous. ignoring");
+    }
+
+    Ok(())
 }
 
 async fn check_all_platforms(env: &Env, logger: &Logger) -> anyhow::Result<()> {
@@ -398,11 +507,19 @@ async fn check_platform(
                     None
                 };
 
+                let available = match platform {
+                    Android => {
+                        state_controller.most_recent_android_firebase_version_tag() == new_tag
+                    }
+                    Ios | Desktop | Server => false, // dummy value,
+                };
+
                 let post = markdown::Post::new(
                     platform,
                     old_tag,
                     new_tag,
                     new_build_configuration,
+                    available,
                     commits,
                     unfiltered_commits_len,
                     LocalizationChangeCollection {

@@ -18,6 +18,12 @@ impl Tag {
             .map_err(|e| anyhow!(e.to_string()))
             .context("could not parse version from tag")
     }
+
+    pub fn from_exact_version_string(version: &str) -> Self {
+        Self {
+            name: format!("v{version}"),
+        }
+    }
 }
 
 #[cfg(test)]

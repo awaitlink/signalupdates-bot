@@ -3,6 +3,7 @@ use std::collections::HashMap;
 use anyhow::{anyhow, bail, Context};
 use semver::Version;
 use serde::{Deserialize, Serialize};
+use serde_json::json;
 use strum::IntoEnumIterator;
 use worker::Env;
 use worker_kv::KvStore;
@@ -15,6 +16,7 @@ use crate::{
 
 const STATE_KV_BINDING: &str = "STATE";
 const STATE_KV_KEY: &str = "state";
+const STATE_KV_MOST_RECENT_ANDROID_FIREBASE_VERSION_KEY: &str = "mostRecentAndroidFirebaseVersion";
 
 pub type State = HashMap<String, PlatformState>;
 
@@ -84,25 +86,45 @@ pub struct PostInformation {
 pub struct StateController {
     kv_store: KvStore,
     state: State,
+    most_recent_android_firebase_version_tag: Tag,
 }
 
 impl StateController {
+    async fn get_json<T>(kv_store: &KvStore, key: &str) -> anyhow::Result<Option<T>>
+    where
+        T: for<'de> Deserialize<'de>,
+    {
+        kv_store
+            .get(key)
+            .json()
+            .await
+            .map_err(|e| anyhow!(e.to_string()))
+            .with_context(|| format!("could not get value for key {key}"))
+    }
+
     pub async fn from_kv(env: &Env) -> anyhow::Result<Self> {
         let kv_store = env
             .kv(STATE_KV_BINDING)
             .map_err(|e| anyhow!(e.to_string()))
             .context("could not get KV store")?;
 
-        let state: Option<State> = kv_store
-            .get(STATE_KV_KEY)
-            .json()
-            .await
-            .map_err(|e| anyhow!(e.to_string()))
-            .with_context(|| format!("could not get value for key {STATE_KV_KEY}"))?;
+        let state: Option<State> = Self::get_json(&kv_store, STATE_KV_KEY).await?;
 
         match state {
             Some(state) => {
-                let controller = Self { kv_store, state };
+                let most_recent_android_firebase_version: String =
+                    Self::get_json(&kv_store, STATE_KV_MOST_RECENT_ANDROID_FIREBASE_VERSION_KEY)
+                        .await?
+                        .unwrap_or(String::from("0.0.0"));
+
+                let controller = Self {
+                    kv_store,
+                    state,
+                    most_recent_android_firebase_version_tag: Tag::from_exact_version_string(
+                        &most_recent_android_firebase_version,
+                    ),
+                };
+
                 controller.log_state("loaded state from KV");
                 controller.validate_state().context("invalid state")?;
                 tracing::trace!("state appears to be valid");
@@ -131,6 +153,10 @@ impl StateController {
             .expect("state to be available for all platforms")
     }
 
+    pub fn most_recent_android_firebase_version_tag(&self) -> &Tag {
+        &self.most_recent_android_firebase_version_tag
+    }
+
     fn platform_state_mut(&mut self, platform: Platform) -> &mut PlatformState {
         self.state
             .get_mut(platform.state_key().as_str())
@@ -150,7 +176,7 @@ impl StateController {
             *platform_state = state;
             tracing::debug!(%platform, ?platform_state, "changed platform state");
 
-            match self.commit_changes().await {
+            match self.commit_state_changes().await {
                 Ok(_) => tracing::debug!("saved state to KV"),
                 Err(e) => return Err(e.context("could not save state to KV")),
             }
@@ -161,15 +187,57 @@ impl StateController {
         Ok(())
     }
 
-    async fn commit_changes(&mut self) -> anyhow::Result<()> {
+    pub async fn set_firebase(
+        &mut self,
+        most_recent_android_firebase_version: Tag,
+    ) -> anyhow::Result<()> {
+        let existing = &mut self.most_recent_android_firebase_version_tag;
+
+        if *existing != most_recent_android_firebase_version {
+            *existing = most_recent_android_firebase_version;
+            tracing::debug!(new=?existing, "changed most recent android firebase version");
+
+            match self.commit_firebase_changes().await {
+                Ok(_) => tracing::debug!("saved firebase state to KV"),
+                Err(e) => return Err(e.context("could not save firebase state to KV")),
+            }
+        } else {
+            tracing::warn!(
+                ?existing,
+                "most recent android firebase version did not change"
+            );
+        }
+
+        Ok(())
+    }
+
+    async fn put_json<T>(&self, key: &str, value: &T) -> anyhow::Result<()>
+    where
+        T: Serialize,
+    {
         self.kv_store
-            .put(STATE_KV_KEY, &self.state)
+            .put(key, value)
             .map_err(|e| anyhow!(e.to_string()))
             .context("could not create request to put to KV")?
             .execute()
             .await
             .map_err(|e| anyhow!(e.to_string()))
             .context("could not put to KV")
+    }
+
+    async fn commit_state_changes(&self) -> anyhow::Result<()> {
+        self.put_json(STATE_KV_KEY, &self.state).await
+    }
+
+    async fn commit_firebase_changes(&self) -> anyhow::Result<()> {
+        self.put_json(
+            STATE_KV_MOST_RECENT_ANDROID_FIREBASE_VERSION_KEY,
+            &json!(self
+                .most_recent_android_firebase_version_tag
+                .exact_version_string())
+            .to_string(),
+        )
+        .await
     }
 
     fn log_state(&self, message: &str) {

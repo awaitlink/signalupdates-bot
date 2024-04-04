@@ -27,6 +27,11 @@ pub struct PostStream {
 }
 
 #[derive(Deserialize, Debug, PartialEq, Eq)]
+pub struct WrappedPost {
+    pub post: Post,
+}
+
+#[derive(Deserialize, Debug, PartialEq, Eq)]
 pub struct Post {
     pub id: u64,
 
@@ -34,6 +39,8 @@ pub struct Post {
     pub post_number: u64,
 
     pub user_id: u64,
+
+    pub raw: String,
 }
 
 #[derive(Deserialize, Debug, PartialEq, Eq)]
@@ -106,6 +113,7 @@ mod tests {
             "topic_id": 0,
             "post_number": 0,
             "user_id": 0,
+            "raw": "content",
         }};
 
         assert_eq!(
@@ -115,6 +123,7 @@ mod tests {
                 topic_id: 0,
                 post_number: 0,
                 user_id: 0,
+                raw: String::from("content"),
             }))
         );
     }

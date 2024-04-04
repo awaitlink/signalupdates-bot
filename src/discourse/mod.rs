@@ -124,6 +124,59 @@ pub async fn post(
     }
 }
 
+pub async fn get_post(post_id: u64, api_key: &str) -> anyhow::Result<Post> {
+    let url = Url::parse(&format!(
+        "https://community.signalusers.org/posts/{post_id}.json"
+    ))
+    .context("could not parse URL")?;
+
+    let request = network::create_request(
+        url,
+        Method::Get,
+        ContentType::ApplicationJson,
+        ContentType::ApplicationJson,
+        None,
+        Some(api_key),
+    )?;
+    let post: ApiResponse<Post> = network::get_json_from_request(request).await?;
+
+    Ok(match post {
+        ApiResponse::Ok(post) => post,
+        ApiResponse::Err(error) => bail!("error = {error:?}"),
+        ApiResponse::Unknown(value) => bail!("unexpected response = {value:?}"),
+    })
+}
+
+pub async fn edit_post(post_id: u64, api_key: &str, raw: &str) -> anyhow::Result<WrappedPost> {
+    let url = Url::parse(&format!(
+        "https://community.signalusers.org/posts/{post_id}.json"
+    ))
+    .context("could not parse URL")?;
+
+    let request = network::create_request(
+        url,
+        Method::Put,
+        ContentType::ApplicationJson,
+        ContentType::ApplicationJson,
+        Some(
+            json!({
+                "post": {
+                    "raw": raw
+                }
+            })
+            .to_string(),
+        ),
+        Some(api_key),
+    )?;
+    let post: ApiResponse<WrappedPost> = network::get_json_from_request(request).await?;
+
+    Ok(match post {
+        ApiResponse::Ok(post) => post,
+        ApiResponse::Err(error) => bail!("error = {error:?}"),
+        ApiResponse::Unknown(value) => bail!("unexpected response = {value:?}"),
+    })
+}
+
 pub async fn get_replies_to_post(post_id: u64) -> anyhow::Result<Vec<Post>> {
     let url = Url::parse(&format!(
         "https://community.signalusers.org/posts/{post_id}/replies.json"
