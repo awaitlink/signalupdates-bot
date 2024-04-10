@@ -13,7 +13,7 @@ mod platform;
 mod state;
 mod utils;
 
-use anyhow::Context;
+use anyhow::{bail, Context};
 use chrono::prelude::*;
 use github::Tag;
 use semver::Version;
@@ -164,13 +164,18 @@ async fn edit_existing_android_post_if_needed(
 
                 tracing::trace!("getting existing post...");
                 let existing_post = discourse::get_post(id, &discourse_api_key).await?;
-                let new_raw = existing_post.raw.replace(
-                    Android.availability_notice(false),
-                    Android.availability_notice(true),
-                );
 
-                discourse::edit_post(id, &discourse_api_key, &new_raw).await?;
-                tracing::trace!("probably edited post!");
+                if let Some(raw) = existing_post.raw {
+                    let new_raw = raw.replace(
+                        Android.availability_notice(false),
+                        Android.availability_notice(true),
+                    );
+
+                    discourse::edit_post(id, &discourse_api_key, &new_raw).await?;
+                    tracing::trace!("probably edited post!");
+                } else {
+                    bail!("no raw in post?");
+                }
             } else {
                 tracing::warn!("there's no post information but there is a last posted version!");
             }

@@ -40,7 +40,7 @@ pub struct Post {
 
     pub user_id: u64,
 
-    pub raw: String,
+    pub raw: Option<String>,
 }
 
 #[derive(Deserialize, Debug, PartialEq, Eq)]
@@ -123,7 +123,28 @@ mod tests {
                 topic_id: 0,
                 post_number: 0,
                 user_id: 0,
-                raw: String::from("content"),
+                raw: Some(String::from("content")),
+            }))
+        );
+    }
+
+    #[test]
+    fn api_response_ok_post_deserialization_without_raw() {
+        let input = json! {{
+            "id": 0,
+            "topic_id": 0,
+            "post_number": 0,
+            "user_id": 0,
+        }};
+
+        assert_eq!(
+            serde_json::from_str::<ApiResponse<CreatePostResponse>>(&input.to_string()).unwrap(),
+            ApiResponse::Ok(CreatePostResponse::Posted(Post {
+                id: 0,
+                topic_id: 0,
+                post_number: 0,
+                user_id: 0,
+                raw: None,
             }))
         );
     }
