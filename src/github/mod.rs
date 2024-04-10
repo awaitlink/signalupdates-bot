@@ -26,7 +26,7 @@ pub async fn get_tags_to_post(
     .await
     .context("could not fetch tags from GitHub")?;
 
-    tracing::trace!(?enough_tags);
+    tracing::trace!(enough_tags.len = ?enough_tags.len());
 
     let mut tags: Vec<(Tag, Version)> = enough_tags
         .iter()
@@ -34,10 +34,9 @@ pub async fn get_tags_to_post(
         .filter(|(_, version)| platform.should_post_version(version))
         .collect();
 
-    tracing::trace!(?tags);
+    tracing::trace!(tags.len = ?tags.len());
 
     tags.sort_unstable_by(|(_, lhs), (_, rhs)| lhs.cmp(rhs));
-    tracing::trace!(?tags, "after sorting");
 
     let tags_to_post: Vec<(Tag, Version)> = tags
         .iter()

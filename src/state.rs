@@ -125,7 +125,6 @@ impl StateController {
                     ),
                 };
 
-                controller.log_state("loaded state from KV");
                 controller.validate_state().context("invalid state")?;
                 tracing::trace!("state appears to be valid");
 
@@ -238,14 +237,5 @@ impl StateController {
             .to_string(),
         )
         .await
-    }
-
-    fn log_state(&self, message: &str) {
-        tracing::debug!("{message}:");
-
-        for platform in Platform::iter() {
-            tracing::debug!(%platform, state = ?self.platform_state(platform));
-            crate::logging::separator();
-        }
     }
 }
