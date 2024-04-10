@@ -154,7 +154,14 @@ pub async fn send_error_message(env: &Env, error: &anyhow::Error, log: &str) -> 
         .discord_errors_mention_role()
         .context("could not get Discord errors mention role")?;
 
-    let message = format!("**[error]** <@&{role}>\n```\n{error:?}\n```");
+    let error_string = format!("{error:?}");
+
+    let message = match error_string.len() {
+        // Max 2000 chars in Discord message
+        0..=1970 => format!("**[error]** <@&{role}>\n```\n{error_string}\n```"),
+        _ => format!("**[error]** <@&{role}> (error is too large to show inline, see log)"),
+    };
+
     notify_with_log(env, &message, log).await
 }
 
@@ -163,7 +170,12 @@ pub async fn send_misc_message(env: &Env, content: &str, log: &str) -> anyhow::R
         .discord_errors_mention_role()
         .context("could not get Discord errors mention role")?;
 
-    let message = format!("**[misc]** {content} <@&{role}>");
+    let message = match content.len() {
+        // Max 2000 chars in Discord message
+        0..=1970 => format!("**[misc]** {content} <@&{role}>"),
+        _ => format!("**[misc]** (misc message is too large to show inline, see log) <@&{role}>"),
+    };
+
     notify_with_log(env, &message, log).await
 }
 
