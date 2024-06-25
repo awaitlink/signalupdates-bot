@@ -106,34 +106,13 @@ impl<'a> Post<'a> {
         let (metadata_part1, metadata_part2) = match &self.new_build_configuration {
             Some(BuildConfiguration {
                 canonical_version_code,
-                postfix_size,
-                abi_postfixes,
+                current_hotfix_version,
+                max_hotfix_versions,
             }) => {
-                let mut vec: Vec<(&String, &u64)> = abi_postfixes.iter().collect();
-                vec.sort_by(|a, b| a.1.cmp(b.1));
+                let full_version_code =
+                    (canonical_version_code * max_hotfix_versions) + *current_hotfix_version;
 
-                let build_numbers = vec
-                    .iter()
-                    .map(|(abi, postfix)| {
-                        format!(
-                            "`{abi}`|`{}`",
-                            (canonical_version_code * postfix_size) + *postfix
-                        )
-                    })
-                    .collect::<Vec<String>>()
-                    .join("\n");
-
-                (
-                    format!(" ({canonical_version_code})"),
-                    format!(
-                        "
-[details=\"Specific build numbers\"]
-ABI | Build
--|-
-{build_numbers}
-[/details]"
-                    ),
-                )
+                (format!(" ({full_version_code})"), String::new())
             }
             None => {
                 if self.platform == Platform::Android {
@@ -319,29 +298,12 @@ Localization changes for the release are the same, as this is the first build of
 [/details]"; "Android: one commit available")]
     #[test_case(Android, "v1.2.3", "v1.2.4", Some(BuildConfiguration {
     canonical_version_code: 1234,
-    postfix_size: 100,
-    abi_postfixes: {
-        let mut map = HashMap::new();
-        map.insert(String::from("universal"), 0);
-        map.insert(String::from("armeabi-v7a"), 1);
-        map.insert(String::from("arm64-v8a"), 2);
-        map.insert(String::from("x86"), 3);
-        map.insert(String::from("x86_64"), 4);
-        map
-    },
+    current_hotfix_version: 1,
+    max_hotfix_versions: 100,
 }), false, vec![
     Commit::new(Android, "Test commit.", "abcdef")
-], 1, None, "## New Version: 1.2.4 (1234)
+], 1, None, "## New Version: 1.2.4 (123401)
 **Not yet** available via [Firebase App Distribution](/t/17538)
-[details=\"Specific build numbers\"]
-ABI | Build
--|-
-`universal`|`123400`
-`armeabi-v7a`|`123401`
-`arm64-v8a`|`123402`
-`x86`|`123403`
-`x86_64`|`123404`
-[/details]
 [quote]
 1 new commit since 1.2.3:
 - Test commit. [[1]](//github.com/signalapp/Signal-Android/commit/abcdef)
