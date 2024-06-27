@@ -116,7 +116,7 @@ impl<'a> Post<'a> {
             }
             None => {
                 if self.platform == Platform::Android {
-                    (String::new(), String::from("\n*An error occurred when trying to find specific build numbers for this version.*"))
+                    (String::new(), String::from("\n*Couldn't find the build number for this version. The app `build.gradle` kittens have changed...*"))
                 } else {
                     (String::new(), String::new())
                 }
@@ -256,7 +256,7 @@ mod tests {
         Commit::new(Android, "Test commit.", "abcdef")
     ], 1, None, "## New Version: 1.2.4
 Builds [will no longer be published to Firebase App Distribution](/t/17538/114)
-*An error occurred when trying to find specific build numbers for this version.*
+*Couldn't find the build number for this version. The app `build.gradle` kittens have changed...*
 [quote]
 1 new commit since 1.2.3:
 - Test commit. [[1]](//github.com/signalapp/Signal-Android/commit/abcdef)
@@ -278,7 +278,7 @@ Localization changes for the release are the same, as this is the first build of
     Commit::new(Android, "Test commit.", "abcdef")
 ], 1, None, "## New Version: 1.2.4
 Available via [Firebase App Distribution](/t/17538) despite [this](/t/17538/114)? :eyes:
-*An error occurred when trying to find specific build numbers for this version.*
+*Couldn't find the build number for this version. The app `build.gradle` kittens have changed...*
 [quote]
 1 new commit since 1.2.3:
 - Test commit. [[1]](//github.com/signalapp/Signal-Android/commit/abcdef)
@@ -326,7 +326,7 @@ Localization changes for the release are the same, as this is the first build of
         Commit::new(Android, "Bump version to 1.2.4", "abc123")
     ], 2, None, "## New Version: 1.2.4
 Builds [will no longer be published to Firebase App Distribution](/t/17538/114)
-*An error occurred when trying to find specific build numbers for this version.*
+*Couldn't find the build number for this version. The app `build.gradle` kittens have changed...*
 [quote]
 2 new commits since 1.2.3:
 - Test commit. [[1]](//github.com/signalapp/Signal-Android/commit/abcdef)
@@ -351,7 +351,7 @@ Localization changes for the release are the same, as this is the first build of
         Commit::new(Android, "Bump version to 1.2.4", "abc123")
     ], 3, None, "## New Version: 1.2.4
 Builds [will no longer be published to Firebase App Distribution](/t/17538/114)
-*An error occurred when trying to find specific build numbers for this version.*
+*Couldn't find the build number for this version. The app `build.gradle` kittens have changed...*
 [quote]
 2 new commits since 1.2.3 (+ 1 commit omitted):
 - Test commit. [[1]](//github.com/signalapp/Signal-Android/commit/abcdef)
@@ -376,7 +376,7 @@ Localization changes for the release are the same, as this is the first build of
         Commit::new(Android, "Bump version to 1.2.4", "abc123")
     ], 4, None, "## New Version: 1.2.4
 Builds [will no longer be published to Firebase App Distribution](/t/17538/114)
-*An error occurred when trying to find specific build numbers for this version.*
+*Couldn't find the build number for this version. The app `build.gradle` kittens have changed...*
 [quote]
 2 new commits since 1.2.3 (+ 2 commits omitted):
 - Test commit. [[1]](//github.com/signalapp/Signal-Android/commit/abcdef)
@@ -404,7 +404,7 @@ Localization changes for the release are the same, as this is the first build of
         Commit::new(Android, "Test commit 2.", "abc555"),
     ], 5, None, "## New Version: 1.2.4
 Builds [will no longer be published to Firebase App Distribution](/t/17538/114)
-*An error occurred when trying to find specific build numbers for this version.*
+*Couldn't find the build number for this version. The app `build.gradle` kittens have changed...*
 [quote]
 5 new commits since 1.2.3:
 - <del>Test commit. [[1]](//github.com/signalapp/Signal-Android/commit/abc111)</del> (reverted by [2])
@@ -437,7 +437,7 @@ Localization changes for the release are the same, as this is the first build of
         .collect(),
     MAX_COMMITS_WITHOUT_DETAILS_TAG + 1, None, "## New Version: 1.2.4
 Builds [will no longer be published to Firebase App Distribution](/t/17538/114)
-*An error occurred when trying to find specific build numbers for this version.*
+*Couldn't find the build number for this version. The app `build.gradle` kittens have changed...*
 [quote]
 11 new commits since 1.2.3:
 [details=\"Show commits\"]
@@ -501,7 +501,7 @@ Localization changes for the release are the same, as this is the first build of
         Commit::new(Android, "Test commit.", "abcdef")
     ], 1, Some(Completeness::Complete), "## New Version: 1.2.4
 Builds [will no longer be published to Firebase App Distribution](/t/17538/114)
-*An error occurred when trying to find specific build numbers for this version.*
+*Couldn't find the build number for this version. The app `build.gradle` kittens have changed...*
 [quote]
 1 new commit since 1.2.3:
 - Test commit. [[1]](//github.com/signalapp/Signal-Android/commit/abcdef)
