@@ -255,7 +255,7 @@ mod tests {
     #[test_case(Android, "v1.2.3", "v1.2.4", None, false, vec![
         Commit::new(Android, "Test commit.", "abcdef")
     ], 1, None, "## New Version: 1.2.4
-**Not yet** available via [Firebase App Distribution](/t/17538)
+Builds [will no longer be published to Firebase App Distribution](/t/17538/114)
 *An error occurred when trying to find specific build numbers for this version.*
 [quote]
 1 new commit since 1.2.3:
@@ -277,7 +277,7 @@ Localization changes for the release are the same, as this is the first build of
     #[test_case(Android, "v1.2.3", "v1.2.4", None, true, vec![
     Commit::new(Android, "Test commit.", "abcdef")
 ], 1, None, "## New Version: 1.2.4
-Available via [Firebase App Distribution](/t/17538)
+Available via [Firebase App Distribution](/t/17538) despite [this](/t/17538/114)? :eyes:
 *An error occurred when trying to find specific build numbers for this version.*
 [quote]
 1 new commit since 1.2.3:
@@ -303,7 +303,7 @@ Localization changes for the release are the same, as this is the first build of
 }), false, vec![
     Commit::new(Android, "Test commit.", "abcdef")
 ], 1, None, "## New Version: 1.2.4 (123401)
-**Not yet** available via [Firebase App Distribution](/t/17538)
+Builds [will no longer be published to Firebase App Distribution](/t/17538/114)
 [quote]
 1 new commit since 1.2.3:
 - Test commit. [[1]](//github.com/signalapp/Signal-Android/commit/abcdef)
@@ -325,7 +325,7 @@ Localization changes for the release are the same, as this is the first build of
         Commit::new(Android, "Test commit.", "abcdef"),
         Commit::new(Android, "Bump version to 1.2.4", "abc123")
     ], 2, None, "## New Version: 1.2.4
-**Not yet** available via [Firebase App Distribution](/t/17538)
+Builds [will no longer be published to Firebase App Distribution](/t/17538/114)
 *An error occurred when trying to find specific build numbers for this version.*
 [quote]
 2 new commits since 1.2.3:
@@ -350,7 +350,7 @@ Localization changes for the release are the same, as this is the first build of
         Commit::new(Android, "Test commit.", "abcdef"),
         Commit::new(Android, "Bump version to 1.2.4", "abc123")
     ], 3, None, "## New Version: 1.2.4
-**Not yet** available via [Firebase App Distribution](/t/17538)
+Builds [will no longer be published to Firebase App Distribution](/t/17538/114)
 *An error occurred when trying to find specific build numbers for this version.*
 [quote]
 2 new commits since 1.2.3 (+ 1 commit omitted):
@@ -375,7 +375,7 @@ Localization changes for the release are the same, as this is the first build of
         Commit::new(Android, "Test commit.", "abcdef"),
         Commit::new(Android, "Bump version to 1.2.4", "abc123")
     ], 4, None, "## New Version: 1.2.4
-**Not yet** available via [Firebase App Distribution](/t/17538)
+Builds [will no longer be published to Firebase App Distribution](/t/17538/114)
 *An error occurred when trying to find specific build numbers for this version.*
 [quote]
 2 new commits since 1.2.3 (+ 2 commits omitted):
@@ -403,7 +403,7 @@ Localization changes for the release are the same, as this is the first build of
         Commit::new(Android, "Revert \"Test commit 0.\".\nThis reverts commit abc000.", "abc444"),
         Commit::new(Android, "Test commit 2.", "abc555"),
     ], 5, None, "## New Version: 1.2.4
-**Not yet** available via [Firebase App Distribution](/t/17538)
+Builds [will no longer be published to Firebase App Distribution](/t/17538/114)
 *An error occurred when trying to find specific build numbers for this version.*
 [quote]
 5 new commits since 1.2.3:
@@ -436,7 +436,7 @@ Localization changes for the release are the same, as this is the first build of
         .chain([Commit::new(Android, "Bump version to 1.2.4", "abc123")].iter().cloned())
         .collect(),
     MAX_COMMITS_WITHOUT_DETAILS_TAG + 1, None, "## New Version: 1.2.4
-**Not yet** available via [Firebase App Distribution](/t/17538)
+Builds [will no longer be published to Firebase App Distribution](/t/17538/114)
 *An error occurred when trying to find specific build numbers for this version.*
 [quote]
 11 new commits since 1.2.3:
@@ -500,7 +500,7 @@ Localization changes for the release are the same, as this is the first build of
     #[test_case(Android, "v1.2.3", "v1.2.4", None, false, vec![
         Commit::new(Android, "Test commit.", "abcdef")
     ], 1, Some(Completeness::Complete), "## New Version: 1.2.4
-**Not yet** available via [Firebase App Distribution](/t/17538)
+Builds [will no longer be published to Firebase App Distribution](/t/17538/114)
 *An error occurred when trying to find specific build numbers for this version.*
 [quote]
 1 new commit since 1.2.3:
