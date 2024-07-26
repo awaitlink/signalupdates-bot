@@ -34,7 +34,7 @@ use crate::{
     state::{PostInformation, StateController},
 };
 
-const POSTING_DELAY_MILLISECONDS: u64 = 3000;
+const POSTING_DELAY_MILLISECONDS: u64 = 5000;
 
 enum Mode {
     MakeNewPostIfPossible,
