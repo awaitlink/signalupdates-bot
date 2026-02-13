@@ -1,6 +1,7 @@
 account_id = "..."
 compatibility_date = "2022-06-18"
 main = "build/worker/shim.mjs"
+name = "signalupdates-bot"
 
 [build]
 command = "cargo install worker-build && worker-build --release"
