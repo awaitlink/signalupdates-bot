@@ -72,7 +72,7 @@ pub fn create_request(
 ) -> anyhow::Result<Request> {
     tracing::debug!(url.domain = url.domain(), ?method, "creating request");
 
-    let mut headers = Headers::new();
+    let headers = Headers::new();
 
     if let Some(api_key) = discourse_api_key {
         headers.set("User-Api-Key", api_key).unwrap();

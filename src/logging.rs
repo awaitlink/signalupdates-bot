@@ -18,10 +18,7 @@ impl MpscWriter {
 
 impl io::Write for MpscWriter {
     fn write(&mut self, buf: &[u8]) -> io::Result<usize> {
-        self.sender
-            .send(buf.to_vec())
-            .map_err(|error| io::Error::new(io::ErrorKind::Other, error))?;
-
+        self.sender.send(buf.to_vec()).map_err(io::Error::other)?;
         Ok(buf.len())
     }
 

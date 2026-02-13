@@ -192,7 +192,7 @@ async fn notify_with_log(env: &Env, message: &str, log: &str) -> anyhow::Result<
 
     let boundary = "721640C74F194C8C9F795C59A371A868";
 
-    let body = vec![
+    let body = [
         format!("--{boundary}"),
         String::from(r#"Content-Disposition: form-data; name="payload_json""#),
         String::from(""),
