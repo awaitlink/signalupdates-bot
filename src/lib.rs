@@ -1,5 +1,3 @@
-#![feature(array_windows)]
-
 mod discord;
 mod discourse;
 mod env;
