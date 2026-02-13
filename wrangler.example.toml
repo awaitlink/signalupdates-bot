@@ -4,7 +4,7 @@ main = "build/worker/shim.mjs"
 name = "signalupdates-bot"
 
 [build]
-command = "cargo install worker-build && worker-build --release"
+command = "cargo install worker-build@^0.1 && worker-build --release"
 
 [env.production]
 name = "signalupdates-bot"
