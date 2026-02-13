@@ -13,25 +13,25 @@ default = ["console_error_panic_hook"]
 [dependencies]
 cfg-if = "1.0"
 console_error_panic_hook = { version = "0.1.1", optional = true }
-worker = "0.0.13"
-worker-kv = "0.5"
+worker = "0.7"
+worker-kv = "0.9"
 anyhow = "1.0"
 serde = "1.0"
 serde_derive = "1.0"
 serde_json = "1.0"
 semver = "1.0"
 lenient_semver = "0.4"
-strum = "0.26"
-strum_macros = "0.26"
+strum = "0.27"
+strum_macros = "0.27"
 locale-codes = "0.3"
 regex = "1.5"
 lazy_static = "1.4"
 sha2 = "0.10"
-base16ct = { version = "0.2", features = ["alloc"] }
-parse_link_header = "0.3"
+base16ct = { version = "1.0", features = ["alloc"] }
+parse_link_header = "0.4"
 chrono = { version = "0.4", default-features = false, features = ["std"] }
 permute = "0.2"
-askama_escape = "0.10"
+askama_escape = "0.15"
 tracing = { version = "0.1", features = [
     "max_level_trace",
     "release_max_level_trace",
@@ -44,7 +44,7 @@ subtle = "2.5"
 [dev-dependencies]
 test-case = "3.1"
 pretty_assertions = "1.2"
-reqwest = { version = "0.11", features = ["blocking", "json"] }
+reqwest = { version = "0.13", features = ["blocking", "json"] }
 
 [profile.release]
 codegen-units = 1
