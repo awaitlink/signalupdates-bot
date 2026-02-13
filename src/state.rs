@@ -5,7 +5,8 @@ use semver::Version;
 use serde::{Deserialize, Serialize};
 use serde_json::json;
 use strum::IntoEnumIterator;
-use worker::{Env, KvStore};
+use worker::Env;
+use worker_kv::KvStore;
 
 use crate::{
     github::Tag,
