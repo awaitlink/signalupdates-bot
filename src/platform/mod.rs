@@ -86,9 +86,9 @@ impl Platform {
         match self {
             Android => {
                 if available {
-                    "\nAvailable via [Firebase App Distribution](/t/17538) despite [this](/t/17538/114)? :eyes:"
+                    "\nSomehow available via [Firebase App Distribution](/t/17538) despite [this](/t/17538/114)? :eyes:"
                 } else {
-                    "\nBuilds [will no longer be published to Firebase App Distribution](/t/17538/114)"
+                    "\nAvailable soon via [Obtainium](/t/65274) or the Google Play Store"
                 }
             }
             Ios | Desktop | Server => "",
