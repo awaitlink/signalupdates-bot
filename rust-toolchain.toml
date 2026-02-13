@@ -1,15 +1,15 @@
-# Due to incompatibility of newer `wasm-bindgen` versions with newer Rust versions,
-# and updating to a newer version results in:
+# Toolchain fixed because:
+# - older `wasm-bindgen` versions are incompatible with newer Rust versions
+# - updating to a newer version of `wasm-bindgen` results in:
+#     ```
+#     ERROR signalupdates_bot: error=could not get value for key state
 #
-# ```
-# ERROR signalupdates_bot: error=could not get value for key state
-#
-# Caused by:
-#     js error: JsValue(Error: invalid type: string "fi", expected a borrowed string
-#     Error: invalid type: string "fi", expected a borrowed string
-#         at __wbg_Error_8c4e43fe74559d73 (shim.js:238:12)
-#         ...
-# ```
+#     Caused by:
+#         js error: JsValue(Error: invalid type: string "fi", expected a borrowed string
+#         Error: invalid type: string "fi", expected a borrowed string
+#             at __wbg_Error_8c4e43fe74559d73 (shim.js:238:12)
+#             ...
+#     ```
 
 [toolchain]
-channel = "nightly-2024-07-27"
+channel = "nightly-2024-07-27" # rustc 1.82.0-nightly (7c2012d0e 2024-07-26)

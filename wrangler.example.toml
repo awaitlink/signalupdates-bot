@@ -4,7 +4,14 @@ main = "build/worker/shim.mjs"
 name = "signalupdates-bot"
 
 [build]
-command = "cargo install worker-build@^0.1 && worker-build --release"
+command = """\
+    rustup -V && \
+        cargo -V && \
+        rustc -V && \
+        cargo install --force --locked wasm-bindgen-cli --version 0.2.84 && \
+        cargo install --force --locked worker-build --version 0.1.0 && \
+        worker-build --release
+"""
 
 [env.production]
 name = "signalupdates-bot"
